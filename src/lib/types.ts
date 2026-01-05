@@ -7,16 +7,17 @@ export type Customer = {
   document: string;
 };
 
-export type Part = {
+export type Product = {
   id: string;
   name: string;
   description: string;
   price: number;
-  quantity: number;
+  quantity?: number; // Optional, as services won't have a quantity
+  type: 'piece' | 'service';
 };
 
 export type SaleItem = {
-  partId: string;
+  productId: string;
   quantity: number;
   unitPrice: number;
 };

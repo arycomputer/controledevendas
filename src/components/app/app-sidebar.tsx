@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, Users, Wrench, ShoppingCart, CircleDollarSign } from 'lucide-react';
+import { LayoutDashboard, Users, Wrench, ShoppingCart, CircleDollarSign, Package } from 'lucide-react';
 import {
   Sidebar,
   SidebarHeader,
@@ -16,7 +16,7 @@ import {
 const navItems = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/customers', label: 'Clientes', icon: Users },
-  { href: '/parts', label: 'Peças', icon: Wrench },
+  { href: '/products', label: 'Produtos', icon: Package },
   { href: '/sales', label: 'Vendas', icon: ShoppingCart },
 ];
 

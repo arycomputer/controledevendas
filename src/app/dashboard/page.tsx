@@ -1,9 +1,9 @@
-import { CircleDollarSign, Users, Wrench, ShoppingCart } from "lucide-react";
+import { CircleDollarSign, Users, Package, ShoppingCart } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { StatCard } from "@/components/app/stat-card";
 import { SalesChart } from "@/components/app/sales-chart";
-import { customers, parts, sales } from "@/lib/data";
+import { customers, products, sales } from "@/lib/data";
 import { Badge } from "@/components/ui/badge";
 
 export default function DashboardPage() {
@@ -33,9 +33,9 @@ export default function DashboardPage() {
           icon={Users} 
         />
         <StatCard 
-          title="Tipos de Peças" 
-          value={`${parts.length}`} 
-          icon={Wrench} 
+          title="Produtos/Serviços" 
+          value={`${products.length}`} 
+          icon={Package} 
         />
       </div>
       <div className="grid grid-cols-1 lg:grid-cols-7 gap-8">

@@ -13,13 +13,13 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Separator } from "@/components/ui/separator"
 import { useToast } from "@/hooks/use-toast"
-import { customers, parts } from "@/lib/data"
+import { customers, products } from "@/lib/data"
 import { useEffect } from "react"
 
 const saleFormSchema = z.object({
   customerId: z.string({ required_error: "É necessário selecionar um cliente." }).min(1, "É necessário selecionar um cliente."),
   items: z.array(z.object({
-    partId: z.string().min(1, "Selecione uma peça."),
+    productId: z.string().min(1, "Selecione um produto ou serviço."),
     quantity: z.coerce.number().int().min(1, "Mínimo 1."),
     unitPrice: z.coerce.number(),
   })).min(1, "Adicione pelo menos um item à venda."),
@@ -64,7 +64,7 @@ export default function NewSalePage() {
     <Card className="max-w-4xl mx-auto">
       <CardHeader>
         <CardTitle>Registrar Nova Venda</CardTitle>
-        <CardDescription>Selecione o cliente e as peças para registrar uma nova venda.</CardDescription>
+        <CardDescription>Selecione o cliente e os produtos/serviços para registrar uma nova venda.</CardDescription>
       </CardHeader>
       <CardContent>
         <Form {...form}>
@@ -99,24 +99,24 @@ export default function NewSalePage() {
                   <div key={field.id} className="grid grid-cols-[1fr_100px_auto] items-end gap-4 p-4 border rounded-lg bg-muted/20">
                     <FormField
                       control={form.control}
-                      name={`items.${index}.partId`}
+                      name={`items.${index}.productId`}
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel className="text-xs">Peça</FormLabel>
+                          <FormLabel className="text-xs">Produto/Serviço</FormLabel>
                           <Select onValueChange={(value) => {
-                            const part = parts.find(p => p.id === value);
+                            const product = products.find(p => p.id === value);
                             field.onChange(value);
-                            form.setValue(`items.${index}.unitPrice`, part?.price || 0);
+                            form.setValue(`items.${index}.unitPrice`, product?.price || 0);
                           }} defaultValue={field.value}>
                             <FormControl>
                               <SelectTrigger>
-                                <SelectValue placeholder="Selecione uma peça" />
+                                <SelectValue placeholder="Selecione um item" />
                               </SelectTrigger>
                             </FormControl>
                             <SelectContent>
-                              {parts.map(part => (
-                                <SelectItem key={part.id} value={part.id} disabled={watchedItems.some(item => item.partId === part.id)}>
-                                  {part.name} - {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(part.price)}
+                              {products.map(product => (
+                                <SelectItem key={product.id} value={product.id} disabled={watchedItems.some(item => item.productId === product.id)}>
+                                  {product.name} - {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(product.price)}
                                 </SelectItem>
                               ))}
                             </SelectContent>
@@ -148,7 +148,7 @@ export default function NewSalePage() {
                   type="button"
                   variant="outline"
                   size="sm"
-                  onClick={() => append({ partId: "", quantity: 1, unitPrice: 0 })}
+                  onClick={() => append({ productId: "", quantity: 1, unitPrice: 0 })}
                 >
                   <PlusCircle className="mr-2 h-4 w-4" /> Adicionar Item
                 </Button>
