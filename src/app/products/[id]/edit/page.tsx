@@ -33,7 +33,7 @@ const productFormSchema = z.object({
   quantity: z.coerce.number().int().min(0, "A quantidade não pode ser negativa.").optional(),
   type: z.enum(['piece', 'service'], { required_error: "É necessário selecionar um tipo." }),
 }).refine(data => {
-    if (data.type === 'piece' && (data.quantity === undefined || data.quantity === null)) {
+    if (data.type === 'piece' && (data.quantity === undefined || data.quantity === null || isNaN(data.quantity))) {
         return false;
     }
     return true;
