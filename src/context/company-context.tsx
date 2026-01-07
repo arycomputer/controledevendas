@@ -46,16 +46,17 @@ export const CompanyProvider = ({ children }: { children: ReactNode }) => {
   const { data: remoteCompanyData, isLoading: isSettingsLoading } = useDoc<CompanyData>(settingsDocRef);
   const [companyData, setCompanyDataState] = useState<CompanyData>(defaultCompanyData);
 
-  const isLoading = isUserLoading || isSettingsLoading;
+  const isLoading = isUserLoading || (user && isSettingsLoading);
 
   useEffect(() => {
     if (remoteCompanyData) {
       setCompanyDataState(remoteCompanyData);
-    } else if (!isSettingsLoading && !isUserLoading && settingsDocRef) {
-      // If no data is found and we are not loading, create the initial doc
+    } else if (!isSettingsLoading && user && settingsDocRef) {
+      // If no data is found and we are not loading, create the initial doc and set local state
       setDoc(settingsDocRef, defaultCompanyData);
+      setCompanyDataState(defaultCompanyData);
     }
-  }, [remoteCompanyData, isSettingsLoading, isUserLoading, settingsDocRef]);
+  }, [remoteCompanyData, isSettingsLoading, user, settingsDocRef]);
   
   const handleSetCompanyData = async (data: Partial<CompanyData>) => {
     if (!settingsDocRef) return;
