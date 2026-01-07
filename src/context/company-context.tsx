@@ -44,13 +44,13 @@ export const CompanyProvider = ({ children }: { children: ReactNode }) => {
   }, [firestore, user]);
   
   const { data: remoteCompanyData, isLoading: isSettingsLoading } = useDoc<CompanyData>(settingsDocRef);
-  const [companyData, setCompanyData] = useState<CompanyData>(defaultCompanyData);
+  const [companyData, setCompanyDataState] = useState<CompanyData>(defaultCompanyData);
 
   const isLoading = isUserLoading || isSettingsLoading;
 
   useEffect(() => {
     if (remoteCompanyData) {
-      setCompanyData(remoteCompanyData);
+      setCompanyDataState(remoteCompanyData);
     } else if (!isLoading && settingsDocRef) {
       // If no data is found and we are not loading, create the initial doc
       setDoc(settingsDocRef, defaultCompanyData);
@@ -60,7 +60,7 @@ export const CompanyProvider = ({ children }: { children: ReactNode }) => {
   const handleSetCompanyData = async (data: Partial<CompanyData>) => {
     if (!settingsDocRef) return;
     const updatedData = { ...companyData, ...data };
-    setCompanyData(updatedData);
+    setCompanyDataState(updatedData);
     await setDoc(settingsDocRef, updatedData, { merge: true });
   };
 
@@ -70,7 +70,8 @@ export const CompanyProvider = ({ children }: { children: ReactNode }) => {
     isLoading: isLoading,
   };
 
-  if (isLoading && !remoteCompanyData) {
+  // Do not render children until authentication and initial data fetch is complete
+  if (isLoading) {
      return (
         <div className="flex items-center justify-center h-screen">
             <Loader2 className="h-12 w-12 animate-spin" />
