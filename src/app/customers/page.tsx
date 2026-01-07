@@ -14,8 +14,9 @@ import { ConfirmationDialog } from '@/components/app/confirmation-dialog';
 import { useToast } from '@/hooks/use-toast';
 import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
 import { collection, doc, deleteDoc } from 'firebase/firestore';
+import { AuthGuard } from '@/components/app/auth-guard';
 
-export default function CustomersPage() {
+function CustomersPageContent() {
     const router = useRouter();
     const { toast } = useToast();
     const firestore = useFirestore();
@@ -165,4 +166,13 @@ export default function CustomersPage() {
             )}
         </>
     );
+}
+
+
+export default function CustomersPage() {
+    return (
+        <AuthGuard>
+            <CustomersPageContent />
+        </AuthGuard>
+    )
 }

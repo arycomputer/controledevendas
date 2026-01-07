@@ -1,43 +1,63 @@
 'use client'
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { PlusCircle, MoreHorizontal } from 'lucide-react';
+import { PlusCircle, MoreHorizontal, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 import { Badge } from '@/components/ui/badge';
-import { sales as initialSales, customers } from '@/lib/data';
-import type { Sale } from '@/lib/types';
+import type { Sale, Customer } from '@/lib/types';
 import { ConfirmationDialog } from '@/components/app/confirmation-dialog';
 import { useToast } from '@/hooks/use-toast';
+import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
+import { collection, doc, deleteDoc } from 'firebase/firestore';
+import { AuthGuard } from '@/components/app/auth-guard';
 
-export default function SalesPage() {
+function SalesPageContent() {
     const router = useRouter();
     const { toast } = useToast();
-    const [sales, setSales] = useState<Sale[]>(initialSales);
+    const firestore = useFirestore();
+
+    const salesCollection = useMemoFirebase(() => collection(firestore, 'sales'), [firestore]);
+    const { data: sales, isLoading: salesLoading } = useCollection<Sale>(salesCollection);
+
+    const customersCollection = useMemoFirebase(() => collection(firestore, 'customers'), [firestore]);
+    const { data: customers, isLoading: customersLoading } = useCollection<Customer>(customersCollection);
+
     const [dialogOpen, setDialogOpen] = useState(false);
     const [saleToCancel, setSaleToCancel] = useState<Sale | null>(null);
 
-    const sortedSales = [...sales].sort((a, b) => new Date(b.saleDate).getTime() - new Date(a.saleDate).getTime());
+    const sortedSales = useMemo(() => {
+        if (!sales) return [];
+        return [...sales].sort((a, b) => new Date(b.saleDate).getTime() - new Date(a.saleDate).getTime());
+    }, [sales]);
 
     const handleCancelClick = (sale: Sale) => {
         setSaleToCancel(sale);
         setDialogOpen(true);
     };
 
-    const handleConfirmCancel = () => {
+    const handleConfirmCancel = async () => {
         if (!saleToCancel) return;
 
-        setSales(sales.filter(s => s.id !== saleToCancel.id));
-
-        toast({
-            title: "Sucesso!",
-            description: `Venda ${saleToCancel.id.toUpperCase()} cancelada.`,
-            variant: "default",
-        });
+        try {
+            await deleteDoc(doc(firestore, 'sales', saleToCancel.id));
+            toast({
+                title: "Sucesso!",
+                description: `Venda ${saleToCancel.id.toUpperCase()} cancelada.`,
+                variant: "default",
+            });
+        } catch (error) {
+            console.error("Error cancelling sale: ", error);
+            toast({
+                title: "Erro!",
+                description: "Não foi possível cancelar a venda.",
+                variant: "destructive"
+            });
+        }
 
         setSaleToCancel(null);
         setDialogOpen(false);
@@ -46,6 +66,8 @@ export default function SalesPage() {
     const handleViewClick = (saleId: string) => {
         router.push(`/sales/${saleId}`);
     };
+    
+    const isLoading = salesLoading || customersLoading;
 
     return (
         <>
@@ -78,40 +100,54 @@ export default function SalesPage() {
                             </TableRow>
                         </TableHeader>
                         <TableBody>
-                            {sortedSales.map((sale: Sale) => {
-                                const customer = customers.find(c => c.id === sale.customerId);
-                                const totalItems = sale.items.reduce((sum, item) => sum + item.quantity, 0);
+                            {isLoading ? (
+                                <TableRow>
+                                    <TableCell colSpan={6} className="h-24 text-center">
+                                        <Loader2 className="h-6 w-6 animate-spin mx-auto" />
+                                    </TableCell>
+                                </TableRow>
+                            ) : sortedSales.length > 0 ? (
+                                sortedSales.map((sale: Sale) => {
+                                    const customer = customers?.find(c => c.id === sale.customerId);
+                                    const totalItems = sale.items.reduce((sum, item) => sum + item.quantity, 0);
 
-                                return (
-                                    <TableRow key={sale.id}>
-                                        <TableCell className="font-mono text-xs">{sale.id.toUpperCase()}</TableCell>
-                                        <TableCell className="font-medium">{customer?.name || 'N/A'}</TableCell>
-                                        <TableCell>{new Date(sale.saleDate).toLocaleDateString('pt-BR')}</TableCell>
-                                        <TableCell className="text-center">
-                                            <Badge variant="secondary">{totalItems} item(s)</Badge>
-                                        </TableCell>
-                                        <TableCell className="text-right font-semibold">
-                                            {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(sale.totalAmount)}
-                                        </TableCell>
-                                        <TableCell className="text-right">
-                                            <DropdownMenu>
-                                                <DropdownMenuTrigger asChild>
-                                                    <Button variant="ghost" className="h-8 w-8 p-0">
-                                                        <span className="sr-only">Abrir menu</span>
-                                                        <MoreHorizontal className="h-4 w-4" />
-                                                    </Button>
-                                                </DropdownMenuTrigger>
-                                                <DropdownMenuContent align="end">
-                                                    <DropdownMenuLabel>Ações</DropdownMenuLabel>
-                                                    <DropdownMenuItem onClick={() => handleViewClick(sale.id)}>Visualizar</DropdownMenuItem>
-                                                    <DropdownMenuSeparator />
-                                                    <DropdownMenuItem onClick={() => handleCancelClick(sale)} className="text-destructive focus:text-destructive focus:bg-destructive/10">Cancelar Venda</DropdownMenuItem>
-                                                </DropdownMenuContent>
-                                            </DropdownMenu>
-                                        </TableCell>
-                                    </TableRow>
-                                );
-                            })}
+                                    return (
+                                        <TableRow key={sale.id}>
+                                            <TableCell className="font-mono text-xs">{sale.id.toUpperCase()}</TableCell>
+                                            <TableCell className="font-medium">{customer?.name || 'N/A'}</TableCell>
+                                            <TableCell>{new Date(sale.saleDate).toLocaleDateString('pt-BR')}</TableCell>
+                                            <TableCell className="text-center">
+                                                <Badge variant="secondary">{totalItems} item(s)</Badge>
+                                            </TableCell>
+                                            <TableCell className="text-right font-semibold">
+                                                {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(sale.totalAmount)}
+                                            </TableCell>
+                                            <TableCell className="text-right">
+                                                <DropdownMenu>
+                                                    <DropdownMenuTrigger asChild>
+                                                        <Button variant="ghost" className="h-8 w-8 p-0">
+                                                            <span className="sr-only">Abrir menu</span>
+                                                            <MoreHorizontal className="h-4 w-4" />
+                                                        </Button>
+                                                    </DropdownMenuTrigger>
+                                                    <DropdownMenuContent align="end">
+                                                        <DropdownMenuLabel>Ações</DropdownMenuLabel>
+                                                        <DropdownMenuItem onClick={() => handleViewClick(sale.id)}>Visualizar</DropdownMenuItem>
+                                                        <DropdownMenuSeparator />
+                                                        <DropdownMenuItem onClick={() => handleCancelClick(sale)} className="text-destructive focus:text-destructive focus:bg-destructive/10">Cancelar Venda</DropdownMenuItem>
+                                                    </DropdownMenuContent>
+                                                </DropdownMenu>
+                                            </TableCell>
+                                        </TableRow>
+                                    );
+                                })
+                             ) : (
+                                <TableRow>
+                                    <TableCell colSpan={6} className="h-24 text-center">
+                                        Nenhuma venda encontrada.
+                                    </TableCell>
+                                </TableRow>
+                            )}
                         </TableBody>
                     </Table>
                 </CardContent>
@@ -128,4 +164,12 @@ export default function SalesPage() {
             )}
         </>
     );
+}
+
+export default function SalesPage() {
+    return (
+        <AuthGuard>
+            <SalesPageContent />
+        </AuthGuard>
+    )
 }

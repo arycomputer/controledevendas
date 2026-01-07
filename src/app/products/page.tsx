@@ -3,21 +3,27 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { PlusCircle, MoreHorizontal } from 'lucide-react';
+import { PlusCircle, MoreHorizontal, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
-import { products as initialProducts } from '@/lib/data';
 import type { Product } from '@/lib/types';
 import { Badge } from '@/components/ui/badge';
 import { ConfirmationDialog } from '@/components/app/confirmation-dialog';
 import { useToast } from '@/hooks/use-toast';
+import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
+import { collection, doc, deleteDoc } from 'firebase/firestore';
+import { AuthGuard } from '@/components/app/auth-guard';
 
-export default function ProductsPage() {
+function ProductsPageContent() {
     const router = useRouter();
     const { toast } = useToast();
-    const [products, setProducts] = useState<Product[]>(initialProducts);
+    const firestore = useFirestore();
+    
+    const productsCollection = useMemoFirebase(() => collection(firestore, 'parts'), [firestore]);
+    const { data: products, isLoading } = useCollection<Product>(productsCollection);
+
     const [dialogOpen, setDialogOpen] = useState(false);
     const [productToDelete, setProductToDelete] = useState<Product | null>(null);
 
@@ -26,15 +32,23 @@ export default function ProductsPage() {
         setDialogOpen(true);
     };
 
-    const handleConfirmDelete = () => {
+    const handleConfirmDelete = async () => {
         if (!productToDelete) return;
 
-        setProducts(products.filter(p => p.id !== productToDelete.id));
-        
-        toast({
-            title: "Sucesso!",
-            description: `Item "${productToDelete.name}" excluído.`,
-        });
+        try {
+            await deleteDoc(doc(firestore, 'parts', productToDelete.id));
+            toast({
+                title: "Sucesso!",
+                description: `Item "${productToDelete.name}" excluído.`,
+            });
+        } catch (error) {
+             console.error("Error deleting product: ", error);
+             toast({
+                title: "Erro!",
+                description: "Não foi possível excluir o item.",
+                variant: "destructive"
+            });
+        }
 
         setProductToDelete(null);
         setDialogOpen(false);
@@ -75,37 +89,51 @@ export default function ProductsPage() {
                             </TableRow>
                         </TableHeader>
                         <TableBody>
-                            {products.map((product: Product) => (
-                                <TableRow key={product.id}>
-                                    <TableCell className="font-medium">{product.name}</TableCell>
-                                    <TableCell className="text-muted-foreground">{product.description}</TableCell>
-                                    <TableCell>
-                                        <Badge variant={product.type === 'piece' ? 'secondary' : 'outline'}>
-                                            {product.type === 'piece' ? 'Peça' : 'Serviço'}
-                                        </Badge>
-                                    </TableCell>
-                                    <TableCell className="text-right">
-                                        {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(product.price)}
-                                    </TableCell>
-                                    <TableCell className="text-right">{product.type === 'piece' ? product.quantity : 'N/A'}</TableCell>
-                                    <TableCell className="text-right">
-                                        <DropdownMenu>
-                                            <DropdownMenuTrigger asChild>
-                                                <Button variant="ghost" className="h-8 w-8 p-0">
-                                                    <span className="sr-only">Abrir menu</span>
-                                                    <MoreHorizontal className="h-4 w-4" />
-                                                </Button>
-                                            </DropdownMenuTrigger>
-                                            <DropdownMenuContent align="end">
-                                                <DropdownMenuLabel>Ações</DropdownMenuLabel>
-                                                <DropdownMenuItem onClick={() => handleEditClick(product.id)}>Editar</DropdownMenuItem>
-                                                <DropdownMenuSeparator />
-                                                <DropdownMenuItem onClick={() => handleDeleteClick(product)} className="text-destructive focus:text-destructive focus:bg-destructive/10">Excluir</DropdownMenuItem>
-                                            </DropdownMenuContent>
-                                        </DropdownMenu>
+                            {isLoading ? (
+                                <TableRow>
+                                    <TableCell colSpan={6} className="h-24 text-center">
+                                        <Loader2 className="h-6 w-6 animate-spin mx-auto" />
                                     </TableCell>
                                 </TableRow>
-                            ))}
+                            ) : products && products.length > 0 ? (
+                                products.map((product: Product) => (
+                                    <TableRow key={product.id}>
+                                        <TableCell className="font-medium">{product.name}</TableCell>
+                                        <TableCell className="text-muted-foreground">{product.description}</TableCell>
+                                        <TableCell>
+                                            <Badge variant={product.type === 'piece' ? 'secondary' : 'outline'}>
+                                                {product.type === 'piece' ? 'Peça' : 'Serviço'}
+                                            </Badge>
+                                        </TableCell>
+                                        <TableCell className="text-right">
+                                            {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(product.price)}
+                                        </TableCell>
+                                        <TableCell className="text-right">{product.type === 'piece' ? product.quantity : 'N/A'}</TableCell>
+                                        <TableCell className="text-right">
+                                            <DropdownMenu>
+                                                <DropdownMenuTrigger asChild>
+                                                    <Button variant="ghost" className="h-8 w-8 p-0">
+                                                        <span className="sr-only">Abrir menu</span>
+                                                        <MoreHorizontal className="h-4 w-4" />
+                                                    </Button>
+                                                </DropdownMenuTrigger>
+                                                <DropdownMenuContent align="end">
+                                                    <DropdownMenuLabel>Ações</DropdownMenuLabel>
+                                                    <DropdownMenuItem onClick={() => handleEditClick(product.id)}>Editar</DropdownMenuItem>
+                                                    <DropdownMenuSeparator />
+                                                    <DropdownMenuItem onClick={() => handleDeleteClick(product)} className="text-destructive focus:text-destructive focus:bg-destructive/10">Excluir</DropdownMenuItem>
+                                                </DropdownMenuContent>
+                                            </DropdownMenu>
+                                        </TableCell>
+                                    </TableRow>
+                                ))
+                            ) : (
+                                <TableRow>
+                                     <TableCell colSpan={6} className="h-24 text-center">
+                                        Nenhum item encontrado.
+                                    </TableCell>
+                                </TableRow>
+                            )}
                         </TableBody>
                     </Table>
                 </CardContent>
@@ -122,4 +150,13 @@ export default function ProductsPage() {
             )}
         </>
     );
+}
+
+
+export default function ProductsPage() {
+    return (
+        <AuthGuard>
+            <ProductsPageContent />
+        </AuthGuard>
+    )
 }

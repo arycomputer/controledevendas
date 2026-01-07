@@ -1,17 +1,43 @@
-import { CircleDollarSign, Users, Package, ShoppingCart } from "lucide-react";
+'use client'
+
+import { CircleDollarSign, Users, Package, ShoppingCart, Loader2 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { StatCard } from "@/components/app/stat-card";
 import { SalesChart } from "@/components/app/sales-chart";
-import { customers, products, sales } from "@/lib/data";
 import { Badge } from "@/components/ui/badge";
+import { useCollection, useFirestore, useMemoFirebase } from "@/firebase";
+import { collection } from "firebase/firestore";
+import type { Customer, Product, Sale } from "@/lib/types";
+import { AuthGuard } from "@/components/app/auth-guard";
 
-export default function DashboardPage() {
-  const totalSalesValue = sales.reduce((sum, sale) => sum + sale.totalAmount, 0);
+function DashboardPageContent() {
+  const firestore = useFirestore();
+
+  const salesCollection = useMemoFirebase(() => collection(firestore, 'sales'), [firestore]);
+  const { data: sales, isLoading: salesLoading } = useCollection<Sale>(salesCollection);
+
+  const customersCollection = useMemoFirebase(() => collection(firestore, 'customers'), [firestore]);
+  const { data: customers, isLoading: customersLoading } = useCollection<Customer>(customersCollection);
+  
+  const productsCollection = useMemoFirebase(() => collection(firestore, 'parts'), [firestore]);
+  const { data: products, isLoading: productsLoading } = useCollection<Product>(productsCollection);
+
+  const isLoading = salesLoading || customersLoading || productsLoading;
+  
+  if (isLoading) {
+    return (
+        <div className="flex justify-center items-center h-64">
+            <Loader2 className="h-8 w-8 animate-spin" />
+        </div>
+    )
+  }
+  
+  const totalSalesValue = sales?.reduce((sum, sale) => sum + sale.totalAmount, 0) || 0;
   
   const recentSales = sales
-    .sort((a, b) => new Date(b.saleDate).getTime() - new Date(a.saleDate).getTime())
-    .slice(0, 5);
+    ?.sort((a, b) => new Date(b.saleDate).getTime() - new Date(a.saleDate).getTime())
+    .slice(0, 5) || [];
 
   return (
     <div className="flex flex-col gap-8">
@@ -24,17 +50,17 @@ export default function DashboardPage() {
         />
         <StatCard 
           title="Vendas" 
-          value={`+${sales.length}`} 
+          value={`+${sales?.length || 0}`} 
           icon={ShoppingCart}
         />
         <StatCard 
           title="Clientes" 
-          value={`+${customers.length}`} 
+          value={`+${customers?.length || 0}`} 
           icon={Users} 
         />
         <StatCard 
           title="Produtos/Serviços" 
-          value={`${products.length}`} 
+          value={`${products?.length || 0}`} 
           icon={Package} 
         />
       </div>
@@ -44,7 +70,7 @@ export default function DashboardPage() {
             <CardTitle>Visão Geral de Vendas</CardTitle>
           </CardHeader>
           <CardContent className="pl-2">
-            <SalesChart />
+            <SalesChart sales={sales || []}/>
           </CardContent>
         </Card>
         <Card className="lg:col-span-3">
@@ -62,7 +88,7 @@ export default function DashboardPage() {
               </TableHeader>
               <TableBody>
                 {recentSales.map((sale) => {
-                  const customer = customers.find(c => c.id === sale.customerId);
+                  const customer = customers?.find(c => c.id === sale.customerId);
                   return (
                     <TableRow key={sale.id}>
                       <TableCell>
@@ -85,4 +111,13 @@ export default function DashboardPage() {
       </div>
     </div>
   );
+}
+
+
+export default function DashboardPage() {
+    return (
+        <AuthGuard>
+            <DashboardPageContent />
+        </AuthGuard>
+    )
 }

@@ -17,8 +17,7 @@ import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { useToast } from "@/hooks/use-toast"
 import type { User } from "@/lib/types"
-import { useAuth } from "@/firebase"
-import { initiateEmailSignUp } from "@/firebase/non-blocking-login"
+import { useAuth, initiateEmailSignUp } from "@/firebase"
 import { useEffect } from "react"
 
 
@@ -71,7 +70,7 @@ export function UserForm({ user, onSuccess, onClose }: UserFormProps) {
     } else {
         // Create new user with Firebase Auth
         initiateEmailSignUp(auth, data.email, data.password);
-        toast({ title: "Sucesso!", description: "Usuário criado." })
+        toast({ title: "Sucesso!", description: "Usuário criado. Verifique o estado de autenticação para ver o novo usuário." })
         onSuccess({ ...data, id: '' }); // ID will be set by Firebase, handle it in parent
     }
     onClose();
