@@ -1,34 +1,45 @@
-export type Customer = {
-  id: string;
-  name: string;
-  email: string;
-  phone: string;
-  address: string;
-  document: string;
-};
+'use client';
 
-export type Product = {
-  id: string;
-  name: string;
-  description: string;
-  price: number;
-  quantity?: number; // Optional, as services won't have a quantity
-  type: 'piece' | 'service';
-};
+import { z } from "zod";
 
-export type SaleItem = {
-  productId: string;
-  quantity: number;
-  unitPrice: number;
-};
+export const CustomerSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  email: z.string().email(),
+  phone: z.string(),
+  document: z.string(),
+  address: z.string(),
+});
+export type Customer = z.infer<typeof CustomerSchema>;
 
-export type Sale = {
-  id: string;
-  customerId: string;
-  items: SaleItem[];
-  totalAmount: number;
-  saleDate: string; // ISO date string
-};
+
+export const ProductSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  description: z.string(),
+  price: z.number(),
+  quantity: z.number().optional(),
+  type: z.enum(['piece', 'service']),
+});
+export type Product = z.infer<typeof ProductSchema>;
+
+export const SaleItemSchema = z.object({
+  productId: z.string(),
+  quantity: z.number(),
+  unitPrice: z.number(),
+});
+export type SaleItem = z.infer<typeof SaleItemSchema>;
+
+
+export const SaleSchema = z.object({
+  id: z.string(),
+  customerId: z.string(),
+  items: z.array(SaleItemSchema),
+  totalAmount: z.number(),
+  saleDate: z.string(), // ISO date string
+});
+export type Sale = z.infer<typeof SaleSchema>;
+
 
 export type User = {
     id: string;

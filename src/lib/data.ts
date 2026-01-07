@@ -1,5 +1,8 @@
 import type { Customer, Product, Sale } from './types';
 
+// This file is now deprecated as we are using Firestore.
+// It is kept for reference during the migration.
+
 export const customers: Customer[] = [
   { id: '1', name: 'João da Silva', email: 'joao.silva@example.com', phone: '11987654321', address: 'Rua das Flores, 123, São Paulo', document: '123.456.789-00' },
   { id: '2', name: 'Maria Oliveira', email: 'maria.oliveira@example.com', phone: '21912345678', address: 'Avenida Principal, 456, Rio de Janeiro', document: '987.654.321-11' },

@@ -4,6 +4,9 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
 import * as z from "zod"
 import { useRouter, useParams } from "next/navigation"
+import { doc, updateDoc } from 'firebase/firestore'
+import { useDoc, useFirestore, useMemoFirebase } from "@/firebase"
+import { useEffect } from "react"
 
 import { Button } from "@/components/ui/button"
 import {
@@ -17,8 +20,7 @@ import {
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { useToast } from "@/hooks/use-toast"
-import { customers } from "@/lib/data"
-import { useEffect } from "react"
+import { Loader2 } from "lucide-react"
 
 const customerFormSchema = z.object({
   name: z.string().min(2, "O nome deve ter pelo menos 2 caracteres."),
@@ -34,9 +36,11 @@ export default function EditCustomerPage() {
   const router = useRouter()
   const params = useParams()
   const { toast } = useToast()
+  const firestore = useFirestore();
   
   const customerId = params.id as string;
-  const customer = customers.find(c => c.id === customerId);
+  const customerDocRef = useMemoFirebase(() => doc(firestore, 'customers', customerId), [firestore, customerId]);
+  const { data: customer, isLoading } = useDoc(customerDocRef);
 
   const form = useForm<CustomerFormValues>({
     resolver: zodResolver(customerFormSchema),
@@ -51,26 +55,41 @@ export default function EditCustomerPage() {
 
   useEffect(() => {
     if (customer) {
-      form.reset(customer);
-    } else {
-       toast({
-        title: "Erro",
-        description: "Cliente não encontrado.",
-        variant: "destructive",
+      form.reset({
+        name: customer.name,
+        email: customer.email,
+        phone: customer.phone,
+        document: customer.document,
+        address: customer.address
+      });
+    }
+  }, [customer, form]);
+
+  async function onSubmit(data: CustomerFormValues) {
+    try {
+      await updateDoc(customerDocRef, data);
+      toast({
+        title: "Sucesso!",
+        description: `Dados do cliente "${data.name}" atualizados.`,
+        variant: "default",
       })
       router.push('/customers')
+    } catch (error) {
+       console.error("Error updating customer: ", error);
+       toast({
+        title: "Erro!",
+        description: "Não foi possível atualizar o cliente.",
+        variant: "destructive"
+      })
     }
-  }, [customer, form, router, toast]);
-
-  function onSubmit(data: CustomerFormValues) {
-    // In a real app, you would send this data to your API to update the customer.
-    console.log({ ...data, id: customerId })
-    toast({
-      title: "Sucesso!",
-      description: `Dados do cliente "${data.name}" atualizados.`,
-      variant: "default",
-    })
-    router.push('/customers')
+  }
+  
+  if (isLoading) {
+    return (
+        <div className="flex justify-center items-center h-64">
+            <Loader2 className="h-8 w-8 animate-spin" />
+        </div>
+    )
   }
   
   if (!customer) {

@@ -3,32 +3,38 @@
 import React, { useState, useMemo } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { PlusCircle, Search, MoreHorizontal } from 'lucide-react';
+import { PlusCircle, Search, MoreHorizontal, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
-import { customers as initialCustomers } from '@/lib/data';
 import type { Customer } from '@/lib/types';
 import { ConfirmationDialog } from '@/components/app/confirmation-dialog';
 import { useToast } from '@/hooks/use-toast';
+import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
+import { collection, doc, deleteDoc } from 'firebase/firestore';
 
 export default function CustomersPage() {
     const router = useRouter();
     const { toast } = useToast();
+    const firestore = useFirestore();
     const [searchTerm, setSearchTerm] = useState('');
-    const [customers, setCustomers] = useState<Customer[]>(initialCustomers);
+    
+    const customersCollection = useMemoFirebase(() => collection(firestore, 'customers'), [firestore]);
+    const { data: customers, isLoading } = useCollection<Customer>(customersCollection);
+
     const [dialogOpen, setDialogOpen] = useState(false);
     const [customerToDelete, setCustomerToDelete] = useState<Customer | null>(null);
     
     const filteredCustomers = useMemo(() => {
+        if (!customers) return [];
         if (!searchTerm) return customers;
         const lowercasedTerm = searchTerm.toLowerCase();
         return customers.filter(customer => 
             customer.name.toLowerCase().includes(lowercasedTerm) ||
-            customer.phone.includes(searchTerm) ||
-            customer.document.replace(/[^\d]/g, "").includes(searchTerm.replace(/[^\d]/g, ""))
+            (customer.phone && customer.phone.includes(searchTerm)) ||
+            (customer.document && customer.document.replace(/[^\d]/g, "").includes(searchTerm.replace(/[^\d]/g, "")))
         );
     }, [searchTerm, customers]);
 
@@ -37,16 +43,23 @@ export default function CustomersPage() {
         setDialogOpen(true);
     };
 
-    const handleConfirmDelete = () => {
+    const handleConfirmDelete = async () => {
         if (!customerToDelete) return;
         
-        // In a real app, you would call an API to delete the customer
-        setCustomers(customers.filter(c => c.id !== customerToDelete.id));
-        
-        toast({
-            title: "Sucesso!",
-            description: `Cliente "${customerToDelete.name}" excluído.`,
-        });
+        try {
+            await deleteDoc(doc(firestore, 'customers', customerToDelete.id));
+            toast({
+                title: "Sucesso!",
+                description: `Cliente "${customerToDelete.name}" excluído.`,
+            });
+        } catch (error) {
+            console.error("Error deleting customer: ", error);
+            toast({
+                title: "Erro!",
+                description: "Não foi possível excluir o cliente.",
+                variant: "destructive"
+            });
+        }
 
         setCustomerToDelete(null);
         setDialogOpen(false);
@@ -95,7 +108,13 @@ export default function CustomersPage() {
                             </TableRow>
                         </TableHeader>
                         <TableBody>
-                            {filteredCustomers.length > 0 ? (
+                            {isLoading ? (
+                                <TableRow>
+                                    <TableCell colSpan={5} className="h-24 text-center">
+                                        <Loader2 className="h-6 w-6 animate-spin mx-auto" />
+                                    </TableCell>
+                                </TableRow>
+                            ) : filteredCustomers.length > 0 ? (
                                 filteredCustomers.map((customer: Customer) => (
                                     <TableRow key={customer.id}>
                                         <TableCell className="font-medium">{customer.name}</TableCell>

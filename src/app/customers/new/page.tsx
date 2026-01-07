@@ -4,6 +4,8 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
 import * as z from "zod"
 import { useRouter } from "next/navigation"
+import { addDoc, collection } from "firebase/firestore"
+import { v4 as uuidv4 } from 'uuid';
 
 import { Button } from "@/components/ui/button"
 import {
@@ -17,6 +19,7 @@ import {
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { useToast } from "@/hooks/use-toast"
+import { useFirestore } from "@/firebase"
 
 const customerFormSchema = z.object({
   name: z.string().min(2, "O nome deve ter pelo menos 2 caracteres."),
@@ -31,6 +34,7 @@ type CustomerFormValues = z.infer<typeof customerFormSchema>
 export default function NewCustomerPage() {
   const router = useRouter()
   const { toast } = useToast()
+  const firestore = useFirestore();
 
   const form = useForm<CustomerFormValues>({
     resolver: zodResolver(customerFormSchema),
@@ -43,15 +47,26 @@ export default function NewCustomerPage() {
     },
   })
 
-  function onSubmit(data: CustomerFormValues) {
-    // In a real app, you would send this data to your API to create a new customer.
-    console.log(data)
-    toast({
-      title: "Sucesso!",
-      description: `Cliente "${data.name}" cadastrado.`,
-      variant: "default",
-    })
-    router.push('/customers')
+  async function onSubmit(data: CustomerFormValues) {
+    try {
+      const customerId = uuidv4();
+      const customerData = { ...data, id: customerId };
+      await addDoc(collection(firestore, "customers"), customerData);
+
+      toast({
+        title: "Sucesso!",
+        description: `Cliente "${data.name}" cadastrado.`,
+        variant: "default",
+      })
+      router.push('/customers')
+    } catch (error) {
+      console.error("Error creating customer: ", error);
+      toast({
+        title: "Erro!",
+        description: "Não foi possível cadastrar o cliente.",
+        variant: "destructive"
+      })
+    }
   }
 
   return (
