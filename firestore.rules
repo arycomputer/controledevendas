@@ -1,0 +1,116 @@
+/**
+ * This ruleset enforces a simple, yet secure, access model for the VendasControl application.
+ *
+ * Core Philosophy:
+ * The security model assumes an internal business application where all authenticated users are
+ * trusted employees. Therefore, any signed-in user is granted full Create, Read, Update, and
+ * Delete (CRUD) permissions on all data collections (customers, parts, and sales). Access for
+ * unauthenticated (anonymous) users is completely denied.
+ *
+ * Data Structure:
+ * The data is organized into three top-level collections:
+ * - /customers/{customerId}: Stores individual customer records.
+ * - /parts/{partId}: Stores inventory part information.
+ * - /sales/{saleId}: Stores sales transaction records.
+ * This flat structure is simple and performant for the application's needs.
+ *
+ * Key Security Decisions:
+ * - Authenticated Access Only: The primary security boundary is authentication. If a user is
+ *   signed in, they have access. If not, they have no access.
+ * - No User-Specific Ownership: The data model does not contain user-specific ownership fields
+ *   (e.g., 'ownerId'). All data is treated as shared company data, manageable by any employee.
+ * - Relational Integrity: While data shapes are flexible for prototyping, rules enforce that
+ *   a document's internal 'id' field must match its document ID in the path upon creation and
+ *   remain immutable thereafter. This prevents data corruption and maintains consistency.
+ */
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // --------------------------------
+    // Helper Functions
+    // --------------------------------
+
+    /**
+     * isSignedIn
+     * Checks if the user making the request is authenticated.
+     */
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    /**
+     * isExistingDoc
+     * Checks if a document currently exists. Used to protect update/delete operations.
+     */
+    function isExistingDoc() {
+      return resource != null;
+    }
+    
+    /**
+     * hasConsistentId
+     * On create, ensures the document's internal 'id' field matches the document ID from the path.
+     */
+    function hasConsistentId(docId) {
+      return request.resource.data.id == docId;
+    }
+
+    /**
+     * isImmutableId
+     * On update, ensures the document's internal 'id' field cannot be changed.
+     */
+    function isImmutableId() {
+      return request.resource.data.id == resource.data.id;
+    }
+
+
+    // --------------------------------
+    // Collection Rules
+    // --------------------------------
+
+    /**
+     * @description Manages customer records. All authenticated users can read and write customer data.
+     * @path /customers/{customerId}
+     * @allow (get) An authenticated user reads a specific customer document.
+     * @deny (get) An unauthenticated (anonymous) user tries to read a customer.
+     * @principle Grants full CRUD access to any authenticated user, treating all data as shared.
+     */
+    match /customers/{customerId} {
+      allow get: if isSignedIn();
+      allow list: if isSignedIn();
+      allow create: if isSignedIn() && hasConsistentId(customerId);
+      allow update: if isSignedIn() && isExistingDoc() && isImmutableId();
+      allow delete: if isSignedIn() && isExistingDoc();
+    }
+
+    /**
+     * @description Manages inventory parts. All authenticated users can read and write part data.
+     * @path /parts/{partId}
+     * @allow (create) An authenticated user adds a new part to the inventory.
+     * @deny (create) An unauthenticated (anonymous) user tries to add a part.
+     * @principle Grants full CRUD access to any authenticated user, treating all data as shared.
+     */
+    match /parts/{partId} {
+      allow get: if isSignedIn();
+      allow list: if isSignedIn();
+      allow create: if isSignedIn() && hasConsistentId(partId);
+      allow update: if isSignedIn() && isExistingDoc() && isImmutableId();
+      allow delete: if isSignedIn() && isExistingDoc();
+    }
+
+    /**
+     * @description Manages sales transaction records. All authenticated users can read and write sales data.
+     * @path /sales/{saleId}
+     * @allow (update) An authenticated user modifies an existing sales record.
+     * @deny (update) An authenticated user tries to modify a non-existent sales record.
+     * @principle Grants full CRUD access to any authenticated user, treating all data as shared.
+     */
+    match /sales/{saleId} {
+      allow get: if isSignedIn();
+      allow list: if isSignedIn();
+      allow create: if isSignedIn() && hasConsistentId(saleId);
+      allow update: if isSignedIn() && isExistingDoc() && isImmutableId();
+      allow delete: if isSignedIn() && isExistingDoc();
+    }
+  }
+}

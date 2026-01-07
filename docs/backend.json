@@ -1,0 +1,174 @@
+{
+  "entities": {
+    "Customer": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Customer",
+      "type": "object",
+      "description": "Represents a customer with their contact information and address.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Customer entity."
+        },
+        "name": {
+          "type": "string",
+          "description": "The full name of the customer."
+        },
+        "contactInformation": {
+          "type": "string",
+          "description": "The contact details of the customer, such as phone number or email address."
+        },
+        "address": {
+          "type": "string",
+          "description": "The physical address of the customer."
+        },
+        "document": {
+          "type": "string",
+          "description": "The document of the customer."
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "contactInformation",
+        "address",
+        "document"
+      ]
+    },
+    "Part": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Part",
+      "type": "object",
+      "description": "Represents a part in the inventory with its details.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Part entity."
+        },
+        "name": {
+          "type": "string",
+          "description": "The name of the part."
+        },
+        "description": {
+          "type": "string",
+          "description": "A description of the part."
+        },
+        "price": {
+          "type": "number",
+          "description": "The price of the part."
+        },
+        "quantity": {
+          "type": "number",
+          "description": "The quantity of the part in the inventory."
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "description",
+        "price",
+        "quantity"
+      ]
+    },
+    "Sale": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Sale",
+      "type": "object",
+      "description": "Represents a sales transaction, linking a customer to purchased parts.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Sale entity."
+        },
+        "customerId": {
+          "type": "string",
+          "description": "Reference to Customer. (Relationship: Customer 1:N Sale)"
+        },
+        "partId": {
+          "type": "string",
+          "description": "Reference to Part. (Relationship: Part 1:N Sale)"
+        },
+        "date": {
+          "type": "string",
+          "description": "The date of the sale transaction.",
+          "format": "date-time"
+        },
+        "quantity": {
+          "type": "number",
+          "description": "The quantity of the part sold in this transaction."
+        },
+        "totalAmount": {
+          "type": "number",
+          "description": "The total amount of the sale transaction."
+        }
+      },
+      "required": [
+        "id",
+        "customerId",
+        "partId",
+        "date",
+        "quantity",
+        "totalAmount"
+      ]
+    }
+  },
+  "auth": {
+    "providers": [
+      "password",
+      "anonymous"
+    ]
+  },
+  "firestore": {
+    "structure": [
+      {
+        "path": "customers/{customerId}",
+        "definition": {
+          "entityName": "Customer",
+          "schema": {
+            "$ref": "#/backend/entities/Customer"
+          },
+          "description": "Stores customer data. Uses document-based storage.  Path-based ownership is not applicable here as there is no user context to associate the customer with.",
+          "params": [
+            {
+              "name": "customerId",
+              "description": "Unique identifier for the customer."
+            }
+          ]
+        }
+      },
+      {
+        "path": "parts/{partId}",
+        "definition": {
+          "entityName": "Part",
+          "schema": {
+            "$ref": "#/backend/entities/Part"
+          },
+          "description": "Stores parts inventory data. Uses document-based storage.",
+          "params": [
+            {
+              "name": "partId",
+              "description": "Unique identifier for the part."
+            }
+          ]
+        }
+      },
+      {
+        "path": "sales/{saleId}",
+        "definition": {
+          "entityName": "Sale",
+          "schema": {
+            "$ref": "#/backend/entities/Sale"
+          },
+          "description": "Stores sales transaction data. Includes 'customerId' and 'partId' for easy access.",
+          "params": [
+            {
+              "name": "saleId",
+              "description": "Unique identifier for the sale."
+            }
+          ]
+        }
+      }
+    ],
+    "reasoning": "The Firestore structure is designed to manage customers, parts, and sales transactions for the VendasControl application. It prioritizes simplicity and security, leveraging path-based ownership and denormalization where applicable. The structure consists of three main collections: 'customers', 'parts', and 'sales'.\n\n*   **Customers:** Stores customer details. This collection uses simple document-based storage.\n*   **Parts:** Stores parts inventory. This collection uses simple document-based storage.\n*   **Sales:** Stores sales transaction data. Each sale document references a customer and a part. To enable efficient querying and reporting, the 'customerId' and 'partId' are stored directly within the sale document.\n\nThis design avoids complex subcollections and `get()` calls in security rules, enhancing performance and security."
+  }
+}
