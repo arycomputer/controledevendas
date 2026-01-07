@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { LayoutDashboard, Users, ShoppingCart, Package, Settings } from 'lucide-react';
+import Image from 'next/image';
 import {
   Sidebar,
   SidebarHeader,
@@ -11,6 +12,7 @@ import {
   SidebarMenuItem,
   SidebarMenuButton,
   SidebarTrigger,
+  useSidebar
 } from '@/components/ui/sidebar';
 
 const navItems = [
@@ -23,11 +25,26 @@ const navItems = [
 
 export function AppSidebar() {
   const pathname = usePathname();
+  const { state } = useSidebar();
+
+  // In a real app, you would fetch this from your settings/database
+  const companyLogo = "https://picsum.photos/seed/logo/80/80";
 
   return (
     <Sidebar variant="inset" collapsible="icon">
-      <SidebarHeader className="flex items-center">
+      <SidebarHeader className="flex items-center gap-2">
         <SidebarTrigger />
+        {state === 'expanded' && companyLogo && (
+          <div className="relative h-8 w-8 rounded-md overflow-hidden">
+             <Image 
+                src={companyLogo} 
+                alt="Logo da empresa" 
+                fill 
+                className="object-cover"
+                data-ai-hint="logo company"
+            />
+          </div>
+        )}
       </SidebarHeader>
       <SidebarContent>
         <SidebarMenu>
