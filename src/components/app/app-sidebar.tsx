@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, Users, Wrench, ShoppingCart, CircleDollarSign, Package } from 'lucide-react';
+import { LayoutDashboard, Users, ShoppingCart, CircleDollarSign, Package } from 'lucide-react';
 import {
   Sidebar,
   SidebarHeader,
@@ -26,11 +26,13 @@ export function AppSidebar() {
   return (
     <Sidebar variant="inset" collapsible="icon">
       <SidebarHeader className="flex items-center justify-between">
-        <Link href="/dashboard" className="flex items-center gap-2">
-            <CircleDollarSign className="h-8 w-8 text-primary" />
-            <span className="text-lg font-semibold text-foreground group-data-[collapsible=icon]:hidden">VendasControl</span>
-        </Link>
-        <SidebarTrigger className="md:hidden"/>
+        <div className="flex items-center gap-2">
+           <SidebarTrigger />
+           <Link href="/dashboard" className="flex items-center gap-2">
+                <CircleDollarSign className="h-8 w-8 text-primary" />
+                <span className="text-lg font-semibold text-foreground group-data-[collapsible=icon]:hidden">VendasControl</span>
+            </Link>
+        </div>
       </SidebarHeader>
       <SidebarContent>
         <SidebarMenu>
