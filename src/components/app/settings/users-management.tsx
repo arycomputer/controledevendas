@@ -6,26 +6,49 @@ import { Button } from "@/components/ui/button"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu"
 import { Badge } from "@/components/ui/badge"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
+import { UserForm } from "./user-form"
+import type { User } from "@/lib/types"
 
-const mockUsers = [
+const mockUsers: User[] = [
     { id: 'u1', name: 'Admin Geral', email: 'admin@example.com', role: 'admin' },
     { id: 'u2', name: 'Vendedor 1', email: 'vendedor1@example.com', role: 'seller' },
     { id: 'u3', name: 'Vendedor 2', email: 'vendedor2@example.com', role: 'seller' },
 ]
 
-type User = typeof mockUsers[0];
-
 export function UsersManagement() {
     const [users, setUsers] = useState(mockUsers)
+    const [isDialogOpen, setIsDialogOpen] = useState(false);
+    const [editingUser, setEditingUser] = useState<User | null>(null);
 
     const handleAction = (action: string, user: User) => {
-        console.log(`${action} user:`, user.name);
+        if (action === 'edit') {
+            setEditingUser(user);
+            setIsDialogOpen(true);
+        } else {
+             console.log(`${action} user:`, user.name);
+        }
     };
+    
+    const handleNewUser = () => {
+        setEditingUser(null);
+        setIsDialogOpen(true);
+    }
+    
+    const handleFormSubmit = (user: User) => {
+        if (editingUser) {
+            // Logic to update user
+            setUsers(users.map(u => u.id === user.id ? user : u));
+        } else {
+            // Logic to add new user
+            setUsers([...users, { ...user, id: `u${users.length + 1}` }]);
+        }
+    }
 
     return (
         <div className="space-y-4">
             <div className="flex justify-end">
-                <Button>
+                <Button onClick={handleNewUser}>
                     <PlusCircle className="mr-2 h-4 w-4" /> Novo Usuário
                 </Button>
             </div>
@@ -68,6 +91,21 @@ export function UsersManagement() {
                     ))}
                 </TableBody>
             </Table>
+            <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>{editingUser ? 'Editar Usuário' : 'Novo Usuário'}</DialogTitle>
+                         <DialogDescription>
+                           {editingUser ? 'Atualize os dados do usuário.' : 'Preencha os dados para criar um novo usuário.'}
+                        </DialogDescription>
+                    </DialogHeader>
+                    <UserForm 
+                        user={editingUser} 
+                        onSuccess={handleFormSubmit}
+                        onClose={() => setIsDialogOpen(false)} 
+                    />
+                </DialogContent>
+            </Dialog>
         </div>
     )
 }

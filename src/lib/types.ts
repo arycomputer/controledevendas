@@ -29,3 +29,10 @@ export type Sale = {
   totalAmount: number;
   saleDate: string; // ISO date string
 };
+
+export type User = {
+    id: string;
+    name: string;
+    email: string;
+    role: 'admin' | 'seller';
+};
