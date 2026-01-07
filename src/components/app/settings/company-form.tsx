@@ -4,12 +4,13 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
 import * as z from "zod"
 import Image from "next/image"
-import React, { useRef, useState } from "react"
+import React, { useRef, useState, useEffect } from "react"
 
 import { useToast } from "@/hooks/use-toast"
 import { Button } from "@/components/ui/button"
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
+import { useCompany } from "@/context/company-context"
 
 const companyFormSchema = z.object({
   name: z.string().min(2, "O nome da empresa é obrigatório."),
@@ -22,27 +23,24 @@ const companyFormSchema = z.object({
 
 type CompanyFormValues = z.infer<typeof companyFormSchema>
 
-const defaultValues: Partial<CompanyFormValues> = {
-  name: "Minha Empresa",
-  logo: "https://picsum.photos/seed/logo/80/80",
-  document: "00.000.000/0001-00",
-  phone: "(11) 99999-8888",
-  email: "contato@minhaempresa.com",
-  address: "Rua Exemplo, 123, Cidade - UF",
-}
-
 export function CompanyForm() {
   const { toast } = useToast()
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [logoPreview, setLogoPreview] = useState<string | null>(defaultValues.logo || null);
+  const { companyData, setCompanyData } = useCompany();
+  const [logoPreview, setLogoPreview] = useState<string | null>(null);
 
   const form = useForm<CompanyFormValues>({
     resolver: zodResolver(companyFormSchema),
-    defaultValues,
+    defaultValues: companyData,
   })
 
+  useEffect(() => {
+    form.reset(companyData);
+    setLogoPreview(companyData.logo || null);
+  }, [companyData, form]);
+
   function onSubmit(data: CompanyFormValues) {
-    console.log(data)
+    setCompanyData(data)
     toast({
       title: "Sucesso!",
       description: "Dados da empresa atualizados.",

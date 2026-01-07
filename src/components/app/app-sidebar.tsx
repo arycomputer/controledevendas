@@ -14,6 +14,7 @@ import {
   SidebarTrigger,
   useSidebar
 } from '@/components/ui/sidebar';
+import { useCompany } from '@/context/company-context';
 
 const navItems = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -26,18 +27,16 @@ const navItems = [
 export function AppSidebar() {
   const pathname = usePathname();
   const { state } = useSidebar();
-
-  // In a real app, you would fetch this from your settings/database
-  const companyLogo = "https://picsum.photos/seed/logo/80/80";
+  const { companyData } = useCompany();
 
   return (
     <Sidebar variant="inset" collapsible="icon">
       <SidebarHeader className="flex items-center gap-2">
         <SidebarTrigger />
-        {state === 'expanded' && companyLogo && (
+        {state === 'expanded' && companyData.logo && (
           <div className="relative h-8 w-8 rounded-md overflow-hidden">
              <Image 
-                src={companyLogo} 
+                src={companyData.logo} 
                 alt="Logo da empresa" 
                 fill 
                 className="object-cover"
