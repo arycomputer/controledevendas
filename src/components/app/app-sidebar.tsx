@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, Users, ShoppingCart, CircleDollarSign, Package } from 'lucide-react';
+import { LayoutDashboard, Users, ShoppingCart, Package } from 'lucide-react';
 import {
   Sidebar,
   SidebarHeader,
@@ -25,10 +25,8 @@ export function AppSidebar() {
 
   return (
     <Sidebar variant="inset" collapsible="icon">
-      <SidebarHeader className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-           <SidebarTrigger />
-        </div>
+      <SidebarHeader className="flex items-center">
+        <SidebarTrigger />
       </SidebarHeader>
       <SidebarContent>
         <SidebarMenu>
