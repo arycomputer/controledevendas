@@ -17,28 +17,25 @@ import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { useToast } from "@/hooks/use-toast"
 import type { User } from "@/lib/types"
-import { useAuth, initiateEmailSignUp } from "@/firebase"
+import { useAuth } from "@/firebase"
 import { useEffect } from "react"
 import { createUserWithEmailAndPassword, updateProfile } from "firebase/auth"
 
 
-const userFormSchema = z.object({
+const userCreateFormSchema = z.object({
   name: z.string().min(2, "O nome é obrigatório."),
   email: z.string().email("E-mail inválido."),
-  password: z.string().min(6, "A senha deve ter no mínimo 6 caracteres.").optional(),
+  password: z.string().min(6, "A senha deve ter no mínimo 6 caracteres."),
   role: z.enum(["admin", "seller"], { required_error: "A função é obrigatória." }),
-}).refine(data => {
-    // Make password required only when creating a new user (user is null)
-    if (!data.password) return false;
-    return true;
-}, {
-    message: "A senha é obrigatória.",
-    path: ["password"],
 })
 
-const userEditFormSchema = userFormSchema.omit({ password: true });
+const userEditFormSchema = z.object({
+  name: z.string().min(2, "O nome é obrigatório."),
+  email: z.string().email("E-mail inválido."),
+  role: z.enum(["admin", "seller"], { required_error: "A função é obrigatória." }),
+});
 
-type UserFormValues = z.infer<typeof userFormSchema>
+type UserFormValues = z.infer<typeof userCreateFormSchema>;
 
 interface UserFormProps {
     user: User | null;
@@ -51,7 +48,7 @@ export function UserForm({ user, onSuccess, onClose }: UserFormProps) {
   const auth = useAuth();
   
   const form = useForm<UserFormValues>({
-    resolver: zodResolver(user ? userEditFormSchema : userFormSchema),
+    resolver: zodResolver(user ? userEditFormSchema : userCreateFormSchema),
     defaultValues: {
       name: "",
       email: "",
@@ -84,7 +81,7 @@ export function UserForm({ user, onSuccess, onClose }: UserFormProps) {
         // Handle user update logic (e.g., update role in Firestore)
         console.log("Update user", data)
         toast({ title: "Sucesso!", description: "Usuário atualizado." })
-        onSuccess({ name: data.name, email: data.email, role: data.role, id: user.id }, user.id);
+        onSuccess({ name: data.name, email: data.email, role: data.role as 'admin' | 'seller', id: user.id }, user.id);
     } else {
         // Create new user with Firebase Auth
         try {
@@ -99,7 +96,7 @@ export function UserForm({ user, onSuccess, onClose }: UserFormProps) {
                 id: userCredential.user.uid,
                 name: data.name,
                 email: data.email,
-                role: data.role,
+                role: data.role as 'admin' | 'seller',
             };
 
             onSuccess(newUser, userCredential.user.uid);
