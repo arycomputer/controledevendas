@@ -1,3 +1,4 @@
+
 'use client'
 
 import { zodResolver } from "@hookform/resolvers/zod"
@@ -16,7 +17,7 @@ import { Separator } from "@/components/ui/separator"
 import { useToast } from "@/hooks/use-toast"
 import { useEffect } from "react"
 import { useCollection, useFirestore, useMemoFirebase } from "@/firebase"
-import { collection, addDoc } from "firebase/firestore"
+import { collection, doc, setDoc, updateDoc } from "firebase/firestore"
 import type { Customer, Product } from "@/lib/types"
 import { AuthGuard } from "@/components/app/auth-guard"
 
@@ -62,7 +63,31 @@ function NewSalePageContent() {
   }, 0);
 
   async function onSubmit(data: SaleFormValues) {
+    if (!firestore || !products) return;
     try {
+      // Stock validation
+      for (const item of data.items) {
+        const product = products.find(p => p.id === item.productId);
+        if (product && product.type === 'piece' && (product.quantity === undefined || product.quantity < item.quantity)) {
+          toast({
+            title: "Erro de Estoque",
+            description: `Estoque insuficiente para o produto "${product.name}". Disponível: ${product.quantity || 0}.`,
+            variant: "destructive",
+          });
+          return;
+        }
+      }
+
+      // Update stock
+      for (const item of data.items) {
+        const product = products.find(p => p.id === item.productId);
+        if (product && product.type === 'piece') {
+          const productRef = doc(firestore, 'parts', product.id);
+          const newQuantity = (product.quantity || 0) - item.quantity;
+          await updateDoc(productRef, { quantity: newQuantity });
+        }
+      }
+      
       const saleId = uuidv4();
       const saleData = {
         ...data,
@@ -70,7 +95,8 @@ function NewSalePageContent() {
         totalAmount,
         saleDate: new Date().toISOString(),
       };
-      await addDoc(collection(firestore, "sales"), saleData);
+      await setDoc(doc(firestore, "sales", saleId), saleData);
+
       toast({
         title: "Sucesso!",
         description: "Nova venda registrada.",
@@ -148,7 +174,7 @@ function NewSalePageContent() {
                    const isService = selectedProduct?.type === 'service';
 
                    return (
-                     <div key={field.id} className="grid grid-cols-[1fr_100px_auto] items-end gap-4 p-4 border rounded-lg bg-muted/20">
+                     <div key={field.id} className="grid grid-cols-[1fr_100px_100px_auto] items-end gap-4 p-4 border rounded-lg bg-muted/20">
                         <FormField
                           control={form.control}
                           name={`items.${index}.productId`}
@@ -162,11 +188,16 @@ function NewSalePageContent() {
                                   </SelectTrigger>
                                 </FormControl>
                                 <SelectContent>
-                                  {products?.map(product => (
-                                    <SelectItem key={product.id} value={product.id} disabled={watchedItems.some((item, itemIndex) => item.productId === product.id && itemIndex !== index)}>
-                                      {product.name} - {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(product.price)}
+                                  {products?.map(product => {
+                                      const isOutOfStock = product.type === 'piece' && (!product.quantity || product.quantity <= 0);
+                                      const isAlreadySelected = watchedItems.some((item, itemIndex) => item.productId === product.id && itemIndex !== index);
+                                      const isDisabled = isOutOfStock || isAlreadySelected;
+                                    return (
+                                    <SelectItem key={product.id} value={product.id} disabled={isDisabled}>
+                                      {product.name} ({product.type === 'piece' ? `${product.quantity || 0} em estoque` : 'Serviço'}) - {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(product.price)}
                                     </SelectItem>
-                                  ))}
+                                  )})
+                                }
                                 </SelectContent>
                               </Select>
                               <FormMessage />
@@ -186,6 +217,14 @@ function NewSalePageContent() {
                             </FormItem>
                           )}
                         />
+                        <div className="flex items-center space-x-2">
+                            <span className="text-sm text-muted-foreground whitespace-nowrap">Subtotal:</span>
+                            <span className="font-semibold text-sm">
+                                {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(
+                                    (watchedItems[index]?.unitPrice || 0) * (watchedItems[index]?.quantity || 0)
+                                )}
+                            </span>
+                        </div>
                         <Button type="button" variant="destructive" size="icon" onClick={() => remove(index)}>
                           <Trash2 className="h-4 w-4" />
                           <span className="sr-only">Remover item</span>
