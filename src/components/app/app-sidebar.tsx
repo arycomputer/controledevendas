@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, Users, ShoppingCart, Package } from 'lucide-react';
+import { LayoutDashboard, Users, ShoppingCart, Package, Settings } from 'lucide-react';
 import {
   Sidebar,
   SidebarHeader,
@@ -18,6 +18,7 @@ const navItems = [
   { href: '/customers', label: 'Clientes', icon: Users },
   { href: '/products', label: 'Produtos', icon: Package },
   { href: '/sales', label: 'Vendas', icon: ShoppingCart },
+  { href: '/settings', label: 'Configurações', icon: Settings },
 ];
 
 export function AppSidebar() {
