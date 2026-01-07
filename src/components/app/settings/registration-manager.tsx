@@ -154,7 +154,7 @@ export function RegistrationManager() {
                     </div>
                 </div>
                 <div className="flex justify-end pt-4">
-                   <Button type="submit">Salvar Alterações</Button>
+                   <Button type="submit" disabled={!form.formState.isDirty}>Salvar Alterações</Button>
                 </div>
             </form>
         </Form>

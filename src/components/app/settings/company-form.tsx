@@ -26,7 +26,7 @@ type CompanyFormValues = z.infer<typeof companyFormSchema>
 export function CompanyForm() {
   const { toast } = useToast()
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const { companyData, setCompanyData } = useCompany();
+  const { companyData, setCompanyData, isLoading } = useCompany();
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
 
   const form = useForm<CompanyFormValues>({
@@ -35,8 +35,10 @@ export function CompanyForm() {
   })
   
   useEffect(() => {
-    form.reset(companyData);
-    setLogoPreview(companyData.logo || null);
+    if (companyData) {
+        form.reset(companyData);
+        setLogoPreview(companyData.logo || null);
+    }
   }, [companyData, form]);
 
   const handleLogoChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -159,7 +161,7 @@ export function CompanyForm() {
           )}
         />
          <div className="flex justify-end pt-4">
-            <Button type="submit">Salvar Alterações</Button>
+            <Button type="submit" disabled={!form.formState.isDirty}>Salvar Alterações</Button>
         </div>
       </form>
     </Form>
