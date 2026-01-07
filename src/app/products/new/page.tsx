@@ -21,7 +21,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { useToast } from "@/hooks/use-toast"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { useFirestore } from "@/firebase"
-import { addDoc, collection } from "firebase/firestore"
+import { doc, setDoc } from "firebase/firestore"
 import { AuthGuard } from "@/components/app/auth-guard"
 
 const productFormSchema = z.object({
@@ -62,6 +62,7 @@ function NewProductPageContent() {
   const productType = form.watch("type");
 
   async function onSubmit(data: ProductFormValues) {
+    if (!firestore) return;
     try {
         const productId = uuidv4();
         const productData = {
@@ -69,7 +70,9 @@ function NewProductPageContent() {
             id: productId,
             quantity: data.type === 'piece' ? data.quantity : undefined
         };
-        await addDoc(collection(firestore, "parts"), productData);
+        const productDocRef = doc(firestore, "parts", productId);
+        await setDoc(productDocRef, productData);
+
         toast({
           title: "Sucesso!",
           description: `Produto "${data.name}" cadastrado.`,

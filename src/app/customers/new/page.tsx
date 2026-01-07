@@ -4,7 +4,7 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
 import * as z from "zod"
 import { useRouter } from "next/navigation"
-import { addDoc, collection } from "firebase/firestore"
+import { doc, setDoc } from "firebase/firestore"
 import { v4 as uuidv4 } from 'uuid';
 
 import { Button } from "@/components/ui/button"
@@ -48,10 +48,12 @@ export default function NewCustomerPage() {
   })
 
   async function onSubmit(data: CustomerFormValues) {
+    if (!firestore) return;
     try {
       const customerId = uuidv4();
       const customerData = { ...data, id: customerId };
-      await addDoc(collection(firestore, "customers"), customerData);
+      const customerDocRef = doc(firestore, "customers", customerId);
+      await setDoc(customerDocRef, customerData);
 
       toast({
         title: "Sucesso!",
