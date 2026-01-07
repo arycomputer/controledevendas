@@ -2,7 +2,6 @@
 
 import { useForm } from "react-hook-form"
 import { useToast } from "@/hooks/use-toast"
-import { Button } from "@/components/ui/button"
 import { Form, FormField, FormItem, FormLabel } from "@/components/ui/form"
 import { Switch } from "@/components/ui/switch"
 import { Separator } from "@/components/ui/separator"
@@ -34,6 +33,20 @@ export function RegistrationManager() {
     const form = useForm<RegistrationFormValues>({
         defaultValues: defaultSettings
     })
+    
+    const watchedValues = form.watch();
+
+    useEffect(() => {
+        if (form.formState.isDirty) {
+            setDoc(settingsDocRef, watchedValues, { merge: true });
+             toast({
+                title: "Sucesso!",
+                description: "Configurações de campos obrigatórios atualizadas.",
+            });
+        }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [watchedValues, form.formState.isDirty, settingsDocRef]);
+
 
     useEffect(() => {
         if (registrationSettings) {
@@ -45,13 +58,6 @@ export function RegistrationManager() {
         }
     }, [registrationSettings, isLoading, form, settingsDocRef]);
 
-    async function onSubmit(data: RegistrationFormValues) {
-        await setDoc(settingsDocRef, data, { merge: true });
-        toast({
-            title: "Sucesso!",
-            description: "Configurações de campos obrigatórios atualizadas.",
-        })
-    }
 
     if (isLoading) {
         return (
@@ -63,7 +69,7 @@ export function RegistrationManager() {
 
     return (
         <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8 max-w-lg">
+            <form className="space-y-8 max-w-lg">
                 <div>
                     <h3 className="text-lg font-medium mb-4">Cadastro de Clientes</h3>
                     <div className="space-y-4">
@@ -127,8 +133,6 @@ export function RegistrationManager() {
                         />
                     </div>
                 </div>
-                
-                <Button type="submit">Salvar Configurações</Button>
             </form>
         </Form>
     )

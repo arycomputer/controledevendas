@@ -4,7 +4,7 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
 import * as z from "zod"
 import Image from "next/image"
-import React, { useRef, useState, useEffect } from "react"
+import React, { useRef, useState, useEffect, useCallback } from "react"
 
 import { useToast } from "@/hooks/use-toast"
 import { Button } from "@/components/ui/button"
@@ -23,6 +23,18 @@ const companyFormSchema = z.object({
 
 type CompanyFormValues = z.infer<typeof companyFormSchema>
 
+// Simple debounce function
+function debounce<F extends (...args: any[]) => any>(func: F, waitFor: number) {
+  let timeout: ReturnType<typeof setTimeout> | null = null;
+
+  return (...args: Parameters<F>): void => {
+    if (timeout) {
+      clearTimeout(timeout);
+    }
+    timeout = setTimeout(() => func(...args), waitFor);
+  };
+}
+
 export function CompanyForm() {
   const { toast } = useToast()
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -34,18 +46,31 @@ export function CompanyForm() {
     defaultValues: companyData,
   })
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const debouncedSave = useCallback(
+    debounce((data: CompanyFormValues) => {
+      setCompanyData(data);
+      toast({
+        title: "Sucesso!",
+        description: "Dados da empresa atualizados.",
+      });
+    }, 1000), // 1 second delay
+    [setCompanyData, toast]
+  );
+  
+  const watchedValues = form.watch();
+
+  useEffect(() => {
+    if (form.formState.isDirty) {
+      debouncedSave(watchedValues);
+    }
+  }, [watchedValues, debouncedSave, form.formState.isDirty]);
+
+
   useEffect(() => {
     form.reset(companyData);
     setLogoPreview(companyData.logo || null);
   }, [companyData, form]);
-
-  function onSubmit(data: CompanyFormValues) {
-    setCompanyData(data)
-    toast({
-      title: "Sucesso!",
-      description: "Dados da empresa atualizados.",
-    })
-  }
 
   const handleLogoChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -54,7 +79,7 @@ export function CompanyForm() {
       reader.onloadend = () => {
         const result = reader.result as string;
         setLogoPreview(result);
-        form.setValue("logo", result);
+        form.setValue("logo", result, { shouldDirty: true });
       };
       reader.readAsDataURL(file);
     }
@@ -62,7 +87,7 @@ export function CompanyForm() {
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 max-w-lg">
+      <form className="space-y-6 max-w-lg">
         <FormItem>
             <FormLabel>Logo da Empresa</FormLabel>
             <div className="flex items-center gap-4">
@@ -157,7 +182,6 @@ export function CompanyForm() {
             </FormItem>
           )}
         />
-        <Button type="submit">Salvar Alterações</Button>
       </form>
     </Form>
   )
