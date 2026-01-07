@@ -59,21 +59,9 @@ export function RegistrationManager() {
         [settingsDocRef, toast]
     );
 
-    const watchedValues = form.watch();
-
-    useEffect(() => {
-        const subscription = form.watch((value, { name, type }) => {
-            if (type === 'change' && form.formState.isDirty) {
-                debouncedSave(value as RegistrationFormValues);
-            }
-        });
-        return () => subscription.unsubscribe();
-    }, [form, debouncedSave]);
-
-
     useEffect(() => {
         if (registrationSettings) {
-            form.reset(registrationSettings, { keepDirty: false });
+            form.reset(registrationSettings);
         } else if (!isLoading) {
             // Pre-fill form and create document if it doesn't exist
             form.reset(defaultSettings);
@@ -102,7 +90,13 @@ export function RegistrationManager() {
                             render={({ field }) => (
                                 <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
                                     <FormLabel className="font-normal">Telefone obrigatório</FormLabel>
-                                    <Switch checked={field.value} onCheckedChange={field.onChange} />
+                                    <Switch
+                                        checked={field.value}
+                                        onCheckedChange={(checked) => {
+                                            field.onChange(checked);
+                                            debouncedSave(form.getValues());
+                                        }}
+                                    />
                                 </FormItem>
                             )}
                         />
@@ -112,7 +106,13 @@ export function RegistrationManager() {
                             render={({ field }) => (
                                 <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
                                     <FormLabel className="font-normal">Documento (CPF/CNPJ) obrigatório</FormLabel>
-                                    <Switch checked={field.value} onCheckedChange={field.onChange} />
+                                    <Switch
+                                        checked={field.value}
+                                        onCheckedChange={(checked) => {
+                                            field.onChange(checked);
+                                            debouncedSave(form.getValues());
+                                        }}
+                                    />
                                 </FormItem>
                             )}
                         />
@@ -122,7 +122,13 @@ export function RegistrationManager() {
                             render={({ field }) => (
                                 <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
                                     <FormLabel className="font-normal">Endereço obrigatório</FormLabel>
-                                    <Switch checked={field.value} onCheckedChange={field.onChange} />
+                                    <Switch
+                                        checked={field.value}
+                                        onCheckedChange={(checked) => {
+                                            field.onChange(checked);
+                                            debouncedSave(form.getValues());
+                                        }}
+                                    />
                                 </FormItem>
                             )}
                         />
@@ -140,7 +146,13 @@ export function RegistrationManager() {
                             render={({ field }) => (
                                 <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
                                     <FormLabel className="font-normal">Descrição obrigatória</FormLabel>
-                                    <Switch checked={field.value} onCheckedChange={field.onChange} />
+                                    <Switch
+                                        checked={field.value}
+                                        onCheckedChange={(checked) => {
+                                            field.onChange(checked);
+                                            debouncedSave(form.getValues());
+                                        }}
+                                    />
                                 </FormItem>
                             )}
                         />
@@ -150,7 +162,13 @@ export function RegistrationManager() {
                             render={({ field }) => (
                                 <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
                                     <FormLabel className="font-normal">Quantidade obrigatória</FormLabel>
-                                    <Switch checked={field.value} onCheckedChange={field.onChange} />
+                                    <Switch
+                                        checked={field.value}
+                                        onCheckedChange={(checked) => {
+                                            field.onChange(checked);
+                                            debouncedSave(form.getValues());
+                                        }}
+                                    />
                                 </FormItem>
                             )}
                         />
