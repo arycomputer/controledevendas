@@ -3,8 +3,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { CompanyForm } from "@/components/app/settings/company-form";
 import { UsersManagement } from "@/components/app/settings/users-management";
 import { RegistrationManager } from "@/components/app/settings/registration-manager";
+import { AuthGuard } from "@/components/app/auth-guard";
 
-export default function SettingsPage() {
+function SettingsPageContent() {
     return (
         <div className="flex flex-col gap-8">
             <h1 className="text-3xl font-bold tracking-tight">Configurações</h1>
@@ -49,5 +50,13 @@ export default function SettingsPage() {
                 </TabsContent>
             </Tabs>
         </div>
+    )
+}
+
+export default function SettingsPage() {
+    return (
+        <AuthGuard>
+            <SettingsPageContent />
+        </AuthGuard>
     )
 }

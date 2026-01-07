@@ -1,7 +1,7 @@
 'use client'
 
 import React, { createContext, useContext, useState, ReactNode, useEffect } from 'react';
-import { useFirestore, useDoc, useMemoFirebase } from '@/firebase';
+import { useFirestore, useDoc, useMemoFirebase, useUser } from '@/firebase';
 import { doc, setDoc } from 'firebase/firestore';
 import { Loader2 } from 'lucide-react';
 
@@ -32,22 +32,33 @@ const defaultCompanyData: CompanyData = {
 const CompanyContext = createContext<CompanyContextType | undefined>(undefined);
 
 export const CompanyProvider = ({ children }: { children: ReactNode }) => {
+  const { user, isUserLoading } = useUser();
   const firestore = useFirestore();
-  const settingsDocRef = useMemoFirebase(() => doc(firestore, 'settings', 'companyData'), [firestore]);
   
-  const { data: remoteCompanyData, isLoading } = useDoc<CompanyData>(settingsDocRef);
+  // Only create the doc ref if the user is logged in.
+  const settingsDocRef = useMemoFirebase(() => {
+    if (firestore && user) {
+        return doc(firestore, 'settings', 'companyData');
+    }
+    return null;
+  }, [firestore, user]);
+  
+  const { data: remoteCompanyData, isLoading: isSettingsLoading } = useDoc<CompanyData>(settingsDocRef);
   const [localCompanyData, setLocalCompanyData] = useState<CompanyData>(defaultCompanyData);
+
+  const isLoading = isUserLoading || isSettingsLoading;
 
   useEffect(() => {
     if (remoteCompanyData) {
       setLocalCompanyData(remoteCompanyData);
-    } else if (!isLoading) {
+    } else if (!isLoading && settingsDocRef) {
       // If no data is found and we are not loading, create the initial doc
       setDoc(settingsDocRef, defaultCompanyData);
     }
   }, [remoteCompanyData, isLoading, settingsDocRef]);
   
   const handleSetCompanyData = async (data: Partial<CompanyData>) => {
+    if (!settingsDocRef) return;
     const updatedData = { ...localCompanyData, ...data };
     setLocalCompanyData(updatedData);
     await setDoc(settingsDocRef, updatedData, { merge: true });
@@ -56,7 +67,7 @@ export const CompanyProvider = ({ children }: { children: ReactNode }) => {
   const contextValue = {
     companyData: localCompanyData,
     setCompanyData: handleSetCompanyData,
-    isLoading,
+    isLoading: isLoading,
   };
 
   if (isLoading && !remoteCompanyData) {
