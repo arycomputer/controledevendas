@@ -57,9 +57,11 @@ export function UsersManagement() {
     
     const handleFormSubmit = async (userData: User, userId: string) => {
         if (!firestore) return;
+        // Ensure the ID is part of the object being saved
         const userWithId = { ...userData, id: userId };
         
         try {
+            // Explicitly use the userId to create/update the document
             await setDoc(doc(firestore, "users", userId), userWithId, { merge: true });
         } catch(error) {
             console.error("Error saving user to Firestore: ", error);
