@@ -41,9 +41,10 @@ export const SaleSchema = z.object({
 export type Sale = z.infer<typeof SaleSchema>;
 
 
-export type User = {
-    id: string;
-    name: string;
-    email: string;
-    role: 'admin' | 'seller';
-};
+export const UserSchema = z.object({
+    id: z.string(),
+    name: z.string(),
+    email: z.string().email(),
+    role: z.enum(['admin', 'seller']),
+});
+export type User = z.infer<typeof UserSchema>;

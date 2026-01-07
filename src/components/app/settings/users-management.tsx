@@ -1,7 +1,7 @@
 'use client'
 
-import { useState } from "react"
-import { MoreHorizontal, PlusCircle } from "lucide-react"
+import { useState, useMemo } from "react"
+import { MoreHorizontal, PlusCircle, Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu"
@@ -9,39 +9,65 @@ import { Badge } from "@/components/ui/badge"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
 import { UserForm } from "./user-form"
 import type { User } from "@/lib/types"
-
-const mockUsers: User[] = [
-    { id: 'u1', name: 'Admin Geral', email: 'admin@example.com', role: 'admin' },
-    { id: 'u2', name: 'Vendedor 1', email: 'vendedor1@example.com', role: 'seller' },
-    { id: 'u3', name: 'Vendedor 2', email: 'vendedor2@example.com', role: 'seller' },
-]
+import { useCollection, useFirestore, useMemoFirebase } from "@/firebase"
+import { collection, deleteDoc, doc, setDoc } from "firebase/firestore"
+import { useToast } from "@/hooks/use-toast"
+import { ConfirmationDialog } from "@/components/app/confirmation-dialog"
 
 export function UsersManagement() {
-    const [users, setUsers] = useState(mockUsers)
+    const firestore = useFirestore()
+    const { toast } = useToast()
+    const usersCollection = useMemoFirebase(() => collection(firestore, 'users'), [firestore]);
+    const { data: users, isLoading } = useCollection<User>(usersCollection);
+    
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [editingUser, setEditingUser] = useState<User | null>(null);
+    const [isConfirmDialogOpen, setIsConfirmDialogOpen] = useState(false);
+    const [userToDelete, setUserToDelete] = useState<User | null>(null);
 
     const handleAction = (action: string, user: User) => {
         if (action === 'edit') {
             setEditingUser(user);
             setIsDialogOpen(true);
-        } else {
-             console.log(`${action} user:`, user.name);
+        } else if (action === 'delete'){
+            setUserToDelete(user);
+            setIsConfirmDialogOpen(true);
         }
     };
+
+    const handleConfirmDelete = async () => {
+        if (!userToDelete || !firestore) return;
+        try {
+            await deleteDoc(doc(firestore, 'users', userToDelete.id));
+            toast({ title: "Sucesso!", description: `Usuário "${userToDelete.name}" removido.` });
+            // Note: Deleting from Auth is a privileged operation and should be handled by a backend function.
+            // This implementation only removes the user from the Firestore collection.
+        } catch (error) {
+            console.error("Error deleting user:", error);
+            toast({ title: "Erro!", description: "Não foi possível remover o usuário.", variant: 'destructive' });
+        }
+        setIsConfirmDialogOpen(false);
+        setUserToDelete(null);
+    }
     
     const handleNewUser = () => {
         setEditingUser(null);
         setIsDialogOpen(true);
     }
     
-    const handleFormSubmit = (user: User) => {
-        if (editingUser) {
-            // Logic to update user
-            setUsers(users.map(u => u.id === user.id ? user : u));
-        } else {
-            // Logic to add new user
-            setUsers([...users, { ...user, id: `u${users.length + 1}` }]);
+    const handleFormSubmit = async (userData: User, userId: string) => {
+        if (!firestore) return;
+        const userWithId = { ...userData, id: userId };
+        
+        try {
+            await setDoc(doc(firestore, "users", userId), userWithId, { merge: true });
+        } catch(error) {
+            console.error("Error saving user to Firestore: ", error);
+            toast({
+                title: "Erro de Sincronização",
+                description: "Não foi possível salvar os detalhes do usuário no banco de dados.",
+                variant: "destructive"
+            });
         }
     }
 
@@ -62,33 +88,47 @@ export function UsersManagement() {
                     </TableRow>
                 </TableHeader>
                 <TableBody>
-                    {users.map((user) => (
-                        <TableRow key={user.id}>
-                            <TableCell className="font-medium">{user.name}</TableCell>
-                            <TableCell>{user.email}</TableCell>
-                            <TableCell>
-                                <Badge variant={user.role === 'admin' ? "destructive" : "secondary"}>
-                                    {user.role === 'admin' ? 'Admin' : 'Vendedor'}
-                                </Badge>
-                            </TableCell>
-                            <TableCell className="text-right">
-                                <DropdownMenu>
-                                    <DropdownMenuTrigger asChild>
-                                        <Button variant="ghost" className="h-8 w-8 p-0">
-                                            <span className="sr-only">Abrir menu</span>
-                                            <MoreHorizontal className="h-4 w-4" />
-                                        </Button>
-                                    </DropdownMenuTrigger>
-                                    <DropdownMenuContent align="end">
-                                        <DropdownMenuLabel>Ações</DropdownMenuLabel>
-                                        <DropdownMenuItem onClick={() => handleAction('edit', user)}>Editar</DropdownMenuItem>
-                                        <DropdownMenuSeparator />
-                                        <DropdownMenuItem onClick={() => handleAction('delete', user)} className="text-destructive focus:text-destructive focus:bg-destructive/10">Remover</DropdownMenuItem>
-                                    </DropdownMenuContent>
-                                </DropdownMenu>
+                     {isLoading ? (
+                        <TableRow>
+                            <TableCell colSpan={4} className="h-24 text-center">
+                                <Loader2 className="h-6 w-6 animate-spin mx-auto" />
                             </TableCell>
                         </TableRow>
-                    ))}
+                    ) : users && users.length > 0 ? (
+                        users.map((user) => (
+                            <TableRow key={user.id}>
+                                <TableCell className="font-medium">{user.name}</TableCell>
+                                <TableCell>{user.email}</TableCell>
+                                <TableCell>
+                                    <Badge variant={user.role === 'admin' ? "destructive" : "secondary"}>
+                                        {user.role === 'admin' ? 'Admin' : 'Vendedor'}
+                                    </Badge>
+                                </TableCell>
+                                <TableCell className="text-right">
+                                    <DropdownMenu>
+                                        <DropdownMenuTrigger asChild>
+                                            <Button variant="ghost" className="h-8 w-8 p-0" disabled={user.email === 'admin@admin.com'}>
+                                                <span className="sr-only">Abrir menu</span>
+                                                <MoreHorizontal className="h-4 w-4" />
+                                            </Button>
+                                        </DropdownMenuTrigger>
+                                        <DropdownMenuContent align="end">
+                                            <DropdownMenuLabel>Ações</DropdownMenuLabel>
+                                            <DropdownMenuItem onClick={() => handleAction('edit', user)}>Editar</DropdownMenuItem>
+                                            <DropdownMenuSeparator />
+                                            <DropdownMenuItem onClick={() => handleAction('delete', user)} className="text-destructive focus:text-destructive focus:bg-destructive/10">Remover</DropdownMenuItem>
+                                        </DropdownMenuContent>
+                                    </DropdownMenu>
+                                </TableCell>
+                            </TableRow>
+                        ))
+                    ) : (
+                         <TableRow>
+                            <TableCell colSpan={4} className="h-24 text-center">
+                                Nenhum usuário encontrado.
+                            </TableCell>
+                        </TableRow>
+                    )}
                 </TableBody>
             </Table>
             <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
@@ -106,6 +146,14 @@ export function UsersManagement() {
                     />
                 </DialogContent>
             </Dialog>
+             <ConfirmationDialog
+                open={isConfirmDialogOpen}
+                onOpenChange={setIsConfirmDialogOpen}
+                title="Tem certeza?"
+                description={`Esta ação removerá o usuário "${userToDelete?.name}" do sistema. Esta ação não pode ser desfeita.`}
+                onConfirm={handleConfirmDelete}
+                confirmText="Sim, remover usuário"
+            />
         </div>
     )
 }

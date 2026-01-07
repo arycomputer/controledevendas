@@ -19,20 +19,30 @@ import { useToast } from "@/hooks/use-toast"
 import type { User } from "@/lib/types"
 import { useAuth, initiateEmailSignUp } from "@/firebase"
 import { useEffect } from "react"
+import { createUserWithEmailAndPassword, updateProfile } from "firebase/auth"
 
 
 const userFormSchema = z.object({
   name: z.string().min(2, "O nome é obrigatório."),
   email: z.string().email("E-mail inválido."),
-  password: z.string().min(6, "A senha deve ter no mínimo 6 caracteres."),
+  password: z.string().min(6, "A senha deve ter no mínimo 6 caracteres.").optional(),
   role: z.enum(["admin", "seller"], { required_error: "A função é obrigatória." }),
+}).refine(data => {
+    // Make password required only when creating a new user (user is null)
+    if (!data.password) return false;
+    return true;
+}, {
+    message: "A senha é obrigatória.",
+    path: ["password"],
 })
+
+const userEditFormSchema = userFormSchema.omit({ password: true });
 
 type UserFormValues = z.infer<typeof userFormSchema>
 
 interface UserFormProps {
     user: User | null;
-    onSuccess: (user: User) => void;
+    onSuccess: (userData: User, userId: string) => void;
     onClose: () => void;
 }
 
@@ -41,7 +51,7 @@ export function UserForm({ user, onSuccess, onClose }: UserFormProps) {
   const auth = useAuth();
   
   const form = useForm<UserFormValues>({
-    resolver: zodResolver(userFormSchema),
+    resolver: zodResolver(user ? userEditFormSchema : userFormSchema),
     defaultValues: {
       name: "",
       email: "",
@@ -55,23 +65,51 @@ export function UserForm({ user, onSuccess, onClose }: UserFormProps) {
         form.reset({
             name: user.name,
             email: user.email,
-            password: "", // Password should not be pre-filled
             role: user.role,
+        })
+    } else {
+        form.reset({
+            name: "",
+            email: "",
+            password: "",
+            role: "seller",
         })
     }
   }, [user, form]);
 
-  function onSubmit(data: UserFormValues) {
+  async function onSubmit(data: UserFormValues) {
+    if (!auth) return;
+
     if (user) {
-        // In a real app, you would handle user update logic here
+        // Handle user update logic (e.g., update role in Firestore)
         console.log("Update user", data)
         toast({ title: "Sucesso!", description: "Usuário atualizado." })
-        onSuccess({ ...data, id: user.id });
+        onSuccess({ name: data.name, email: data.email, role: data.role, id: user.id }, user.id);
     } else {
         // Create new user with Firebase Auth
-        initiateEmailSignUp(auth, data.email, data.password);
-        toast({ title: "Sucesso!", description: "Usuário criado. Verifique o estado de autenticação para ver o novo usuário." })
-        onSuccess({ ...data, id: '' }); // ID will be set by Firebase, handle it in parent
+        try {
+            if (!data.password) throw new Error("Password is required for new user.");
+            
+            const userCredential = await createUserWithEmailAndPassword(auth, data.email, data.password);
+            await updateProfile(userCredential.user, { displayName: data.name });
+
+            toast({ title: "Sucesso!", description: "Usuário criado." });
+
+            const newUser: User = {
+                id: userCredential.user.uid,
+                name: data.name,
+                email: data.email,
+                role: data.role,
+            };
+
+            onSuccess(newUser, userCredential.user.uid);
+        } catch (error: any) {
+            console.error("Error creating user: ", error);
+            const errorMessage = error.code === 'auth/email-already-in-use' 
+                ? "Este e-mail já está em uso." 
+                : "Não foi possível criar o usuário.";
+            toast({ title: "Erro!", description: errorMessage, variant: "destructive" });
+        }
     }
     onClose();
   }
