@@ -1,3 +1,4 @@
+
 'use client'
 
 import { zodResolver } from "@hookform/resolvers/zod"
@@ -33,8 +34,8 @@ const productFormSchema = z.object({
   quantity: z.coerce.number().int().min(0, "A quantidade não pode ser negativa.").optional(),
   type: z.enum(['piece', 'service'], { required_error: "É necessário selecionar um tipo." }),
 }).refine(data => {
-    if (data.type === 'piece' && (data.quantity === undefined || data.quantity === null || isNaN(data.quantity))) {
-        return false;
+    if (data.type === 'piece') {
+        return data.quantity !== undefined && data.quantity !== null && !isNaN(data.quantity);
     }
     return true;
 }, {
