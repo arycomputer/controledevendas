@@ -5,7 +5,7 @@ import { AppSidebar } from '@/components/app/app-sidebar';
 import { SidebarProvider, SidebarInset } from '@/components/ui/sidebar';
 
 export const metadata: Metadata = {
-  title: 'VendasControl',
+  title: 'Controle de Vendas',
   description: 'Gerenciamento de vendas, clientes e produtos.',
 };
 
