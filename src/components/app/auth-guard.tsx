@@ -15,8 +15,8 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
     const auth = useAuth();
     const { toast } = useToast();
 
-    const [email, setEmail] = useState('');
-    const [password, setPassword] = useState('');
+    const [email, setEmail] = useState('admin@admin.com');
+    const [password, setPassword] = useState('123456');
 
     const handleLogin = (e: React.FormEvent) => {
         e.preventDefault();
