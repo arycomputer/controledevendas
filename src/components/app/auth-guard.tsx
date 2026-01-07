@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useUser, useAuth, initiateEmailSignIn } from '@/firebase';
 import { Loader2 } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card';
@@ -19,45 +19,77 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
     const [email, setEmail] = useState('admin@admin.com');
     const [password, setPassword] = useState('123456');
     const [isSubmitting, setIsSubmitting] = useState(false);
+    
+    // Track login attempts to trigger account creation
+    const [loginAttempted, setLoginAttempted] = useState(false);
 
     const handleLogin = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!auth) return;
         setIsSubmitting(true);
+        setLoginAttempted(true); // Mark that a login has been attempted
+        
         try {
             // Non-blocking sign-in attempt
             initiateEmailSignIn(auth, email, password);
         } catch (error: any) {
-            // This catch block might not be effective for non-blocking calls,
-            // but as a fallback, we check the error code.
-            if (error.code === 'auth/user-not-found' || error.code === 'auth/invalid-credential') {
-                try {
-                    await createUserWithEmailAndPassword(auth, email, password);
-                    toast({
-                        title: "Conta de admin criada!",
-                        description: "A conta de administrador foi criada. Você será logado automaticamente.",
-                    });
-                    // initiateEmailSignIn is non-blocking, auth state listener will handle the rest
-                } catch (creationError: any) {
-                    toast({
-                        title: "Erro ao criar conta",
-                        description: creationError.message,
-                        variant: "destructive",
-                    });
-                }
-            } else {
-                 toast({
-                    title: "Erro de Login",
-                    description: error.message,
-                    variant: "destructive",
-                });
-            }
-        } finally {
-            // The user state will be updated by the onAuthStateChanged listener,
-            // so we don't need to manage submitting state for too long.
-            setTimeout(() => setIsSubmitting(false), 2000);
+            // This block will likely not catch auth errors from the non-blocking call
+            toast({
+                title: "Erro de Login",
+                description: "Ocorreu um erro inesperado.",
+                variant: "destructive",
+            });
+            setIsSubmitting(false);
+            setLoginAttempted(false);
         }
     };
+    
+    // Effect to handle automatic account creation after a failed login attempt
+    useEffect(() => {
+        // Only run if a login was attempted, we are not loading, there's no user, and we have an auth instance.
+        if (loginAttempted && !isUserLoading && !user && auth) {
+            
+            // Wait a moment to ensure the auth state listener has had time to process the initial sign-in attempt.
+            const timeoutId = setTimeout(async () => {
+                // If after the timeout there's still no user, we assume the credentials were invalid
+                // because the user does not exist, and we proceed to create the account.
+                if (!auth.currentUser) {
+                    try {
+                        await createUserWithEmailAndPassword(auth, email, password);
+                        toast({
+                            title: "Conta de admin criada!",
+                            description: "A conta de administrador foi criada. Você será logado automaticamente.",
+                        });
+                        // The onAuthStateChanged listener will handle the successful login state change.
+                    } catch (creationError: any) {
+                        // Handle cases where even creation fails (e.g., weak password, email already exists with different credential)
+                        toast({
+                            title: "Erro ao criar conta",
+                            description: creationError.message || "Não foi possível criar a conta de administrador.",
+                            variant: "destructive",
+                        });
+                    } finally {
+                        setIsSubmitting(false);
+                        setLoginAttempted(false); // Reset attempt state
+                    }
+                } else {
+                    // User was logged in successfully, just reset state
+                    setIsSubmitting(false);
+                    setLoginAttempted(false);
+                }
+
+            }, 1500); // 1.5 second delay
+
+            return () => clearTimeout(timeoutId);
+        }
+        
+        // If user logs in successfully, reset submission state
+        if (user) {
+            setIsSubmitting(false);
+            setLoginAttempted(false);
+        }
+
+    }, [loginAttempted, isUserLoading, user, auth, email, password, toast]);
     
     if (isUserLoading || isSubmitting) {
         return (
