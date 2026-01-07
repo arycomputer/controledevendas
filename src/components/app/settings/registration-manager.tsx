@@ -7,7 +7,7 @@ import { Switch } from "@/components/ui/switch"
 import { Separator } from "@/components/ui/separator"
 import { useFirestore, useDoc, useMemoFirebase } from "@/firebase"
 import { doc, setDoc } from "firebase/firestore"
-import { useEffect } from "react"
+import { useEffect, useCallback } from "react"
 import { Loader2 } from "lucide-react"
 
 const defaultSettings = {
@@ -24,6 +24,19 @@ const defaultSettings = {
 
 type RegistrationFormValues = typeof defaultSettings;
 
+// Simple debounce function
+function debounce<F extends (...args: any[]) => any>(func: F, waitFor: number) {
+  let timeout: ReturnType<typeof setTimeout> | null = null;
+
+  return (...args: Parameters<F>): void => {
+    if (timeout) {
+      clearTimeout(timeout);
+    }
+    timeout = setTimeout(() => func(...args), waitFor);
+  };
+}
+
+
 export function RegistrationManager() {
     const { toast } = useToast()
     const firestore = useFirestore()
@@ -34,23 +47,30 @@ export function RegistrationManager() {
         defaultValues: defaultSettings
     })
     
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    const debouncedSave = useCallback(
+        debounce((data: RegistrationFormValues) => {
+            setDoc(settingsDocRef, data, { merge: true });
+            toast({
+                title: "Sucesso!",
+                description: "Configurações de campos obrigatórios atualizadas.",
+            });
+        }, 500), 
+        [settingsDocRef, toast]
+    );
+
     const watchedValues = form.watch();
 
     useEffect(() => {
         if (form.formState.isDirty) {
-            setDoc(settingsDocRef, watchedValues, { merge: true });
-             toast({
-                title: "Sucesso!",
-                description: "Configurações de campos obrigatórios atualizadas.",
-            });
+            debouncedSave(watchedValues);
         }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [watchedValues, form.formState.isDirty, settingsDocRef]);
+    }, [watchedValues, form.formState.isDirty, debouncedSave]);
 
 
     useEffect(() => {
         if (registrationSettings) {
-            form.reset(registrationSettings);
+            form.reset(registrationSettings, { keepDirty: false });
         } else if (!isLoading) {
             // Pre-fill form and create document if it doesn't exist
             form.reset(defaultSettings);
