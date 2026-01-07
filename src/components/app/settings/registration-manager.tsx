@@ -7,8 +7,9 @@ import { Switch } from "@/components/ui/switch"
 import { Separator } from "@/components/ui/separator"
 import { useFirestore, useDoc, useMemoFirebase } from "@/firebase"
 import { doc, setDoc } from "firebase/firestore"
-import { useEffect, useCallback } from "react"
+import { useEffect } from "react"
 import { Loader2 } from "lucide-react"
+import { Button } from "@/components/ui/button"
 
 const defaultSettings = {
     customer: {
@@ -24,19 +25,6 @@ const defaultSettings = {
 
 type RegistrationFormValues = typeof defaultSettings;
 
-// Simple debounce function
-function debounce<F extends (...args: any[]) => any>(func: F, waitFor: number) {
-  let timeout: ReturnType<typeof setTimeout> | null = null;
-
-  return (...args: Parameters<F>): void => {
-    if (timeout) {
-      clearTimeout(timeout);
-    }
-    timeout = setTimeout(() => func(...args), waitFor);
-  };
-}
-
-
 export function RegistrationManager() {
     const { toast } = useToast()
     const firestore = useFirestore()
@@ -46,28 +34,33 @@ export function RegistrationManager() {
     const form = useForm<RegistrationFormValues>({
         defaultValues: defaultSettings
     })
-    
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    const debouncedSave = useCallback(
-        debounce((data: RegistrationFormValues) => {
-            setDoc(settingsDocRef, data, { merge: true });
-            toast({
-                title: "Sucesso!",
-                description: "Configurações de campos obrigatórios atualizadas.",
-            });
-        }, 500), 
-        [settingsDocRef, toast]
-    );
 
     useEffect(() => {
         if (registrationSettings) {
             form.reset(registrationSettings);
         } else if (!isLoading) {
-            // Pre-fill form and create document if it doesn't exist
             form.reset(defaultSettings);
             setDoc(settingsDocRef, defaultSettings);
         }
     }, [registrationSettings, isLoading, form, settingsDocRef]);
+    
+    async function onSubmit(data: RegistrationFormValues) {
+        try {
+            await setDoc(settingsDocRef, data, { merge: true });
+            toast({
+                title: "Sucesso!",
+                description: "Configurações de campos obrigatórios atualizadas.",
+            });
+            form.reset(data); // Mark form as not dirty
+        } catch (error) {
+            console.error("Error saving settings:", error);
+            toast({
+                title: "Erro!",
+                description: "Não foi possível salvar as configurações.",
+                variant: "destructive"
+            });
+        }
+    }
 
 
     if (isLoading) {
@@ -80,7 +73,7 @@ export function RegistrationManager() {
 
     return (
         <Form {...form}>
-            <form className="space-y-8 max-w-lg">
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8 max-w-lg">
                 <div>
                     <h3 className="text-lg font-medium mb-4">Cadastro de Clientes</h3>
                     <div className="space-y-4">
@@ -92,10 +85,7 @@ export function RegistrationManager() {
                                     <FormLabel className="font-normal">Telefone obrigatório</FormLabel>
                                     <Switch
                                         checked={field.value}
-                                        onCheckedChange={(checked) => {
-                                            field.onChange(checked);
-                                            debouncedSave(form.getValues());
-                                        }}
+                                        onCheckedChange={field.onChange}
                                     />
                                 </FormItem>
                             )}
@@ -108,10 +98,7 @@ export function RegistrationManager() {
                                     <FormLabel className="font-normal">Documento (CPF/CNPJ) obrigatório</FormLabel>
                                     <Switch
                                         checked={field.value}
-                                        onCheckedChange={(checked) => {
-                                            field.onChange(checked);
-                                            debouncedSave(form.getValues());
-                                        }}
+                                        onCheckedChange={field.onChange}
                                     />
                                 </FormItem>
                             )}
@@ -124,10 +111,7 @@ export function RegistrationManager() {
                                     <FormLabel className="font-normal">Endereço obrigatório</FormLabel>
                                     <Switch
                                         checked={field.value}
-                                        onCheckedChange={(checked) => {
-                                            field.onChange(checked);
-                                            debouncedSave(form.getValues());
-                                        }}
+                                        onCheckedChange={field.onChange}
                                     />
                                 </FormItem>
                             )}
@@ -148,10 +132,7 @@ export function RegistrationManager() {
                                     <FormLabel className="font-normal">Descrição obrigatória</FormLabel>
                                     <Switch
                                         checked={field.value}
-                                        onCheckedChange={(checked) => {
-                                            field.onChange(checked);
-                                            debouncedSave(form.getValues());
-                                        }}
+                                        onCheckedChange={field.onChange}
                                     />
                                 </FormItem>
                             )}
@@ -164,15 +145,15 @@ export function RegistrationManager() {
                                     <FormLabel className="font-normal">Quantidade obrigatória</FormLabel>
                                     <Switch
                                         checked={field.value}
-                                        onCheckedChange={(checked) => {
-                                            field.onChange(checked);
-                                            debouncedSave(form.getValues());
-                                        }}
+                                        onCheckedChange={field.onChange}
                                     />
                                 </FormItem>
                             )}
                         />
                     </div>
+                </div>
+                <div className="flex justify-end pt-4">
+                   <Button type="submit">Salvar Alterações</Button>
                 </div>
             </form>
         </Form>
