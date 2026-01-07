@@ -55,14 +55,12 @@ export function UsersManagement() {
         setIsDialogOpen(true);
     }
     
-    const handleFormSubmit = async (userData: User, userId: string) => {
+    const handleFormSubmit = async (userData: User) => {
         if (!firestore) return;
-        // Ensure the ID is part of the object being saved
-        const userWithId = { ...userData, id: userId };
         
         try {
-            // Explicitly use the userId to create/update the document
-            await setDoc(doc(firestore, "users", userId), userWithId, { merge: true });
+            // The userData object now contains the correct ID, whether it's new or existing.
+            await setDoc(doc(firestore, "users", userData.id), userData, { merge: true });
         } catch(error) {
             console.error("Error saving user to Firestore: ", error);
             toast({

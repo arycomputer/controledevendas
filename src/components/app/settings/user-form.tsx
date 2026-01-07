@@ -39,7 +39,7 @@ type UserFormValues = z.infer<typeof userCreateFormSchema>;
 
 interface UserFormProps {
     user: User | null;
-    onSuccess: (userData: User, userId: string) => void;
+    onSuccess: (userData: User) => void;
     onClose: () => void;
 }
 
@@ -78,10 +78,15 @@ export function UserForm({ user, onSuccess, onClose }: UserFormProps) {
     if (!auth) return;
 
     if (user) {
-        // Handle user update logic (e.g., update role in Firestore)
-        console.log("Update user", data)
+        // Handle user update logic
+        const updatedUser: User = { 
+            id: user.id,
+            name: data.name, 
+            email: data.email, 
+            role: data.role as 'admin' | 'seller',
+        };
+        onSuccess(updatedUser);
         toast({ title: "Sucesso!", description: "Usuário atualizado." })
-        onSuccess({ name: data.name, email: data.email, role: data.role as 'admin' | 'seller', id: user.id }, user.id);
     } else {
         // Create new user with Firebase Auth
         try {
@@ -90,16 +95,16 @@ export function UserForm({ user, onSuccess, onClose }: UserFormProps) {
             const userCredential = await createUserWithEmailAndPassword(auth, data.email, data.password);
             await updateProfile(userCredential.user, { displayName: data.name });
 
-            toast({ title: "Sucesso!", description: "Usuário criado." });
-
             const newUser: User = {
                 id: userCredential.user.uid,
                 name: data.name,
                 email: data.email,
                 role: data.role as 'admin' | 'seller',
             };
+            
+            onSuccess(newUser); // Pass the complete new user object back
+            toast({ title: "Sucesso!", description: "Usuário criado." });
 
-            onSuccess(newUser, userCredential.user.uid);
         } catch (error: any) {
             console.error("Error creating user: ", error);
             const errorMessage = error.code === 'auth/email-already-in-use' 
