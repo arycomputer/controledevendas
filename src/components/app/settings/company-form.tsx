@@ -4,6 +4,7 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
 import * as z from "zod"
 import Image from "next/image"
+import React, { useRef, useState } from "react"
 
 import { useToast } from "@/hooks/use-toast"
 import { Button } from "@/components/ui/button"
@@ -12,6 +13,7 @@ import { Input } from "@/components/ui/input"
 
 const companyFormSchema = z.object({
   name: z.string().min(2, "O nome da empresa é obrigatório."),
+  logo: z.string().optional(),
   document: z.string().optional(),
   phone: z.string().optional(),
   email: z.string().email("E-mail inválido.").optional(),
@@ -22,6 +24,7 @@ type CompanyFormValues = z.infer<typeof companyFormSchema>
 
 const defaultValues: Partial<CompanyFormValues> = {
   name: "Minha Empresa",
+  logo: "https://picsum.photos/seed/logo/80/80",
   document: "00.000.000/0001-00",
   phone: "(11) 99999-8888",
   email: "contato@minhaempresa.com",
@@ -30,6 +33,9 @@ const defaultValues: Partial<CompanyFormValues> = {
 
 export function CompanyForm() {
   const { toast } = useToast()
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [logoPreview, setLogoPreview] = useState<string | null>(defaultValues.logo || null);
+
   const form = useForm<CompanyFormValues>({
     resolver: zodResolver(companyFormSchema),
     defaultValues,
@@ -43,6 +49,19 @@ export function CompanyForm() {
     })
   }
 
+  const handleLogoChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const result = reader.result as string;
+        setLogoPreview(result);
+        form.setValue("logo", result);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 max-w-lg">
@@ -50,15 +69,26 @@ export function CompanyForm() {
             <FormLabel>Logo da Empresa</FormLabel>
             <div className="flex items-center gap-4">
                 <div className="relative h-20 w-20 rounded-md overflow-hidden border">
-                    <Image 
-                        src="https://picsum.photos/seed/logo/80/80" 
-                        alt="Logo da empresa" 
-                        fill 
-                        className="object-cover"
-                        data-ai-hint="logo placeholder"
-                    />
+                    {logoPreview ? (
+                        <Image 
+                            src={logoPreview} 
+                            alt="Logo da empresa" 
+                            fill 
+                            className="object-cover"
+                            data-ai-hint="logo company"
+                        />
+                    ) : (
+                       <div className="h-full w-full bg-muted flex items-center justify-center text-xs text-muted-foreground">Sem logo</div>
+                    )}
                 </div>
-                <Button type="button" variant="outline">Alterar Logo</Button>
+                <Input 
+                    type="file" 
+                    ref={fileInputRef} 
+                    className="hidden" 
+                    accept="image/*"
+                    onChange={handleLogoChange}
+                />
+                <Button type="button" variant="outline" onClick={() => fileInputRef.current?.click()}>Alterar Logo</Button>
             </div>
         </FormItem>
 
