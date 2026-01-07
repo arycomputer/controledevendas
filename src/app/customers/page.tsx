@@ -2,11 +2,12 @@
 
 import React, { useState, useMemo } from 'react';
 import Link from 'next/link';
-import { PlusCircle, Search } from 'lucide-react';
+import { PlusCircle, Search, MoreHorizontal } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { customers as allCustomers } from '@/lib/data';
 import type { Customer } from '@/lib/types';
 
@@ -55,6 +56,9 @@ export default function CustomersPage() {
                             <TableHead>Contato</TableHead>
                             <TableHead>Documento</TableHead>
                             <TableHead>Endereço</TableHead>
+                            <TableHead>
+                                <span className="sr-only">Ações</span>
+                            </TableHead>
                         </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -68,11 +72,26 @@ export default function CustomersPage() {
                                     </TableCell>
                                     <TableCell>{customer.document}</TableCell>
                                     <TableCell>{customer.address}</TableCell>
+                                    <TableCell className="text-right">
+                                        <DropdownMenu>
+                                            <DropdownMenuTrigger asChild>
+                                                <Button variant="ghost" className="h-8 w-8 p-0">
+                                                    <span className="sr-only">Abrir menu</span>
+                                                    <MoreHorizontal className="h-4 w-4" />
+                                                </Button>
+                                            </DropdownMenuTrigger>
+                                            <DropdownMenuContent align="end">
+                                                <DropdownMenuLabel>Ações</DropdownMenuLabel>
+                                                <DropdownMenuItem onClick={() => console.log(`Edit ${customer.id}`)}>Editar</DropdownMenuItem>
+                                                <DropdownMenuItem onClick={() => console.log(`Delete ${customer.id}`)} className="text-red-600">Excluir</DropdownMenuItem>
+                                            </DropdownMenuContent>
+                                        </DropdownMenu>
+                                    </TableCell>
                                 </TableRow>
                             ))
                         ) : (
                             <TableRow>
-                                <TableCell colSpan={4} className="h-24 text-center">
+                                <TableCell colSpan={5} className="h-24 text-center">
                                     Nenhum cliente encontrado.
                                 </TableCell>
                             </TableRow>

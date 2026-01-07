@@ -1,8 +1,9 @@
 import Link from 'next/link';
-import { PlusCircle } from 'lucide-react';
+import { PlusCircle, MoreHorizontal } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Badge } from '@/components/ui/badge';
 import { sales, customers } from '@/lib/data';
 import type { Sale } from '@/lib/types';
@@ -34,6 +35,9 @@ export default function SalesPage() {
                             <TableHead>Data</TableHead>
                             <TableHead className="text-center">Itens</TableHead>
                             <TableHead className="text-right">Valor Total</TableHead>
+                            <TableHead>
+                                <span className="sr-only">Ações</span>
+                            </TableHead>
                         </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -51,6 +55,21 @@ export default function SalesPage() {
                                     </TableCell>
                                     <TableCell className="text-right font-semibold">
                                         {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(sale.totalAmount)}
+                                    </TableCell>
+                                    <TableCell className="text-right">
+                                        <DropdownMenu>
+                                            <DropdownMenuTrigger asChild>
+                                                <Button variant="ghost" className="h-8 w-8 p-0">
+                                                    <span className="sr-only">Abrir menu</span>
+                                                    <MoreHorizontal className="h-4 w-4" />
+                                                </Button>
+                                            </DropdownMenuTrigger>
+                                            <DropdownMenuContent align="end">
+                                                <DropdownMenuLabel>Ações</DropdownMenuLabel>
+                                                <DropdownMenuItem onClick={() => console.log(`View ${sale.id}`)}>Visualizar</DropdownMenuItem>
+                                                <DropdownMenuItem onClick={() => console.log(`Delete ${sale.id}`)} className="text-red-600">Cancelar Venda</DropdownMenuItem>
+                                            </DropdownMenuContent>
+                                        </DropdownMenu>
                                     </TableCell>
                                 </TableRow>
                             );
