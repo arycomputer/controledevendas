@@ -44,13 +44,13 @@ export const CompanyProvider = ({ children }: { children: ReactNode }) => {
   }, [firestore, user]);
   
   const { data: remoteCompanyData, isLoading: isSettingsLoading } = useDoc<CompanyData>(settingsDocRef);
-  const [localCompanyData, setLocalCompanyData] = useState<CompanyData>(defaultCompanyData);
+  const [companyData, setCompanyData] = useState<CompanyData>(defaultCompanyData);
 
   const isLoading = isUserLoading || isSettingsLoading;
 
   useEffect(() => {
     if (remoteCompanyData) {
-      setLocalCompanyData(remoteCompanyData);
+      setCompanyData(remoteCompanyData);
     } else if (!isLoading && settingsDocRef) {
       // If no data is found and we are not loading, create the initial doc
       setDoc(settingsDocRef, defaultCompanyData);
@@ -59,13 +59,13 @@ export const CompanyProvider = ({ children }: { children: ReactNode }) => {
   
   const handleSetCompanyData = async (data: Partial<CompanyData>) => {
     if (!settingsDocRef) return;
-    const updatedData = { ...localCompanyData, ...data };
-    setLocalCompanyData(updatedData);
+    const updatedData = { ...companyData, ...data };
+    setCompanyData(updatedData);
     await setDoc(settingsDocRef, updatedData, { merge: true });
   };
 
   const contextValue = {
-    companyData: localCompanyData,
+    companyData: companyData,
     setCompanyData: handleSetCompanyData,
     isLoading: isLoading,
   };
