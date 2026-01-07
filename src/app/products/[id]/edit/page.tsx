@@ -21,7 +21,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { useToast } from "@/hooks/use-toast"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { useEffect } from "react"
-import { doc, updateDoc } from "firebase/firestore"
+import { doc, updateDoc, deleteField } from "firebase/firestore"
 import { useDoc, useFirestore, useMemoFirebase } from "@/firebase"
 import { Loader2 } from "lucide-react"
 import { AuthGuard } from "@/components/app/auth-guard"
@@ -77,10 +77,14 @@ function EditProductPageContent() {
 
   async function onSubmit(data: ProductFormValues) {
     try {
-        const finalData = {
+        const finalData: Partial<ProductFormValues> & { quantity?: number | ReturnType<typeof deleteField> } = {
             ...data,
-            quantity: data.type === 'piece' ? data.quantity : undefined
         };
+
+        if (data.type === 'service') {
+            finalData.quantity = deleteField();
+        }
+
         await updateDoc(productDocRef, finalData);
         toast({
           title: "Sucesso!",
