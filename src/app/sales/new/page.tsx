@@ -4,7 +4,8 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm, useFieldArray } from "react-hook-form"
 import * as z from "zod"
 import { useRouter } from "next/navigation"
-import { PlusCircle, Trash2 } from "lucide-react"
+import { PlusCircle, Trash2, Loader2 } from "lucide-react"
+import { v4 as uuidv4 } from 'uuid';
 
 import { Button } from "@/components/ui/button"
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
@@ -13,8 +14,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Separator } from "@/components/ui/separator"
 import { useToast } from "@/hooks/use-toast"
-import { customers, products } from "@/lib/data"
 import { useEffect } from "react"
+import { useCollection, useFirestore, useMemoFirebase } from "@/firebase"
+import { collection, addDoc } from "firebase/firestore"
+import type { Customer, Product } from "@/lib/types"
+import { AuthGuard } from "@/components/app/auth-guard"
 
 const saleFormSchema = z.object({
   customerId: z.string({ required_error: "É necessário selecionar um cliente." }).min(1, "É necessário selecionar um cliente."),
@@ -27,9 +31,16 @@ const saleFormSchema = z.object({
 
 type SaleFormValues = z.infer<typeof saleFormSchema>
 
-export default function NewSalePage() {
+function NewSalePageContent() {
   const router = useRouter()
   const { toast } = useToast()
+  const firestore = useFirestore()
+
+  const customersCollection = useMemoFirebase(() => collection(firestore, 'customers'), [firestore]);
+  const { data: customers, isLoading: customersLoading } = useCollection<Customer>(customersCollection);
+
+  const productsCollection = useMemoFirebase(() => collection(firestore, 'parts'), [firestore]);
+  const { data: products, isLoading: productsLoading } = useCollection<Product>(productsCollection);
 
   const form = useForm<SaleFormValues>({
     resolver: zodResolver(saleFormSchema),
@@ -50,26 +61,51 @@ export default function NewSalePage() {
     return acc + ((current.unitPrice || 0) * (current.quantity || 0));
   }, 0);
 
-  function onSubmit(data: SaleFormValues) {
-    // In a real app, you would send this to an API
-    console.log({ ...data, totalAmount });
-    toast({
-      title: "Sucesso!",
-      description: "Nova venda registrada.",
-    })
-    router.push('/sales')
+  async function onSubmit(data: SaleFormValues) {
+    try {
+      const saleId = uuidv4();
+      const saleData = {
+        ...data,
+        id: saleId,
+        totalAmount,
+        saleDate: new Date().toISOString(),
+      };
+      await addDoc(collection(firestore, "sales"), saleData);
+      toast({
+        title: "Sucesso!",
+        description: "Nova venda registrada.",
+      })
+      router.push('/sales')
+    } catch (error) {
+      console.error("Error creating sale: ", error)
+      toast({
+        title: "Erro!",
+        description: "Não foi possível registrar a venda.",
+        variant: 'destructive',
+      })
+    }
   }
   
   const handleProductChange = (value: string, index: number) => {
-    const product = products.find(p => p.id === value);
+    const product = products?.find(p => p.id === value);
     if (product) {
         update(index, {
             ...watchedItems[index],
             productId: value,
             unitPrice: product.price,
-            quantity: product.type === 'service' ? 1 : watchedItems[index].quantity
+            quantity: product.type === 'service' ? 1 : watchedItems[index].quantity || 1
         });
     }
+  }
+
+  const isLoading = customersLoading || productsLoading;
+
+  if (isLoading) {
+    return (
+        <div className="flex justify-center items-center h-64">
+            <Loader2 className="h-8 w-8 animate-spin" />
+        </div>
+    )
   }
 
   return (
@@ -94,7 +130,7 @@ export default function NewSalePage() {
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      {customers.map(customer => (
+                      {customers?.map(customer => (
                         <SelectItem key={customer.id} value={customer.id}>{customer.name}</SelectItem>
                       ))}
                     </SelectContent>
@@ -108,7 +144,7 @@ export default function NewSalePage() {
               <FormLabel>Itens da Venda</FormLabel>
               <div className="mt-2 space-y-4">
                 {fields.map((field, index) => {
-                   const selectedProduct = products.find(p => p.id === watchedItems[index]?.productId);
+                   const selectedProduct = products?.find(p => p.id === watchedItems[index]?.productId);
                    const isService = selectedProduct?.type === 'service';
 
                    return (
@@ -126,7 +162,7 @@ export default function NewSalePage() {
                                   </SelectTrigger>
                                 </FormControl>
                                 <SelectContent>
-                                  {products.map(product => (
+                                  {products?.map(product => (
                                     <SelectItem key={product.id} value={product.id} disabled={watchedItems.some((item, itemIndex) => item.productId === product.id && itemIndex !== index)}>
                                       {product.name} - {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(product.price)}
                                     </SelectItem>
@@ -189,4 +225,13 @@ export default function NewSalePage() {
       </CardContent>
     </Card>
   )
+}
+
+
+export default function NewSalePage() {
+    return (
+        <AuthGuard>
+            <NewSalePageContent />
+        </AuthGuard>
+    )
 }

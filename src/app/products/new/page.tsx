@@ -4,6 +4,7 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
 import * as z from "zod"
 import { useRouter } from "next/navigation"
+import { v4 as uuidv4 } from 'uuid';
 
 import { Button } from "@/components/ui/button"
 import {
@@ -19,6 +20,9 @@ import { Textarea } from "@/components/ui/textarea"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { useToast } from "@/hooks/use-toast"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { useFirestore } from "@/firebase"
+import { addDoc, collection } from "firebase/firestore"
+import { AuthGuard } from "@/components/app/auth-guard"
 
 const productFormSchema = z.object({
   name: z.string().min(2, "O nome deve ter pelo menos 2 caracteres."),
@@ -39,9 +43,10 @@ const productFormSchema = z.object({
 
 type ProductFormValues = z.infer<typeof productFormSchema>
 
-export default function NewProductPage() {
+function NewProductPageContent() {
   const router = useRouter()
   const { toast } = useToast()
+  const firestore = useFirestore();
 
   const form = useForm<ProductFormValues>({
     resolver: zodResolver(productFormSchema),
@@ -56,18 +61,28 @@ export default function NewProductPage() {
   
   const productType = form.watch("type");
 
-  function onSubmit(data: ProductFormValues) {
-    // In a real app, you would send this data to your API.
-    const finalData = {
-        ...data,
-        quantity: data.type === 'piece' ? data.quantity : undefined
+  async function onSubmit(data: ProductFormValues) {
+    try {
+        const productId = uuidv4();
+        const productData = {
+            ...data,
+            id: productId,
+            quantity: data.type === 'piece' ? data.quantity : undefined
+        };
+        await addDoc(collection(firestore, "parts"), productData);
+        toast({
+          title: "Sucesso!",
+          description: `Produto "${data.name}" cadastrado.`,
+        })
+        router.push('/products')
+    } catch (error) {
+        console.error("Error creating product: ", error);
+        toast({
+            title: "Erro!",
+            description: "Não foi possível cadastrar o item.",
+            variant: "destructive"
+        })
     }
-    console.log(finalData)
-    toast({
-      title: "Sucesso!",
-      description: `Produto "${data.name}" cadastrado.`,
-    })
-    router.push('/products')
   }
 
   return (
@@ -167,4 +182,12 @@ export default function NewProductPage() {
       </CardContent>
     </Card>
   )
+}
+
+export default function NewProductPage() {
+    return (
+        <AuthGuard>
+            <NewProductPageContent />
+        </AuthGuard>
+    )
 }

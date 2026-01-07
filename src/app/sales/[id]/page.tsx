@@ -2,22 +2,43 @@
 
 import { useParams, useRouter } from "next/navigation"
 import Link from "next/link"
-import { ArrowLeft } from "lucide-react"
+import { ArrowLeft, Loader2 } from "lucide-react"
 
-import { sales, customers, products } from "@/lib/data"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
+import { useDoc, useCollection, useFirestore, useMemoFirebase } from "@/firebase"
+import type { Sale, Customer, Product } from "@/lib/types"
+import { collection, doc } from "firebase/firestore"
+import { AuthGuard } from "@/components/app/auth-guard"
 
-export default function SaleDetailsPage() {
+function SaleDetailsPageContent() {
     const params = useParams();
     const router = useRouter();
+    const firestore = useFirestore();
     const saleId = params.id as string;
 
-    const sale = sales.find(s => s.id === saleId);
-    const customer = sale ? customers.find(c => c.id === sale.customerId) : null;
+    const saleDocRef = useMemoFirebase(() => doc(firestore, 'sales', saleId), [firestore, saleId]);
+    const { data: sale, isLoading: saleLoading } = useDoc<Sale>(saleDocRef);
+    
+    // We fetch customer and product data here to display in the sale details
+    const customerDocRef = useMemoFirebase(() => sale ? doc(firestore, 'customers', sale.customerId) : null, [firestore, sale]);
+    const { data: customer, isLoading: customerLoading } = useDoc<Customer>(customerDocRef);
+    
+    const productsCollectionRef = useMemoFirebase(() => collection(firestore, 'parts'), [firestore]);
+    const { data: products, isLoading: productsLoading } = useCollection<Product>(productsCollectionRef);
+
+    const isLoading = saleLoading || customerLoading || productsLoading;
+    
+    if(isLoading) {
+        return (
+            <div className="flex justify-center items-center h-64">
+                <Loader2 className="h-8 w-8 animate-spin" />
+            </div>
+        )
+    }
 
     if (!sale || !customer) {
         return (
@@ -84,7 +105,7 @@ export default function SaleDetailsPage() {
                         </TableHeader>
                         <TableBody>
                             {sale.items.map((item, index) => {
-                                const product = products.find(p => p.id === item.productId);
+                                const product = products?.find(p => p.id === item.productId);
                                 return (
                                 <TableRow key={index}>
                                     <TableCell className="font-medium">{product?.name || 'Item não encontrado'}</TableCell>
@@ -113,5 +134,13 @@ export default function SaleDetailsPage() {
 
             </CardContent>
         </Card>
+    )
+}
+
+export default function SaleDetailsPage() {
+    return (
+        <AuthGuard>
+            <SaleDetailsPageContent />
+        </AuthGuard>
     )
 }

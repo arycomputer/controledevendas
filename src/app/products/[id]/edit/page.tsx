@@ -19,8 +19,12 @@ import { Textarea } from "@/components/ui/textarea"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { useToast } from "@/hooks/use-toast"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { products } from "@/lib/data"
 import { useEffect } from "react"
+import { doc, updateDoc } from "firebase/firestore"
+import { useDoc, useFirestore, useMemoFirebase } from "@/firebase"
+import { Loader2 } from "lucide-react"
+import { AuthGuard } from "@/components/app/auth-guard"
+import type { Product } from "@/lib/types"
 
 const productFormSchema = z.object({
   name: z.string().min(2, "O nome deve ter pelo menos 2 caracteres."),
@@ -41,13 +45,15 @@ const productFormSchema = z.object({
 
 type ProductFormValues = z.infer<typeof productFormSchema>
 
-export default function EditProductPage() {
+function EditProductPageContent() {
   const router = useRouter()
   const params = useParams()
   const { toast } = useToast()
+  const firestore = useFirestore()
 
   const productId = params.id as string;
-  const product = products.find(p => p.id === productId);
+  const productDocRef = useMemoFirebase(() => doc(firestore, 'parts', productId), [firestore, productId]);
+  const { data: product, isLoading } = useDoc<Product>(productDocRef);
 
   const form = useForm<ProductFormValues>({
     resolver: zodResolver(productFormSchema),
@@ -63,31 +69,39 @@ export default function EditProductPage() {
   useEffect(() => {
     if (product) {
       form.reset(product);
-    } else {
-       toast({
-        title: "Erro",
-        description: "Produto não encontrado.",
-        variant: "destructive",
-      })
-      router.push('/products')
     }
-  }, [product, form, router, toast]);
+  }, [product, form]);
 
   const productType = form.watch("type");
 
-  function onSubmit(data: ProductFormValues) {
-    // In a real app, you would send this data to your API.
-    const finalData = {
-        ...data,
-        id: productId,
-        quantity: data.type === 'piece' ? data.quantity : undefined
+  async function onSubmit(data: ProductFormValues) {
+    try {
+        const finalData = {
+            ...data,
+            quantity: data.type === 'piece' ? data.quantity : undefined
+        };
+        await updateDoc(productDocRef, finalData);
+        toast({
+          title: "Sucesso!",
+          description: `Produto "${data.name}" atualizado.`,
+        })
+        router.push('/products')
+    } catch(error) {
+        console.error("Error updating product:", error)
+        toast({
+          title: "Erro!",
+          description: "Não foi possível atualizar o item.",
+          variant: "destructive",
+        })
     }
-    console.log(finalData)
-    toast({
-      title: "Sucesso!",
-      description: `Produto "${data.name}" atualizado.`,
-    })
-    router.push('/products')
+  }
+
+  if (isLoading) {
+    return (
+        <div className="flex justify-center items-center h-64">
+            <Loader2 className="h-8 w-8 animate-spin" />
+        </div>
+    )
   }
   
   if (!product) {
@@ -198,4 +212,12 @@ export default function EditProductPage() {
       </CardContent>
     </Card>
   )
+}
+
+export default function EditProductPage() {
+    return (
+        <AuthGuard>
+            <EditProductPageContent />
+        </AuthGuard>
+    )
 }
