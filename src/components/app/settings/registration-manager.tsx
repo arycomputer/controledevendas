@@ -1,12 +1,15 @@
 'use client'
 
-import { useState } from "react"
 import { useForm } from "react-hook-form"
 import { useToast } from "@/hooks/use-toast"
 import { Button } from "@/components/ui/button"
 import { Form, FormField, FormItem, FormLabel } from "@/components/ui/form"
 import { Switch } from "@/components/ui/switch"
 import { Separator } from "@/components/ui/separator"
+import { useFirestore, useDoc, useMemoFirebase } from "@/firebase"
+import { doc, setDoc } from "firebase/firestore"
+import { useEffect } from "react"
+import { Loader2 } from "lucide-react"
 
 const defaultSettings = {
     customer: {
@@ -24,16 +27,38 @@ type RegistrationFormValues = typeof defaultSettings;
 
 export function RegistrationManager() {
     const { toast } = useToast()
+    const firestore = useFirestore()
+    const settingsDocRef = useMemoFirebase(() => doc(firestore, 'settings', 'registration'), [firestore]);
+    const { data: registrationSettings, isLoading } = useDoc<RegistrationFormValues>(settingsDocRef);
+    
     const form = useForm<RegistrationFormValues>({
         defaultValues: defaultSettings
     })
 
-    function onSubmit(data: RegistrationFormValues) {
-        console.log("Saving new settings:", data)
+    useEffect(() => {
+        if (registrationSettings) {
+            form.reset(registrationSettings);
+        } else if (!isLoading) {
+            // Pre-fill form and create document if it doesn't exist
+            form.reset(defaultSettings);
+            setDoc(settingsDocRef, defaultSettings);
+        }
+    }, [registrationSettings, isLoading, form, settingsDocRef]);
+
+    async function onSubmit(data: RegistrationFormValues) {
+        await setDoc(settingsDocRef, data, { merge: true });
         toast({
             title: "Sucesso!",
             description: "Configurações de campos obrigatórios atualizadas.",
         })
+    }
+
+    if (isLoading) {
+        return (
+            <div className="flex justify-center items-center h-40">
+                <Loader2 className="h-8 w-8 animate-spin" />
+            </div>
+        )
     }
 
     return (

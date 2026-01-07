@@ -170,6 +170,12 @@
         "email",
         "role"
       ]
+    },
+    "Settings": {
+      "title": "Settings",
+      "description": "Stores application-wide settings.",
+      "type": "object",
+      "properties": {}
     }
   },
   "auth": {
@@ -218,6 +224,16 @@
             "$ref": "#/backend/entities/User"
           },
           "description": "Stores application user data, mirroring Firebase Auth users. Only admins can write to this collection."
+        }
+      },
+      {
+        "path": "settings/{settingId}",
+        "definition": {
+          "entityName": "Settings",
+          "schema": {
+            "$ref": "#/backend/entities/Settings"
+          },
+          "description": "Stores global application settings. Authenticated users can read/write."
         }
       }
     ]

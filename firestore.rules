@@ -120,5 +120,15 @@ service cloud.firestore {
       allow read: if isSignedIn();
       allow write: if isAdmin();
     }
+
+    /**
+     * @description Manages global application settings.
+     * @path /settings/{settingId}
+     * @allow (read, write) Any authenticated user can manage settings.
+     * @principle Allows all signed-in users to configure the application.
+     */
+    match /settings/{settingId} {
+        allow read, write: if isSignedIn();
+    }
   }
 }

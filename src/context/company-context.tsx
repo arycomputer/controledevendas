@@ -1,6 +1,9 @@
 'use client'
 
-import React, { createContext, useContext, useState, ReactNode } from 'react';
+import React, { createContext, useContext, useState, ReactNode, useEffect } from 'react';
+import { useFirestore, useDoc, useMemoFirebase } from '@/firebase';
+import { doc, setDoc } from 'firebase/firestore';
+import { Loader2 } from 'lucide-react';
 
 interface CompanyData {
   name: string;
@@ -13,7 +16,8 @@ interface CompanyData {
 
 interface CompanyContextType {
   companyData: CompanyData;
-  setCompanyData: (data: CompanyData) => void;
+  setCompanyData: (data: Partial<CompanyData>) => void;
+  isLoading: boolean;
 }
 
 const defaultCompanyData: CompanyData = {
@@ -28,10 +32,43 @@ const defaultCompanyData: CompanyData = {
 const CompanyContext = createContext<CompanyContextType | undefined>(undefined);
 
 export const CompanyProvider = ({ children }: { children: ReactNode }) => {
-  const [companyData, setCompanyData] = useState<CompanyData>(defaultCompanyData);
+  const firestore = useFirestore();
+  const settingsDocRef = useMemoFirebase(() => doc(firestore, 'settings', 'companyData'), [firestore]);
+  
+  const { data: remoteCompanyData, isLoading } = useDoc<CompanyData>(settingsDocRef);
+  const [localCompanyData, setLocalCompanyData] = useState<CompanyData>(defaultCompanyData);
+
+  useEffect(() => {
+    if (remoteCompanyData) {
+      setLocalCompanyData(remoteCompanyData);
+    } else if (!isLoading) {
+      // If no data is found and we are not loading, create the initial doc
+      setDoc(settingsDocRef, defaultCompanyData);
+    }
+  }, [remoteCompanyData, isLoading, settingsDocRef]);
+  
+  const handleSetCompanyData = async (data: Partial<CompanyData>) => {
+    const updatedData = { ...localCompanyData, ...data };
+    setLocalCompanyData(updatedData);
+    await setDoc(settingsDocRef, updatedData, { merge: true });
+  };
+
+  const contextValue = {
+    companyData: localCompanyData,
+    setCompanyData: handleSetCompanyData,
+    isLoading,
+  };
+
+  if (isLoading && !remoteCompanyData) {
+     return (
+        <div className="flex items-center justify-center h-screen">
+            <Loader2 className="h-12 w-12 animate-spin" />
+        </div>
+    );
+  }
 
   return (
-    <CompanyContext.Provider value={{ companyData, setCompanyData }}>
+    <CompanyContext.Provider value={contextValue}>
       {children}
     </CompanyContext.Provider>
   );
