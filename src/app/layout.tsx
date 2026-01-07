@@ -6,7 +6,7 @@ import { SidebarProvider, SidebarInset } from '@/components/ui/sidebar';
 
 export const metadata: Metadata = {
   title: 'VendasControl',
-  description: 'Gerenciamento de vendas, clientes e peças.',
+  description: 'Gerenciamento de vendas, clientes e produtos.',
 };
 
 export default function RootLayout({

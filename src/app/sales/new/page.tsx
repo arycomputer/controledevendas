@@ -39,7 +39,7 @@ export default function NewSalePage() {
     },
   })
 
-  const { fields, append, remove } = useFieldArray({
+  const { fields, append, remove, update } = useFieldArray({
     control: form.control,
     name: "items",
   })
@@ -58,6 +58,18 @@ export default function NewSalePage() {
       description: "Nova venda registrada.",
     })
     router.push('/sales')
+  }
+  
+  const handleProductChange = (value: string, index: number) => {
+    const product = products.find(p => p.id === value);
+    if (product) {
+        update(index, {
+            ...watchedItems[index],
+            productId: value,
+            unitPrice: product.price,
+            quantity: product.type === 'service' ? 1 : watchedItems[index].quantity
+        });
+    }
   }
 
   return (
@@ -95,55 +107,56 @@ export default function NewSalePage() {
             <div>
               <FormLabel>Itens da Venda</FormLabel>
               <div className="mt-2 space-y-4">
-                {fields.map((field, index) => (
-                  <div key={field.id} className="grid grid-cols-[1fr_100px_auto] items-end gap-4 p-4 border rounded-lg bg-muted/20">
-                    <FormField
-                      control={form.control}
-                      name={`items.${index}.productId`}
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel className="text-xs">Produto/Serviço</FormLabel>
-                          <Select onValueChange={(value) => {
-                            const product = products.find(p => p.id === value);
-                            field.onChange(value);
-                            form.setValue(`items.${index}.unitPrice`, product?.price || 0);
-                          }} defaultValue={field.value}>
-                            <FormControl>
-                              <SelectTrigger>
-                                <SelectValue placeholder="Selecione um item" />
-                              </SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
-                              {products.map(product => (
-                                <SelectItem key={product.id} value={product.id} disabled={watchedItems.some(item => item.productId === product.id)}>
-                                  {product.name} - {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(product.price)}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                     <FormField
-                      control={form.control}
-                      name={`items.${index}.quantity`}
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel className="text-xs">Qtd.</FormLabel>
-                          <FormControl>
-                            <Input type="number" min="1" placeholder="1" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <Button type="button" variant="destructive" size="icon" onClick={() => remove(index)}>
-                      <Trash2 className="h-4 w-4" />
-                      <span className="sr-only">Remover item</span>
-                    </Button>
-                  </div>
-                ))}
+                {fields.map((field, index) => {
+                   const selectedProduct = products.find(p => p.id === watchedItems[index]?.productId);
+                   const isService = selectedProduct?.type === 'service';
+
+                   return (
+                     <div key={field.id} className="grid grid-cols-[1fr_100px_auto] items-end gap-4 p-4 border rounded-lg bg-muted/20">
+                        <FormField
+                          control={form.control}
+                          name={`items.${index}.productId`}
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel className="text-xs">Produto/Serviço</FormLabel>
+                              <Select onValueChange={(value) => handleProductChange(value, index)} defaultValue={field.value}>
+                                <FormControl>
+                                  <SelectTrigger>
+                                    <SelectValue placeholder="Selecione um item" />
+                                  </SelectTrigger>
+                                </FormControl>
+                                <SelectContent>
+                                  {products.map(product => (
+                                    <SelectItem key={product.id} value={product.id} disabled={watchedItems.some((item, itemIndex) => item.productId === product.id && itemIndex !== index)}>
+                                      {product.name} - {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(product.price)}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                         <FormField
+                          control={form.control}
+                          name={`items.${index}.quantity`}
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel className="text-xs">Qtd.</FormLabel>
+                              <FormControl>
+                                <Input type="number" min="1" disabled={isService} {...field} />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        <Button type="button" variant="destructive" size="icon" onClick={() => remove(index)}>
+                          <Trash2 className="h-4 w-4" />
+                          <span className="sr-only">Remover item</span>
+                        </Button>
+                      </div>
+                   )
+                })}
                 <Button
                   type="button"
                   variant="outline"
