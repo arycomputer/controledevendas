@@ -88,6 +88,12 @@ function EditProductPageContent() {
 
   const productType = form.watch("type");
 
+  useEffect(() => {
+    if (productType === 'service') {
+        form.setValue('quantity', undefined, { shouldValidate: true });
+    }
+  }, [productType, form]);
+
   async function onSubmit(data: ProductFormValues) {
     try {
         const finalData: Partial<ProductFormValues> & { quantity?: number | ReturnType<typeof deleteField> } = {
@@ -96,9 +102,12 @@ function EditProductPageContent() {
 
         if (data.type === 'service') {
             finalData.quantity = deleteField();
+        } else {
+            // Ensure quantity is a number, defaulting to 0 if not set
+            finalData.quantity = data.quantity ?? 0;
         }
 
-        await updateDoc(productDocRef, finalData);
+        await updateDoc(productDocRef, finalData as { [x: string]: any });
         toast({
           title: "Sucesso!",
           description: `Produto "${data.name}" atualizado.`,
@@ -217,7 +226,7 @@ function EditProductPageContent() {
                         <FormItem>
                         <FormLabel>Quantidade em Estoque</FormLabel>
                         <FormControl>
-                            <Input type="number" placeholder="Ex: 100" {...field} />
+                            <Input type="number" placeholder="Ex: 100" {...field} onChange={e => field.onChange(parseInt(e.target.value, 10))} />
                         </FormControl>
                         <FormMessage />
                         </FormItem>
@@ -245,3 +254,5 @@ export default function EditProductPage() {
         </AuthGuard>
     )
 }
+
+    
