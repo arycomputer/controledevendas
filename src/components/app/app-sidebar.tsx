@@ -28,9 +28,6 @@ export function AppSidebar() {
       <SidebarHeader className="flex items-center justify-between">
         <div className="flex items-center gap-2">
            <SidebarTrigger />
-           <Link href="/dashboard" className="flex items-center gap-2">
-                <CircleDollarSign className="h-8 w-8 text-primary" />
-            </Link>
         </div>
       </SidebarHeader>
       <SidebarContent>
