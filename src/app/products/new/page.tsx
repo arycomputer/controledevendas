@@ -21,33 +21,48 @@ import { Textarea } from "@/components/ui/textarea"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { useToast } from "@/hooks/use-toast"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { useFirestore } from "@/firebase"
+import { useDoc, useFirestore, useMemoFirebase } from "@/firebase"
 import { doc, setDoc } from "firebase/firestore"
 import { AuthGuard } from "@/components/app/auth-guard"
+import { useMemo } from "react"
+import { Loader2 } from "lucide-react"
 
-const productFormSchema = z.object({
-  name: z.string().min(2, "O nome deve ter pelo menos 2 caracteres."),
-  description: z.string().min(5, "A descrição deve ter pelo menos 5 caracteres."),
-  price: z.coerce.number().min(0.01, "O preço deve ser maior que zero."),
-  quantity: z.coerce.number().int().min(0, "A quantidade não pode ser negativa.").optional(),
-  type: z.enum(['piece', 'service'], { required_error: "É necessário selecionar um tipo." }),
-}).refine(data => {
-    if (data.type === 'piece') {
-        return data.quantity !== undefined && data.quantity !== null && !isNaN(data.quantity);
-    }
-    return true;
-}, {
-    message: "Quantidade é obrigatória para peças.",
-    path: ["quantity"],
-});
+const createProductFormSchema = (settings: any) => {
+    const defaultSettings = { description: true, quantity: true };
+    const productSettings = settings?.product || defaultSettings;
 
+    return z.object({
+        name: z.string().min(2, "O nome deve ter pelo menos 2 caracteres."),
+        description: productSettings.description
+            ? z.string().min(5, "A descrição deve ter pelo menos 5 caracteres.")
+            : z.string().optional(),
+        price: z.coerce.number().min(0.01, "O preço deve ser maior que zero."),
+        type: z.enum(['piece', 'service'], { required_error: "É necessário selecionar um tipo." }),
+        quantity: productSettings.quantity
+            ? z.coerce.number().int().min(0, "A quantidade não pode ser negativa.").optional()
+            : z.any().optional(),
+    }).refine(data => {
+        if (data.type === 'piece' && productSettings.quantity) {
+            return data.quantity !== undefined && data.quantity !== null && !isNaN(data.quantity);
+        }
+        return true;
+    }, {
+        message: "Quantidade é obrigatória para peças.",
+        path: ["quantity"],
+    });
+};
 
-type ProductFormValues = z.infer<typeof productFormSchema>
 
 function NewProductPageContent() {
   const router = useRouter()
   const { toast } = useToast()
   const firestore = useFirestore();
+
+  const settingsDocRef = useMemoFirebase(() => doc(firestore, 'settings', 'registration'), [firestore]);
+  const { data: registrationSettings, isLoading: settingsLoading } = useDoc(settingsDocRef);
+  
+  const productFormSchema = useMemo(() => createProductFormSchema(registrationSettings), [registrationSettings]);
+  type ProductFormValues = z.infer<typeof productFormSchema>
 
   const form = useForm<ProductFormValues>({
     resolver: zodResolver(productFormSchema),
@@ -88,6 +103,16 @@ function NewProductPageContent() {
         })
     }
   }
+
+  if (settingsLoading) {
+    return (
+        <div className="flex justify-center items-center h-64">
+            <Loader2 className="h-8 w-8 animate-spin" />
+        </div>
+    )
+  }
+
+  const productSettings = registrationSettings?.product || { description: true, quantity: true };
 
   return (
     <Card className="max-w-2xl mx-auto">
@@ -132,19 +157,21 @@ function NewProductPageContent() {
                 </FormItem>
               )}
             />
-            <FormField
-              control={form.control}
-              name="description"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Descrição</FormLabel>
-                  <FormControl>
-                    <Textarea placeholder="Ex: Para motor 1.0 8v / Serviço de troca de óleo do motor" className="resize-none" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+            {productSettings.description && (
+                <FormField
+                control={form.control}
+                name="description"
+                render={({ field }) => (
+                    <FormItem>
+                    <FormLabel>Descrição</FormLabel>
+                    <FormControl>
+                        <Textarea placeholder="Ex: Para motor 1.0 8v / Serviço de troca de óleo do motor" className="resize-none" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                    </FormItem>
+                )}
+                />
+            )}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <FormField
                 control={form.control}
@@ -159,7 +186,7 @@ function NewProductPageContent() {
                     </FormItem>
                 )}
                 />
-                {productType === 'piece' && (
+                {productType === 'piece' && productSettings.quantity && (
                     <FormField
                     control={form.control}
                     name="quantity"
