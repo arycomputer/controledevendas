@@ -30,7 +30,6 @@ export function AppSidebar() {
            <SidebarTrigger />
            <Link href="/dashboard" className="flex items-center gap-2">
                 <CircleDollarSign className="h-8 w-8 text-primary" />
-                <span className="text-lg font-semibold text-foreground group-data-[collapsible=icon]:hidden">Controle de Vendas</span>
             </Link>
         </div>
       </SidebarHeader>
