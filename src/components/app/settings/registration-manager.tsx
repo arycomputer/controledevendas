@@ -39,6 +39,7 @@ export function RegistrationManager() {
         if (registrationSettings) {
             form.reset(registrationSettings);
         } else if (!isLoading) {
+            // Data is not loading and no settings exist, so create the doc
             form.reset(defaultSettings);
             setDoc(settingsDocRef, defaultSettings);
         }

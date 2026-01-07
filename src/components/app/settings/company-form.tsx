@@ -58,6 +58,7 @@ export function CompanyForm() {
       title: "Sucesso!",
       description: "Dados da empresa atualizados.",
     });
+    form.reset(data); // Mark form as not dirty
   }
 
   return (
