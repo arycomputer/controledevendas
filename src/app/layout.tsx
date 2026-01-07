@@ -4,6 +4,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { AppSidebar } from '@/components/app/app-sidebar';
 import { SidebarProvider, SidebarInset } from '@/components/ui/sidebar';
 import { CompanyProvider } from '@/context/company-context';
+import { FirebaseClientProvider } from '@/firebase';
 
 export const metadata: Metadata = {
   title: 'Controle de Vendas',
@@ -23,16 +24,18 @@ export default function RootLayout({
         <link href="https://fonts.googleapis.com/css2?family=PT+Sans:wght@400;700&display=swap" rel="stylesheet" />
       </head>
       <body className="font-body antialiased">
-        <CompanyProvider>
-          <SidebarProvider>
-            <AppSidebar />
-            <SidebarInset>
-              <div className="p-4 sm:p-6 lg:p-8">
-                {children}
-              </div>
-            </SidebarInset>
-          </SidebarProvider>
-        </CompanyProvider>
+        <FirebaseClientProvider>
+          <CompanyProvider>
+            <SidebarProvider>
+              <AppSidebar />
+              <SidebarInset>
+                <div className="p-4 sm:p-6 lg:p-8">
+                  {children}
+                </div>
+              </SidebarInset>
+            </SidebarProvider>
+          </CompanyProvider>
+        </FirebaseClientProvider>
         <Toaster />
       </body>
     </html>
