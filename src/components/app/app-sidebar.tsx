@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, Users, ShoppingCart, Package, Settings } from 'lucide-react';
+import { LayoutDashboard, Users, ShoppingCart, Package, Settings, LogOut } from 'lucide-react';
 import Image from 'next/image';
 import {
   Sidebar,
@@ -12,9 +12,12 @@ import {
   SidebarMenuItem,
   SidebarMenuButton,
   SidebarTrigger,
-  useSidebar
+  useSidebar,
+  SidebarFooter,
 } from '@/components/ui/sidebar';
 import { useCompany } from '@/context/company-context';
+import { useAuth } from '@/firebase';
+import { signOut } from 'firebase/auth';
 
 const navItems = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -28,6 +31,13 @@ export function AppSidebar() {
   const pathname = usePathname();
   const { state } = useSidebar();
   const { companyData } = useCompany();
+  const auth = useAuth();
+
+  const handleSignOut = () => {
+    if (auth) {
+        signOut(auth);
+    }
+  }
 
   return (
     <Sidebar variant="inset" collapsible="icon">
@@ -63,6 +73,16 @@ export function AppSidebar() {
           ))}
         </SidebarMenu>
       </SidebarContent>
+       <SidebarFooter>
+        <SidebarMenu>
+          <SidebarMenuItem>
+            <SidebarMenuButton onClick={handleSignOut} tooltip={{children: 'Sair'}}>
+              <LogOut className="h-5 w-5" />
+              <span>Sair</span>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+        </SidebarMenu>
+      </SidebarFooter>
     </Sidebar>
   );
 }
