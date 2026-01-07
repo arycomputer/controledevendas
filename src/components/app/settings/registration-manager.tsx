@@ -60,14 +60,13 @@ export function RegistrationManager() {
     );
 
     const watchedValues = form.watch();
-    const watchedValuesString = JSON.stringify(watchedValues);
 
     useEffect(() => {
         // Only save if the form is dirty to avoid saving on initial load
         if (form.formState.isDirty) {
           debouncedSave(watchedValues);
         }
-      }, [watchedValuesString, debouncedSave, form.formState.isDirty, watchedValues]);
+    }, [watchedValues, debouncedSave, form.formState.isDirty]);
 
 
     useEffect(() => {
