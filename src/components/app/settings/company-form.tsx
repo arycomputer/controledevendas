@@ -3,6 +3,8 @@
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
 import * as z from "zod"
+import Image from "next/image"
+
 import { useToast } from "@/hooks/use-toast"
 import { Button } from "@/components/ui/button"
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
@@ -44,6 +46,22 @@ export function CompanyForm() {
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 max-w-lg">
+        <FormItem>
+            <FormLabel>Logo da Empresa</FormLabel>
+            <div className="flex items-center gap-4">
+                <div className="relative h-20 w-20 rounded-md overflow-hidden border">
+                    <Image 
+                        src="https://picsum.photos/seed/logo/80/80" 
+                        alt="Logo da empresa" 
+                        fill 
+                        className="object-cover"
+                        data-ai-hint="logo placeholder"
+                    />
+                </div>
+                <Button type="button" variant="outline">Alterar Logo</Button>
+            </div>
+        </FormItem>
+
         <FormField
           control={form.control}
           name="name"
