@@ -51,11 +51,11 @@ export const CompanyProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
     if (remoteCompanyData) {
       setCompanyDataState(remoteCompanyData);
-    } else if (!isLoading && settingsDocRef) {
+    } else if (!isSettingsLoading && !isUserLoading && settingsDocRef) {
       // If no data is found and we are not loading, create the initial doc
       setDoc(settingsDocRef, defaultCompanyData);
     }
-  }, [remoteCompanyData, isLoading, settingsDocRef]);
+  }, [remoteCompanyData, isSettingsLoading, isUserLoading, settingsDocRef]);
   
   const handleSetCompanyData = async (data: Partial<CompanyData>) => {
     if (!settingsDocRef) return;
@@ -71,7 +71,7 @@ export const CompanyProvider = ({ children }: { children: ReactNode }) => {
   };
 
   // Do not render children until authentication and initial data fetch is complete
-  if (isLoading) {
+  if (isUserLoading || (user && isSettingsLoading)) {
      return (
         <div className="flex items-center justify-center h-screen">
             <Loader2 className="h-12 w-12 animate-spin" />

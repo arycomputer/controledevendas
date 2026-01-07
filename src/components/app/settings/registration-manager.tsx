@@ -62,11 +62,13 @@ export function RegistrationManager() {
     const watchedValues = form.watch();
 
     useEffect(() => {
-        // Only save if the form is dirty to avoid saving on initial load
-        if (form.formState.isDirty) {
-          debouncedSave(watchedValues);
-        }
-    }, [watchedValues, debouncedSave, form.formState.isDirty]);
+        const subscription = form.watch((value, { name, type }) => {
+            if (type === 'change' && form.formState.isDirty) {
+                debouncedSave(value as RegistrationFormValues);
+            }
+        });
+        return () => subscription.unsubscribe();
+    }, [form, debouncedSave]);
 
 
     useEffect(() => {
