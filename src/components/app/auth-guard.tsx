@@ -16,8 +16,8 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
     const auth = useAuth();
     const { toast } = useToast();
 
-    const [email, setEmail] = useState('admin@admin.com');
-    const [password, setPassword] = useState('123456');
+    const [email, setEmail] = useState('');
+    const [password, setPassword] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
     
     // Track login attempts to trigger account creation
@@ -53,7 +53,7 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
             const timeoutId = setTimeout(async () => {
                 // If after the timeout there's still no user, we assume the credentials were invalid
                 // because the user does not exist, and we proceed to create the account.
-                if (!auth.currentUser) {
+                if (!auth.currentUser && email === 'admin@admin.com') {
                     try {
                         await createUserWithEmailAndPassword(auth, email, password);
                         toast({
