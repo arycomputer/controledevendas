@@ -44,19 +44,28 @@ export const CompanyProvider = ({ children }: { children: ReactNode }) => {
   
   const { data: remoteCompanyData, isLoading: isSettingsLoading } = useDoc<CompanyData>(settingsDocRef);
   const [companyData, setCompanyDataState] = useState<CompanyData>(defaultCompanyData);
+  const [isInitialized, setIsInitialized] = useState(false);
 
-  const isLoading = isUserLoading || (user && isSettingsLoading);
+  const isLoading = isUserLoading || (user && isSettingsLoading && !isInitialized);
 
   useEffect(() => {
-    if (!isSettingsLoading) {
+    if (isUserLoading || isSettingsLoading || isInitialized) return;
+
+    if (user && settingsDocRef) {
       if (remoteCompanyData) {
         setCompanyDataState(remoteCompanyData);
-      } else if (user && settingsDocRef) {
+      } else {
         setDoc(settingsDocRef, defaultCompanyData);
         setCompanyDataState(defaultCompanyData);
       }
+      setIsInitialized(true);
+    } else if (!user) {
+        // Handle logout or user not available
+        setCompanyDataState(defaultCompanyData);
+        setIsInitialized(false); // Reset for next login
     }
-  }, [remoteCompanyData, isSettingsLoading, user, settingsDocRef]);
+    
+  }, [isUserLoading, isSettingsLoading, remoteCompanyData, user, settingsDocRef, isInitialized]);
   
   const handleSetCompanyData = async (data: Partial<CompanyData>) => {
     if (!settingsDocRef) return;
@@ -71,7 +80,7 @@ export const CompanyProvider = ({ children }: { children: ReactNode }) => {
     isLoading: isLoading,
   };
 
-  if (isUserLoading || (user && isSettingsLoading)) {
+  if (isLoading) {
      return (
         <div className="flex items-center justify-center h-screen">
             <Loader2 className="h-12 w-12 animate-spin" />

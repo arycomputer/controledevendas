@@ -7,7 +7,7 @@ import { Switch } from "@/components/ui/switch"
 import { Separator } from "@/components/ui/separator"
 import { useFirestore, useDoc, useMemoFirebase } from "@/firebase"
 import { doc, setDoc } from "firebase/firestore"
-import { useEffect } from "react"
+import { useEffect, useState } from "react"
 import { Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 
@@ -29,22 +29,26 @@ export function RegistrationManager() {
     const { toast } = useToast()
     const firestore = useFirestore()
     const settingsDocRef = useMemoFirebase(() => doc(firestore, 'settings', 'registration'), [firestore]);
-    const { data: registrationSettings, isLoading } = useDoc<RegistrationFormValues>(settingsDocRef);
+    const { data: registrationSettings, isLoading: isSettingsLoading } = useDoc<RegistrationFormValues>(settingsDocRef);
     
+    const [isInitialized, setIsInitialized] = useState(false);
+
     const form = useForm<RegistrationFormValues>({
         defaultValues: defaultSettings
     })
 
     useEffect(() => {
-        if (!isLoading) {
-            if (registrationSettings) {
-                form.reset(registrationSettings);
-            } else {
-                setDoc(settingsDocRef, defaultSettings);
-                form.reset(defaultSettings);
-            }
+        if (isSettingsLoading || isInitialized) return;
+
+        if (registrationSettings) {
+            form.reset(registrationSettings);
+        } else if (firestore) {
+            setDoc(settingsDocRef, defaultSettings);
+            form.reset(defaultSettings);
         }
-    }, [registrationSettings, isLoading, form, settingsDocRef]);
+        setIsInitialized(true);
+
+    }, [registrationSettings, isSettingsLoading, form, settingsDocRef, firestore, isInitialized]);
     
     async function onSubmit(data: RegistrationFormValues) {
         try {
@@ -64,6 +68,7 @@ export function RegistrationManager() {
         }
     }
 
+    const isLoading = isSettingsLoading && !isInitialized;
 
     if (isLoading) {
         return (
