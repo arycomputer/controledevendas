@@ -46,25 +46,39 @@ export const CompanyProvider = ({ children }: { children: ReactNode }) => {
   const [companyData, setCompanyDataState] = useState<CompanyData>(defaultCompanyData);
   const [isInitialized, setIsInitialized] = useState(false);
 
-  const isLoading = isUserLoading || (user && isSettingsLoading && !isInitialized);
+  const isLoading = isUserLoading || (user && !isInitialized);
 
   useEffect(() => {
-    if (isUserLoading || isSettingsLoading || isInitialized) return;
-
-    if (user && settingsDocRef) {
-      if (remoteCompanyData) {
-        setCompanyDataState(remoteCompanyData);
-      } else {
-        setDoc(settingsDocRef, defaultCompanyData);
-        setCompanyDataState(defaultCompanyData);
-      }
-      setIsInitialized(true);
-    } else if (!user) {
-        // Handle logout or user not available
-        setCompanyDataState(defaultCompanyData);
-        setIsInitialized(false); // Reset for next login
+    // Prevent running initialization multiple times
+    if (isUserLoading || isSettingsLoading || isInitialized || !user) {
+        if (!user && !isUserLoading) {
+            // If user logs out, reset initialization state
+            setCompanyDataState(defaultCompanyData);
+            setIsInitialized(false);
+        }
+        return;
     }
+
+    // Mark as initialized to prevent re-running
+    setIsInitialized(true);
     
+    if (remoteCompanyData) {
+      // If data is found in Firestore, use it
+      setCompanyDataState(remoteCompanyData);
+    } else if (settingsDocRef) {
+      // If no data, it means the document doesn't exist. Create it.
+      setDoc(settingsDocRef, defaultCompanyData)
+        .then(() => {
+          // After creating, set the local state to the default data.
+          setCompanyDataState(defaultCompanyData);
+        })
+        .catch((error) => {
+          console.error("Failed to create default company data:", error);
+          // Fallback to default data even if Firestore write fails
+          setCompanyDataState(defaultCompanyData);
+        });
+    }
+
   }, [isUserLoading, isSettingsLoading, remoteCompanyData, user, settingsDocRef, isInitialized]);
   
   const handleSetCompanyData = async (data: Partial<CompanyData>) => {

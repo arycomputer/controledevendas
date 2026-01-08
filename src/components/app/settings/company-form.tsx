@@ -17,7 +17,7 @@ const companyFormSchema = z.object({
   logo: z.string().optional(),
   document: z.string().optional(),
   phone: z.string().optional(),
-  email: z.string().email("E-mail inválido.").optional(),
+  email: z.string().email("E-mail inválido.").optional().or(z.literal('')),
   address: z.string().optional(),
 })
 

@@ -38,16 +38,27 @@ export function RegistrationManager() {
     })
 
     useEffect(() => {
+        // Prevent running initialization logic multiple times
         if (isSettingsLoading || isInitialized) return;
 
-        if (registrationSettings) {
-            form.reset(registrationSettings);
-        } else if (firestore) {
-            setDoc(settingsDocRef, defaultSettings);
-            form.reset(defaultSettings);
-        }
+        // Mark as initialized to block this effect from re-running
         setIsInitialized(true);
 
+        if (registrationSettings) {
+            // If data exists, reset the form with it
+            form.reset(registrationSettings);
+        } else if (firestore) {
+            // If no data and not loading, it means the document doesn't exist.
+            // Create it with default settings.
+            setDoc(settingsDocRef, defaultSettings)
+                .then(() => {
+                    // Reset the form with the newly created default settings
+                    form.reset(defaultSettings);
+                })
+                .catch((error) => {
+                    console.error("Failed to create default registration settings:", error);
+                });
+        }
     }, [registrationSettings, isSettingsLoading, form, settingsDocRef, firestore, isInitialized]);
     
     async function onSubmit(data: RegistrationFormValues) {
