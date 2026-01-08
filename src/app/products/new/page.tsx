@@ -161,8 +161,7 @@ function NewProductPageContent() {
               control={form.control}
               name="description"
               render={({ field }) => (
-                <>
-                {productSettings.description && (
+                productSettings.description && (
                     <FormItem>
                     <FormLabel>Descrição</FormLabel>
                     <FormControl>
@@ -170,8 +169,7 @@ function NewProductPageContent() {
                     </FormControl>
                     <FormMessage />
                     </FormItem>
-                )}
-                </>
+                )
               )}
             />
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -192,8 +190,7 @@ function NewProductPageContent() {
                   control={form.control}
                   name="quantity"
                   render={({ field }) => (
-                    <>
-                    {productType === 'piece' && productSettings.quantity && (
+                    productType === 'piece' && productSettings.quantity && (
                         <FormItem>
                         <FormLabel>Quantidade em Estoque</FormLabel>
                         <FormControl>
@@ -201,8 +198,7 @@ function NewProductPageContent() {
                         </FormControl>
                         <FormMessage />
                         </FormItem>
-                    )}
-                    </>
+                    )
                   )}
                 />
             </div>
