@@ -20,7 +20,7 @@ import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { useToast } from "@/hooks/use-toast"
 import { useDoc, useFirestore, useMemoFirebase } from "@/firebase"
-import { useMemo } from "react"
+import { useEffect, useMemo } from "react"
 import { Loader2 } from "lucide-react"
 
 const createCustomerFormSchema = (settings: any) => {
@@ -63,6 +63,12 @@ export default function NewCustomerPage() {
       address: "",
     },
   })
+
+  useEffect(() => {
+    if (registrationSettings) {
+        form.reset();
+    }
+  }, [registrationSettings, form]);
 
   async function onSubmit(data: CustomerFormValues) {
     if (!firestore) return;
@@ -138,8 +144,7 @@ export default function NewCustomerPage() {
                 control={form.control}
                 name="phone"
                 render={({ field }) => (
-                  <>
-                  {customerSettings.phone && (
+                  customerSettings.phone && (
                     <FormItem>
                         <FormLabel>Telefone</FormLabel>
                         <FormControl>
@@ -147,8 +152,7 @@ export default function NewCustomerPage() {
                         </FormControl>
                         <FormMessage />
                     </FormItem>
-                  )}
-                  </>
+                  )
                 )}
               />
             </div>
@@ -156,8 +160,7 @@ export default function NewCustomerPage() {
               control={form.control}
               name="document"
               render={({ field }) => (
-                <>
-                  {customerSettings.document && (
+                  customerSettings.document && (
                     <FormItem>
                       <FormLabel>CPF/CNPJ</FormLabel>
                       <FormControl>
@@ -165,16 +168,14 @@ export default function NewCustomerPage() {
                       </FormControl>
                       <FormMessage />
                     </FormItem>
-                  )}
-                </>
+                  )
               )}
             />
             <FormField
               control={form.control}
               name="address"
               render={({ field }) => (
-                <>
-                  {customerSettings.address && (
+                  customerSettings.address && (
                     <FormItem>
                       <FormLabel>Endereço</FormLabel>
                       <FormControl>
@@ -182,8 +183,7 @@ export default function NewCustomerPage() {
                       </FormControl>
                       <FormMessage />
                     </FormItem>
-                  )}
-                </>
+                  )
               )}
             />
             <div className="flex justify-end gap-2 pt-4">

@@ -71,7 +71,7 @@ export default function EditCustomerPage() {
   })
 
   useEffect(() => {
-    if (customer) {
+    if (customer && registrationSettings) {
       form.reset({
         name: customer.name,
         email: customer.email,
@@ -80,7 +80,7 @@ export default function EditCustomerPage() {
         address: customer.address
       });
     }
-  }, [customer, form]);
+  }, [customer, registrationSettings, form]);
 
   async function onSubmit(data: CustomerFormValues) {
     try {
@@ -164,8 +164,7 @@ export default function EditCustomerPage() {
                 control={form.control}
                 name="phone"
                 render={({ field }) => (
-                  <>
-                  {customerSettings.phone && (
+                  customerSettings.phone && (
                     <FormItem>
                       <FormLabel>Telefone</FormLabel>
                       <FormControl>
@@ -173,8 +172,7 @@ export default function EditCustomerPage() {
                       </FormControl>
                       <FormMessage />
                     </FormItem>
-                  )}
-                  </>
+                  )
                 )}
               />
             </div>
@@ -182,8 +180,7 @@ export default function EditCustomerPage() {
               control={form.control}
               name="document"
               render={({ field }) => (
-                <>
-                  {customerSettings.document && (
+                  customerSettings.document && (
                     <FormItem>
                     <FormLabel>CPF/CNPJ</FormLabel>
                     <FormControl>
@@ -191,16 +188,14 @@ export default function EditCustomerPage() {
                     </FormControl>
                     <FormMessage />
                     </FormItem>
-                  )}
-                </>
+                  )
               )}
             />
             <FormField
               control={form.control}
               name="address"
               render={({ field }) => (
-                <>
-                  {customerSettings.address && (
+                  customerSettings.address && (
                     <FormItem>
                     <FormLabel>Endereço</FormLabel>
                     <FormControl>
@@ -208,8 +203,7 @@ export default function EditCustomerPage() {
                     </FormControl>
                     <FormMessage />
                     </FormItem>
-                  )}
-                </>
+                  )
               )}
             />
             <div className="flex justify-end gap-2 pt-4">
