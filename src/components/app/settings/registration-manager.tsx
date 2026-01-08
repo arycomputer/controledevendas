@@ -36,12 +36,13 @@ export function RegistrationManager() {
     })
 
     useEffect(() => {
-        if (registrationSettings) {
-            form.reset(registrationSettings);
-        } else if (!isLoading && !registrationSettings) {
-            // Data is not loading and no settings exist, so create the doc and set form
-            form.reset(defaultSettings);
-            setDoc(settingsDocRef, defaultSettings);
+        if (!isLoading) {
+            if (registrationSettings) {
+                form.reset(registrationSettings);
+            } else {
+                setDoc(settingsDocRef, defaultSettings);
+                form.reset(defaultSettings);
+            }
         }
     }, [registrationSettings, isLoading, form, settingsDocRef]);
     

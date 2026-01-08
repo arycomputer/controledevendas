@@ -35,7 +35,6 @@ export const CompanyProvider = ({ children }: { children: ReactNode }) => {
   const { user, isUserLoading } = useUser();
   const firestore = useFirestore();
   
-  // Only create the doc ref if the user is logged in.
   const settingsDocRef = useMemoFirebase(() => {
     if (firestore && user) {
         return doc(firestore, 'settings', 'companyData');
@@ -49,12 +48,13 @@ export const CompanyProvider = ({ children }: { children: ReactNode }) => {
   const isLoading = isUserLoading || (user && isSettingsLoading);
 
   useEffect(() => {
-    if (remoteCompanyData) {
-      setCompanyDataState(remoteCompanyData);
-    } else if (!isSettingsLoading && user && settingsDocRef) {
-      // If no data is found and we are not loading, create the initial doc and set local state
-      setDoc(settingsDocRef, defaultCompanyData);
-      setCompanyDataState(defaultCompanyData);
+    if (!isSettingsLoading) {
+      if (remoteCompanyData) {
+        setCompanyDataState(remoteCompanyData);
+      } else if (user && settingsDocRef) {
+        setDoc(settingsDocRef, defaultCompanyData);
+        setCompanyDataState(defaultCompanyData);
+      }
     }
   }, [remoteCompanyData, isSettingsLoading, user, settingsDocRef]);
   
@@ -71,7 +71,6 @@ export const CompanyProvider = ({ children }: { children: ReactNode }) => {
     isLoading: isLoading,
   };
 
-  // Do not render children until authentication and initial data fetch is complete
   if (isUserLoading || (user && isSettingsLoading)) {
      return (
         <div className="flex items-center justify-center h-screen">
