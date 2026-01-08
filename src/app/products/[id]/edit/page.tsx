@@ -218,21 +218,23 @@ function EditProductPageContent() {
                     </FormItem>
                 )}
                 />
-                {productType === 'piece' && productSettings.quantity && (
-                    <FormField
-                    control={form.control}
-                    name="quantity"
-                    render={({ field }) => (
-                        <FormItem>
-                        <FormLabel>Quantidade em Estoque</FormLabel>
-                        <FormControl>
-                            <Input type="number" placeholder="Ex: 100" {...field} onChange={e => field.onChange(parseInt(e.target.value, 10))} />
-                        </FormControl>
-                        <FormMessage />
-                        </FormItem>
-                    )}
-                    />
-                )}
+                <FormField
+                  control={form.control}
+                  name="quantity"
+                  render={({ field }) => (
+                    <>
+                      {productType === 'piece' && productSettings.quantity && (
+                          <FormItem>
+                          <FormLabel>Quantidade em Estoque</FormLabel>
+                          <FormControl>
+                              <Input type="number" placeholder="Ex: 100" {...field} onChange={e => field.onChange(parseInt(e.target.value, 10))} />
+                          </FormControl>
+                          <FormMessage />
+                          </FormItem>
+                      )}
+                    </>
+                  )}
+                />
             </div>
             <div className="flex justify-end gap-2 pt-4">
                 <Button type="button" variant="outline" onClick={() => router.push('/products')}>
@@ -254,5 +256,3 @@ export default function EditProductPage() {
         </AuthGuard>
     )
 }
-
-    
