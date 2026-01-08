@@ -6,7 +6,7 @@ import * as z from "zod"
 import { useRouter, useParams } from "next/navigation"
 import { doc, updateDoc } from 'firebase/firestore'
 import { useDoc, useFirestore, useMemoFirebase } from "@/firebase"
-import { useEffect, useMemo } from "react"
+import { useEffect } from "react"
 
 import { Button } from "@/components/ui/button"
 import {
@@ -22,25 +22,15 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { useToast } from "@/hooks/use-toast"
 import { Loader2 } from "lucide-react"
 
-const createCustomerFormSchema = (settings: any) => {
-    const defaultSettings = { phone: true, document: true, address: true };
-    const customerSettings = settings?.customer || defaultSettings;
+const customerFormSchema = z.object({
+    name: z.string().min(2, "O nome deve ter pelo menos 2 caracteres."),
+    email: z.string().email("Por favor, insira um e-mail válido."),
+    phone: z.string().optional(),
+    document: z.string().optional(),
+    address: z.string().optional(),
+});
 
-    return z.object({
-        name: z.string().min(2, "O nome deve ter pelo menos 2 caracteres."),
-        email: z.string().email("Por favor, insira um e-mail válido."),
-        phone: customerSettings.phone 
-            ? z.string().min(10, "O telefone deve ter pelo menos 10 dígitos.") 
-            : z.string().optional(),
-        document: customerSettings.document 
-            ? z.string().min(11, "O documento (CPF/CNPJ) é obrigatório.")
-            : z.string().optional(),
-        address: customerSettings.address 
-            ? z.string().min(5, "O endereço deve ter pelo menos 5 caracteres.")
-            : z.string().optional(),
-    });
-};
-
+type CustomerFormValues = z.infer<typeof customerFormSchema>
 
 export default function EditCustomerPage() {
   const router = useRouter()
@@ -56,11 +46,25 @@ export default function EditCustomerPage() {
   const customerDocRef = useMemoFirebase(() => doc(firestore, 'customers', customerId), [firestore, customerId]);
   const { data: customer, isLoading: customerLoading } = useDoc(customerDocRef);
 
-  const customerFormSchema = useMemo(() => createCustomerFormSchema(registrationSettings), [registrationSettings]);
-  type CustomerFormValues = z.infer<typeof customerFormSchema>
-
   const form = useForm<CustomerFormValues>({
-    resolver: zodResolver(customerFormSchema),
+    resolver: zodResolver(
+      z.object({
+        name: z.string().min(2, "O nome deve ter pelo menos 2 caracteres."),
+        email: z.string().email("Por favor, insira um e-mail válido."),
+        phone: z.string().optional(),
+        document: z.string().optional(),
+        address: z.string().optional(),
+      }).refine(data => !registrationSettings?.customer?.phone || (data.phone && data.phone.length >= 10), {
+        message: "O telefone deve ter pelo menos 10 dígitos.",
+        path: ["phone"],
+      }).refine(data => !registrationSettings?.customer?.document || (data.document && data.document.length >= 11), {
+        message: "O documento (CPF/CNPJ) é obrigatório.",
+        path: ["document"],
+      }).refine(data => !registrationSettings?.customer?.address || (data.address && data.address.length >= 5), {
+        message: "O endereço deve ter pelo menos 5 caracteres.",
+        path: ["address"],
+      })
+    ),
     defaultValues: {
       name: "",
       email: "",
@@ -71,7 +75,7 @@ export default function EditCustomerPage() {
   })
 
   useEffect(() => {
-    if (customer && registrationSettings) {
+    if (customer) {
       form.reset({
         name: customer.name,
         email: customer.email,
@@ -80,7 +84,7 @@ export default function EditCustomerPage() {
         address: customer.address
       });
     }
-  }, [customer, registrationSettings, form]);
+  }, [customer, form]);
 
   async function onSubmit(data: CustomerFormValues) {
     try {
@@ -160,11 +164,11 @@ export default function EditCustomerPage() {
                   </FormItem>
                 )}
               />
-              <FormField
-                control={form.control}
-                name="phone"
-                render={({ field }) => (
-                  customerSettings.phone ? (
+              {customerSettings.phone && (
+                <FormField
+                  control={form.control}
+                  name="phone"
+                  render={({ field }) => (
                     <FormItem>
                       <FormLabel>Telefone</FormLabel>
                       <FormControl>
@@ -172,40 +176,40 @@ export default function EditCustomerPage() {
                       </FormControl>
                       <FormMessage />
                     </FormItem>
-                  ) : null
-                )}
-              />
+                  )}
+                />
+              )}
             </div>
-            <FormField
-              control={form.control}
-              name="document"
-              render={({ field }) => (
-                  customerSettings.document ? (
-                    <FormItem>
+            {customerSettings.document && (
+              <FormField
+                control={form.control}
+                name="document"
+                render={({ field }) => (
+                  <FormItem>
                     <FormLabel>CPF/CNPJ</FormLabel>
                     <FormControl>
                         <Input placeholder="Ex: 123.456.789-00" {...field} />
                     </FormControl>
                     <FormMessage />
-                    </FormItem>
-                  ) : null
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="address"
-              render={({ field }) => (
-                  customerSettings.address ? (
-                    <FormItem>
+                  </FormItem>
+                )}
+              />
+            )}
+            {customerSettings.address && (
+              <FormField
+                control={form.control}
+                name="address"
+                render={({ field }) => (
+                  <FormItem>
                     <FormLabel>Endereço</FormLabel>
                     <FormControl>
                         <Input placeholder="Ex: Rua das Flores, 123, São Paulo - SP" {...field} />
                     </FormControl>
                     <FormMessage />
-                    </FormItem>
-                  ) : null
-              )}
-            />
+                  </FormItem>
+                )}
+              />
+            )}
             <div className="flex justify-end gap-2 pt-4">
                 <Button type="button" variant="outline" onClick={() => router.push('/customers')}>
                     Cancelar

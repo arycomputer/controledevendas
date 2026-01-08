@@ -27,30 +27,15 @@ import { AuthGuard } from "@/components/app/auth-guard"
 import { useMemo } from "react"
 import { Loader2 } from "lucide-react"
 
-const createProductFormSchema = (settings: any) => {
-    const defaultSettings = { description: true, quantity: true };
-    const productSettings = settings?.product || defaultSettings;
+type ProductFormValues = z.infer<typeof productFormSchema>;
 
-    return z.object({
-        name: z.string().min(2, "O nome deve ter pelo menos 2 caracteres."),
-        description: productSettings.description
-            ? z.string().min(5, "A descrição deve ter pelo menos 5 caracteres.")
-            : z.string().optional(),
-        price: z.coerce.number().min(0.01, "O preço deve ser maior que zero."),
-        type: z.enum(['piece', 'service'], { required_error: "É necessário selecionar um tipo." }),
-        quantity: productSettings.quantity
-            ? z.coerce.number().int().min(0, "A quantidade não pode ser negativa.").optional()
-            : z.any().optional(),
-    }).refine(data => {
-        if (data.type === 'piece' && productSettings.quantity) {
-            return data.quantity !== undefined && data.quantity !== null && !isNaN(data.quantity);
-        }
-        return true;
-    }, {
-        message: "Quantidade é obrigatória para peças.",
-        path: ["quantity"],
-    });
-};
+const productFormSchema = z.object({
+    name: z.string().min(2, "O nome deve ter pelo menos 2 caracteres."),
+    description: z.string().optional(),
+    price: z.coerce.number().min(0.01, "O preço deve ser maior que zero."),
+    type: z.enum(['piece', 'service'], { required_error: "É necessário selecionar um tipo." }),
+    quantity: z.any().optional(),
+});
 
 
 function NewProductPageContent() {
@@ -61,11 +46,27 @@ function NewProductPageContent() {
   const settingsDocRef = useMemoFirebase(() => doc(firestore, 'settings', 'registration'), [firestore]);
   const { data: registrationSettings, isLoading: settingsLoading } = useDoc(settingsDocRef);
   
-  const productFormSchema = useMemo(() => createProductFormSchema(registrationSettings), [registrationSettings]);
-  type ProductFormValues = z.infer<typeof productFormSchema>
-
   const form = useForm<ProductFormValues>({
-    resolver: zodResolver(productFormSchema),
+    resolver: zodResolver(
+      z.object({
+        name: z.string().min(2, "O nome deve ter pelo menos 2 caracteres."),
+        description: z.string().optional(),
+        price: z.coerce.number().min(0.01, "O preço deve ser maior que zero."),
+        type: z.enum(['piece', 'service'], { required_error: "É necessário selecionar um tipo." }),
+        quantity: z.any().optional(),
+      }).refine(data => !registrationSettings?.product?.description || (data.description && data.description.length >= 5), {
+        message: "A descrição deve ter pelo menos 5 caracteres.",
+        path: ["description"],
+      }).refine(data => {
+        if (data.type === 'piece' && registrationSettings?.product?.quantity) {
+          return data.quantity !== undefined && data.quantity !== null && data.quantity !== '' && !isNaN(data.quantity);
+        }
+        return true;
+      }, {
+        message: "Quantidade é obrigatória para peças.",
+        path: ["quantity"],
+      })
+    ),
     defaultValues: {
       name: "",
       description: "",
@@ -84,7 +85,7 @@ function NewProductPageContent() {
         const productData = {
             ...data,
             id: productId,
-            quantity: data.type === 'piece' ? data.quantity : undefined
+            quantity: data.type === 'piece' ? (data.quantity ? Number(data.quantity) : 0) : undefined
         };
         const productDocRef = doc(firestore, "parts", productId);
         await setDoc(productDocRef, productData);
@@ -157,21 +158,21 @@ function NewProductPageContent() {
                 </FormItem>
               )}
             />
-            <FormField
-              control={form.control}
-              name="description"
-              render={({ field }) => (
-                productSettings.description ? (
-                    <FormItem>
+            {productSettings.description && (
+              <FormField
+                control={form.control}
+                name="description"
+                render={({ field }) => (
+                  <FormItem>
                     <FormLabel>Descrição</FormLabel>
                     <FormControl>
                         <Textarea placeholder="Ex: Para motor 1.0 8v / Serviço de troca de óleo do motor" className="resize-none" {...field} />
                     </FormControl>
                     <FormMessage />
-                    </FormItem>
-                ) : null
-              )}
-            />
+                  </FormItem>
+                )}
+              />
+            )}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <FormField
                 control={form.control}
@@ -186,24 +187,27 @@ function NewProductPageContent() {
                     </FormItem>
                 )}
                 />
-                <FormField
-                  control={form.control}
-                  name="quantity"
-                  render={({ field }) => (
-                    productType === 'piece' && productSettings.quantity ? (
-                        <FormItem>
+                {(productType === 'piece' && productSettings.quantity) && (
+                  <FormField
+                    control={form.control}
+                    name="quantity"
+                    render={({ field }) => (
+                      <FormItem>
                         <FormLabel>Quantidade em Estoque</FormLabel>
                         <FormControl>
-                            <Input type="number" placeholder="Ex: 100" {...field} value={field.value ?? ''} onChange={e => {
-                                  const value = parseInt(e.target.value, 10);
-                                  field.onChange(isNaN(value) ? '' : value);
-                              }}/>
+                          <Input
+                            type="number"
+                            placeholder="Ex: 100"
+                            {...field}
+                            onChange={e => field.onChange(e.target.value === '' ? '' : parseInt(e.target.value, 10))}
+                            value={field.value ?? ''}
+                          />
                         </FormControl>
                         <FormMessage />
-                        </FormItem>
-                    ) : null
-                  )}
-                />
+                      </FormItem>
+                    )}
+                  />
+                )}
             </div>
             <div className="flex justify-end gap-2 pt-4">
                 <Button type="button" variant="outline" onClick={() => router.back()}>
