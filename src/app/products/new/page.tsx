@@ -157,11 +157,12 @@ function NewProductPageContent() {
                 </FormItem>
               )}
             />
-            {productSettings.description && (
-                <FormField
-                control={form.control}
-                name="description"
-                render={({ field }) => (
+            <FormField
+              control={form.control}
+              name="description"
+              render={({ field }) => (
+                <>
+                {productSettings.description && (
                     <FormItem>
                     <FormLabel>Descrição</FormLabel>
                     <FormControl>
@@ -170,8 +171,9 @@ function NewProductPageContent() {
                     <FormMessage />
                     </FormItem>
                 )}
-                />
-            )}
+                </>
+              )}
+            />
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <FormField
                 control={form.control}
@@ -186,11 +188,12 @@ function NewProductPageContent() {
                     </FormItem>
                 )}
                 />
-                {productType === 'piece' && productSettings.quantity && (
-                    <FormField
-                    control={form.control}
-                    name="quantity"
-                    render={({ field }) => (
+                <FormField
+                  control={form.control}
+                  name="quantity"
+                  render={({ field }) => (
+                    <>
+                    {productType === 'piece' && productSettings.quantity && (
                         <FormItem>
                         <FormLabel>Quantidade em Estoque</FormLabel>
                         <FormControl>
@@ -199,8 +202,9 @@ function NewProductPageContent() {
                         <FormMessage />
                         </FormItem>
                     )}
-                    />
-                )}
+                    </>
+                  )}
+                />
             </div>
             <div className="flex justify-end gap-2 pt-4">
                 <Button type="button" variant="outline" onClick={() => router.back()}>

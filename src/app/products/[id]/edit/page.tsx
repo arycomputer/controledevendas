@@ -189,21 +189,23 @@ function EditProductPageContent() {
                 </FormItem>
               )}
             />
-            {productSettings.description && (
-                <FormField
-                control={form.control}
-                name="description"
-                render={({ field }) => (
-                    <FormItem>
-                    <FormLabel>Descrição</FormLabel>
-                    <FormControl>
-                        <Textarea placeholder="Ex: Para motor 1.0 8v / Serviço de troca de óleo do motor" className="resize-none" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                    </FormItem>
-                )}
-                />
-            )}
+            <FormField
+              control={form.control}
+              name="description"
+              render={({ field }) => (
+                  <>
+                  {productSettings.description && (
+                      <FormItem>
+                      <FormLabel>Descrição</FormLabel>
+                      <FormControl>
+                          <Textarea placeholder="Ex: Para motor 1.0 8v / Serviço de troca de óleo do motor" className="resize-none" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                      </FormItem>
+                  )}
+                  </>
+              )}
+            />
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <FormField
                 control={form.control}
@@ -227,7 +229,7 @@ function EditProductPageContent() {
                           <FormItem>
                           <FormLabel>Quantidade em Estoque</FormLabel>
                           <FormControl>
-                              <Input type="number" placeholder="Ex: 100" {...field} onChange={e => field.onChange(parseInt(e.target.value, 10))} />
+                              <Input type="number" placeholder="Ex: 100" {...field} value={field.value ?? ''} onChange={e => field.onChange(e.target.value === '' ? undefined : parseInt(e.target.value, 10))} />
                           </FormControl>
                           <FormMessage />
                           </FormItem>

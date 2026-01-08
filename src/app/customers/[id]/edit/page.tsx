@@ -160,11 +160,12 @@ export default function EditCustomerPage() {
                   </FormItem>
                 )}
               />
-              {customerSettings.phone && (
-                <FormField
-                  control={form.control}
-                  name="phone"
-                  render={({ field }) => (
+              <FormField
+                control={form.control}
+                name="phone"
+                render={({ field }) => (
+                  <>
+                  {customerSettings.phone && (
                     <FormItem>
                       <FormLabel>Telefone</FormLabel>
                       <FormControl>
@@ -173,14 +174,16 @@ export default function EditCustomerPage() {
                       <FormMessage />
                     </FormItem>
                   )}
-                />
-              )}
+                  </>
+                )}
+              />
             </div>
-            {customerSettings.document && (
-                <FormField
-                control={form.control}
-                name="document"
-                render={({ field }) => (
+            <FormField
+              control={form.control}
+              name="document"
+              render={({ field }) => (
+                <>
+                  {customerSettings.document && (
                     <FormItem>
                     <FormLabel>CPF/CNPJ</FormLabel>
                     <FormControl>
@@ -188,14 +191,16 @@ export default function EditCustomerPage() {
                     </FormControl>
                     <FormMessage />
                     </FormItem>
-                )}
-                />
-            )}
-            {customerSettings.address && (
-                <FormField
-                control={form.control}
-                name="address"
-                render={({ field }) => (
+                  )}
+                </>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="address"
+              render={({ field }) => (
+                <>
+                  {customerSettings.address && (
                     <FormItem>
                     <FormLabel>Endereço</FormLabel>
                     <FormControl>
@@ -203,9 +208,10 @@ export default function EditCustomerPage() {
                     </FormControl>
                     <FormMessage />
                     </FormItem>
-                )}
-                />
-            )}
+                  )}
+                </>
+              )}
+            />
             <div className="flex justify-end gap-2 pt-4">
                 <Button type="button" variant="outline" onClick={() => router.push('/customers')}>
                     Cancelar
