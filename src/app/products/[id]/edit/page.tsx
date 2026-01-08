@@ -193,7 +193,7 @@ function EditProductPageContent() {
               control={form.control}
               name="description"
               render={({ field }) => (
-                  productSettings.description && (
+                  productSettings.description ? (
                       <FormItem>
                       <FormLabel>Descrição</FormLabel>
                       <FormControl>
@@ -201,7 +201,7 @@ function EditProductPageContent() {
                       </FormControl>
                       <FormMessage />
                       </FormItem>
-                  )
+                  ) : null
               )}
             />
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -222,15 +222,18 @@ function EditProductPageContent() {
                   control={form.control}
                   name="quantity"
                   render={({ field }) => (
-                      productType === 'piece' && productSettings.quantity && (
+                      productType === 'piece' && productSettings.quantity ? (
                           <FormItem>
                           <FormLabel>Quantidade em Estoque</FormLabel>
                           <FormControl>
-                              <Input type="number" placeholder="Ex: 100" {...field} value={field.value ?? ''} onChange={e => field.onChange(e.target.value === '' ? undefined : parseInt(e.target.value, 10))} />
+                              <Input type="number" placeholder="Ex: 100" {...field} value={field.value ?? ''} onChange={e => {
+                                  const value = parseInt(e.target.value, 10);
+                                  field.onChange(isNaN(value) ? '' : value);
+                              }} />
                           </FormControl>
                           <FormMessage />
                           </FormItem>
-                      )
+                      ) : null
                   )}
                 />
             </div>
