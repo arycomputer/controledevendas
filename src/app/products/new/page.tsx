@@ -194,7 +194,10 @@ function NewProductPageContent() {
                         <FormItem>
                         <FormLabel>Quantidade em Estoque</FormLabel>
                         <FormControl>
-                            <Input type="number" placeholder="Ex: 100" {...field} />
+                            <Input type="number" placeholder="Ex: 100" {...field} value={field.value ?? ''} onChange={e => {
+                                  const value = parseInt(e.target.value, 10);
+                                  field.onChange(isNaN(value) ? '' : value);
+                              }}/>
                         </FormControl>
                         <FormMessage />
                         </FormItem>
