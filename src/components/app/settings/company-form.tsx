@@ -26,20 +26,19 @@ type CompanyFormValues = z.infer<typeof companyFormSchema>
 export function CompanyForm() {
   const { toast } = useToast()
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const { companyData, setCompanyData, isLoading } = useCompany();
+  const { savedCompanyData, setCompanyData, saveCompanyData } = useCompany(); // Use savedCompanyData for initialization
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
 
   const form = useForm<CompanyFormValues>({
     resolver: zodResolver(companyFormSchema),
-    defaultValues: companyData,
+    defaultValues: savedCompanyData,
   })
   
   useEffect(() => {
-    if (companyData) {
-        form.reset(companyData);
-        setLogoPreview(companyData.logo || null);
-    }
-  }, [companyData, form]);
+    // This effect now syncs the form with the definitive, saved data from context.
+    form.reset(savedCompanyData);
+    setLogoPreview(savedCompanyData.logo || null);
+  }, [savedCompanyData, form]);
 
   const handleLogoChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -49,18 +48,37 @@ export function CompanyForm() {
         const result = reader.result as string;
         setLogoPreview(result);
         form.setValue("logo", result, { shouldDirty: true });
+        setCompanyData({ logo: result }); // Update local context for preview
       };
       reader.readAsDataURL(file);
     }
   };
-
-  function onSubmit(data: CompanyFormValues) {
-    setCompanyData(data);
-    toast({
-      title: "Sucesso!",
-      description: "Dados da empresa atualizados.",
+  
+  // This updates the local context on any form change for live preview
+  useEffect(() => {
+    const subscription = form.watch((value) => {
+      setCompanyData(value as Partial<CompanyFormValues>);
     });
-    form.reset(data); // Mark form as not dirty
+    return () => subscription.unsubscribe();
+  }, [form, setCompanyData]);
+
+
+  async function onSubmit(data: CompanyFormValues) {
+    try {
+        setCompanyData(data); // ensure local state is up to date
+        await saveCompanyData(); // save the current state to firebase
+        toast({
+        title: "Sucesso!",
+        description: "Dados da empresa atualizados.",
+        });
+        form.reset(data); // Mark form as not dirty, with the new saved data
+    } catch (error) {
+        toast({
+            title: "Erro!",
+            description: "Não foi possível salvar os dados da empresa.",
+            variant: "destructive"
+        });
+    }
   }
 
   return (

@@ -1,6 +1,6 @@
 'use client'
 
-import React, { createContext, useContext, useState, ReactNode, useEffect } from 'react';
+import React, { createContext, useContext, useState, ReactNode, useEffect, useCallback } from 'react';
 import { useFirestore, useDoc, useMemoFirebase, useUser } from '@/firebase';
 import { doc, setDoc } from 'firebase/firestore';
 import { Loader2 } from 'lucide-react';
@@ -17,8 +17,10 @@ interface CompanyData {
 
 interface CompanyContextType {
   companyData: CompanyData;
-  setCompanyData: (data: Partial<CompanyData>) => void;
+  setCompanyData: (data: Partial<CompanyData>) => void; // Only updates local state
+  saveCompanyData: () => Promise<void>; // Saves local state to Firebase
   isLoading: boolean;
+  savedCompanyData: CompanyData;
 }
 
 const defaultCompanyData: CompanyData = {
@@ -42,51 +44,68 @@ export const CompanyProvider = ({ children }: { children: ReactNode }) => {
   }, [firestore]);
   
   const { data: remoteCompanyData, isLoading: isSettingsLoading } = useDoc<CompanyData>(settingsDocRef);
+
+  // State for the data currently reflected in the UI (local, might be unsaved)
   const [companyData, setCompanyDataState] = useState<CompanyData>(defaultCompanyData);
+  // State for the data as it is saved in Firestore
+  const [savedCompanyData, setSavedCompanyData] = useState<CompanyData>(defaultCompanyData);
+  
   const [isInitialized, setIsInitialized] = useState(false);
 
   const isLoading = isUserLoading || isSettingsLoading || !isInitialized;
 
   useEffect(() => {
-    // Wait until firebase hooks are done loading and we have a user object
-    if (isUserLoading || isSettingsLoading || isInitialized) {
-        return;
+    if (isSettingsLoading || isUserLoading || isInitialized) {
+      return;
     }
-    
-    setIsInitialized(true);
 
     if (remoteCompanyData) {
-      setCompanyDataState(prev => ({...prev, ...remoteCompanyData}));
-    } else if (settingsDocRef) {
+      const fullData = { ...defaultCompanyData, ...remoteCompanyData };
+      setCompanyDataState(fullData);
+      setSavedCompanyData(fullData);
+      setIsInitialized(true);
+    } else if (!isSettingsLoading && settingsDocRef) {
+      // Doc doesn't exist, create it with defaults
       setDoc(settingsDocRef, defaultCompanyData)
         .then(() => {
           setCompanyDataState(defaultCompanyData);
+          setSavedCompanyData(defaultCompanyData);
+          setIsInitialized(true);
         })
         .catch((error) => {
           console.error("Failed to create default company data:", error);
-          setCompanyDataState(defaultCompanyData); // Fallback to default on error
+          setCompanyDataState(defaultCompanyData);
+          setSavedCompanyData(defaultCompanyData);
+          setIsInitialized(true); // Proceed with defaults on error
         });
     }
-
-  }, [isUserLoading, isSettingsLoading, remoteCompanyData, settingsDocRef, isInitialized]);
+  }, [isSettingsLoading, isUserLoading, remoteCompanyData, settingsDocRef, isInitialized]);
   
-  const handleSetCompanyData = async (data: Partial<CompanyData>) => {
+  // Only updates the local state for UI previews
+  const handleSetCompanyData = useCallback((data: Partial<CompanyData>) => {
+    setCompanyDataState(prevData => ({ ...prevData, ...data }));
+  }, []);
+
+  // Persists the current local state to Firebase
+  const handleSaveCompanyData = async () => {
     if (!settingsDocRef) return;
-    const updatedData = { ...companyData, ...data };
-    setCompanyDataState(updatedData); // Optimistic update
     try {
-        await setDoc(settingsDocRef, updatedData, { merge: true });
+        await setDoc(settingsDocRef, companyData, { merge: true });
+        setSavedCompanyData(companyData); // Mark current state as saved
     } catch (error) {
         console.error("Failed to save company data:", error);
-        // Optional: revert state on error
-        // setCompanyDataState(companyData); 
+        // Optionally revert state on error by uncommenting below
+        // setCompanyDataState(savedCompanyData); 
+        throw error; // re-throw to be caught in the component
     }
   };
 
   const contextValue = {
-    companyData: companyData,
+    companyData,
     setCompanyData: handleSetCompanyData,
-    isLoading: isLoading,
+    saveCompanyData: handleSaveCompanyData,
+    isLoading,
+    savedCompanyData,
   };
   
   if (isLoading) {
