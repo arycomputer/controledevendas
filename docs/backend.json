@@ -204,6 +204,86 @@
       "description": "Stores application-wide settings.",
       "type": "object",
       "properties": {}
+    },
+    "ServiceOrder": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "ServiceOrder",
+      "type": "object",
+      "description": "Represents a service order for a customer's vehicle.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the ServiceOrder entity."
+        },
+        "customerId": {
+          "type": "string",
+          "description": "Reference to Customer."
+        },
+        "entryDate": {
+          "type": "string",
+          "description": "The date the vehicle entered for service.",
+          "format": "date-time"
+        },
+        "exitDate": {
+          "type": "string",
+          "description": "The date the vehicle was delivered after service.",
+          "format": "date-time"
+        },
+        "vehicleDescription": {
+          "type": "string",
+          "description": "Description of the vehicle (e.g., model, year, plate)."
+        },
+        "problemDescription": {
+          "type": "string",
+          "description": "Description of the problem reported by the customer."
+        },
+        "items": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "productId": {
+                "type": "string"
+              },
+              "quantity": {
+                "type": "number"
+              },
+              "unitPrice": {
+                "type": "number"
+              }
+            },
+            "required": [
+              "productId",
+              "quantity",
+              "unitPrice"
+            ]
+          }
+        },
+        "totalAmount": {
+          "type": "number",
+          "description": "The total amount of the service order."
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "pending",
+            "in_progress",
+            "completed",
+            "delivered"
+          ],
+          "description": "The status of the service order."
+        }
+      },
+      "required": [
+        "id",
+        "customerId",
+        "entryDate",
+        "vehicleDescription",
+        "problemDescription",
+        "items",
+        "totalAmount",
+        "status"
+      ]
     }
   },
   "auth": {
@@ -242,6 +322,16 @@
             "$ref": "#/backend/entities/Sale"
           },
           "description": "Stores sales transaction data. Any authenticated user can manage sales."
+        }
+      },
+      {
+        "path": "serviceOrders/{serviceOrderId}",
+        "definition": {
+          "entityName": "ServiceOrder",
+          "schema": {
+            "$ref": "#/backend/entities/ServiceOrder"
+          },
+          "description": "Stores service order data. Any authenticated user can manage service orders."
         }
       },
       {

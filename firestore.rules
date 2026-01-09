@@ -110,6 +110,17 @@ service cloud.firestore {
     }
 
     /**
+     * @description Manages service order records. All authenticated users can read and write service order data.
+     * @path /serviceOrders/{serviceOrderId}
+     * @allow (get) An authenticated user reads a specific service order document.
+     * @deny (get) An unauthenticated (anonymous) user tries to read a service order.
+     * @principle Grants full CRUD access to any authenticated user, treating all data as shared.
+     */
+    match /serviceOrders/{serviceOrderId} {
+      allow read, write: if isSignedIn();
+    }
+
+    /**
      * @description Manages user roles and data.
      * @path /users/{userId}
      * @allow (read) Any authenticated user can read the list of users.

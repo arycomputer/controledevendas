@@ -52,3 +52,16 @@ export const UserSchema = z.object({
     role: z.enum(['admin', 'seller']),
 });
 export type User = z.infer<typeof UserSchema>;
+
+export const ServiceOrderSchema = z.object({
+  id: z.string(),
+  customerId: z.string(),
+  entryDate: z.string(), // ISO date string
+  exitDate: z.string().optional(), // ISO date string
+  vehicleDescription: z.string(),
+  problemDescription: z.string(),
+  items: z.array(SaleItemSchema),
+  totalAmount: z.number(),
+  status: z.enum(['pending', 'in_progress', 'completed', 'delivered']),
+});
+export type ServiceOrder = z.infer<typeof ServiceOrderSchema>;
