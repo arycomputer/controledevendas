@@ -12,7 +12,7 @@ import type { Budget, Customer } from '@/lib/types';
 import { ConfirmationDialog } from '@/components/app/confirmation-dialog';
 import { useToast } from '@/hooks/use-toast';
 import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
-import { collection, doc, deleteDoc } from 'firebase/firestore';
+import { collection, doc, deleteDoc, updateDoc } from 'firebase/firestore';
 import { AuthGuard } from '@/components/app/auth-guard';
 import { Badge } from '@/components/ui/badge';
 
@@ -83,6 +83,24 @@ function BudgetsPageContent() {
     const handleEditClick = (budgetId: string) => {
         router.push(`/budgets/${budgetId}/edit`);
     }
+
+    const handleStatusChange = async (budgetId: string, newStatus: 'approved' | 'rejected') => {
+        try {
+            const budgetRef = doc(firestore, 'budgets', budgetId);
+            await updateDoc(budgetRef, { status: newStatus });
+            toast({
+                title: "Sucesso!",
+                description: `Status do orçamento atualizado para ${statusLabels[newStatus]}.`
+            });
+        } catch (error) {
+            console.error("Error updating budget status: ", error);
+            toast({
+                title: "Erro!",
+                description: "Não foi possível atualizar o status do orçamento.",
+                variant: "destructive"
+            });
+        }
+    }
     
     const isLoading = budgetsLoading || customersLoading;
 
@@ -152,6 +170,13 @@ function BudgetsPageContent() {
                                                         <DropdownMenuLabel>Ações</DropdownMenuLabel>
                                                         <DropdownMenuItem onClick={() => handleViewClick(budget.id)}>Visualizar</DropdownMenuItem>
                                                         <DropdownMenuItem onClick={() => handleEditClick(budget.id)} disabled={budget.status !== 'pending'}>Editar</DropdownMenuItem>
+                                                        {budget.status === 'pending' && (
+                                                            <>
+                                                                <DropdownMenuSeparator />
+                                                                <DropdownMenuItem onClick={() => handleStatusChange(budget.id, 'approved')}>Aprovar</DropdownMenuItem>
+                                                                <DropdownMenuItem onClick={() => handleStatusChange(budget.id, 'rejected')} className="text-destructive focus:text-destructive focus:bg-destructive/10">Rejeitar</DropdownMenuItem>
+                                                            </>
+                                                        )}
                                                         <DropdownMenuSeparator />
                                                         <DropdownMenuItem onClick={() => handleDeleteClick(budget)} className="text-destructive focus:text-destructive focus:bg-destructive/10" disabled={budget.status === 'approved'}>Excluir</DropdownMenuItem>
                                                     </DropdownMenuContent>

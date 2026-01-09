@@ -128,8 +128,6 @@ function BudgetDetailsPageContent() {
                 amountReceivable: budget.totalAmount,
             };
             await setDoc(doc(firestore, "sales", saleId), saleData);
-            
-            await updateDoc(budgetDocRef, { status: 'approved' });
 
             toast({
                 title: "Sucesso!",
@@ -193,7 +191,7 @@ function BudgetDetailsPageContent() {
                              <Button onClick={handlePrint}>
                                 <Printer className="mr-2 h-4 w-4" /> Imprimir
                             </Button>
-                            {budget.status === 'pending' && (
+                            {budget.status === 'approved' && (
                                 <Button onClick={handleConvertToSale}>
                                     <FileText className="mr-2 h-4 w-4" /> Converter em Venda
                                 </Button>
