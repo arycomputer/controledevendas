@@ -22,15 +22,27 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { useToast } from "@/hooks/use-toast"
 import { Loader2 } from "lucide-react"
 
-const customerFormSchema = z.object({
+const createCustomerFormSchema = (settings: any) => z.object({
     name: z.string().min(2, "O nome deve ter pelo menos 2 caracteres."),
-    email: z.string().email("Por favor, insira um e-mail válido."),
+    email: z.string().optional(),
     phone: z.string().optional(),
     document: z.string().optional(),
     address: z.string().optional(),
+}).refine(data => !settings?.customer?.email || (data.email && z.string().email().safeParse(data.email).success), {
+    message: "Por favor, insira um e-mail válido.",
+    path: ["email"],
+}).refine(data => !settings?.customer?.phone || (data.phone && data.phone.length >= 10), {
+    message: "O telefone deve ter pelo menos 10 dígitos.",
+    path: ["phone"],
+}).refine(data => !settings?.customer?.document || (data.document && data.document.length >= 11), {
+    message: "O documento (CPF/CNPJ) é obrigatório.",
+    path: ["document"],
+}).refine(data => !settings?.customer?.address || (data.address && data.address.length >= 5), {
+    message: "O endereço deve ter pelo menos 5 caracteres.",
+    path: ["address"],
 });
 
-type CustomerFormValues = z.infer<typeof customerFormSchema>
+type CustomerFormValues = z.infer<ReturnType<typeof createCustomerFormSchema>>;
 
 export default function EditCustomerPage() {
   const router = useRouter()
@@ -46,25 +58,10 @@ export default function EditCustomerPage() {
   const customerDocRef = useMemoFirebase(() => doc(firestore, 'customers', customerId), [firestore, customerId]);
   const { data: customer, isLoading: customerLoading } = useDoc(customerDocRef);
 
+  const customerFormSchema = createCustomerFormSchema(registrationSettings);
+
   const form = useForm<CustomerFormValues>({
-    resolver: zodResolver(
-      z.object({
-        name: z.string().min(2, "O nome deve ter pelo menos 2 caracteres."),
-        email: z.string().email("Por favor, insira um e-mail válido."),
-        phone: z.string().optional(),
-        document: z.string().optional(),
-        address: z.string().optional(),
-      }).refine(data => !registrationSettings?.customer?.phone || (data.phone && data.phone.length >= 10), {
-        message: "O telefone deve ter pelo menos 10 dígitos.",
-        path: ["phone"],
-      }).refine(data => !registrationSettings?.customer?.document || (data.document && data.document.length >= 11), {
-        message: "O documento (CPF/CNPJ) é obrigatório.",
-        path: ["document"],
-      }).refine(data => !registrationSettings?.customer?.address || (data.address && data.address.length >= 5), {
-        message: "O endereço deve ter pelo menos 5 caracteres.",
-        path: ["address"],
-      })
-    ),
+    resolver: zodResolver(customerFormSchema),
     defaultValues: {
       name: "",
       email: "",
@@ -126,7 +123,7 @@ export default function EditCustomerPage() {
     )
   }
 
-  const customerSettings = registrationSettings?.customer || { phone: true, document: true, address: true };
+  const customerSettings = registrationSettings?.customer || { email: true, phone: true, document: true, address: true };
 
   return (
     <Card className="max-w-2xl mx-auto">
@@ -151,19 +148,21 @@ export default function EditCustomerPage() {
               )}
             />
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <FormField
-                control={form.control}
-                name="email"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>E-mail</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Ex: joao.silva@example.com" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+              {customerSettings.email && (
+                <FormField
+                  control={form.control}
+                  name="email"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>E-mail</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Ex: joao.silva@example.com" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              )}
               {customerSettings.phone && (
                 <FormField
                   control={form.control}

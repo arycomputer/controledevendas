@@ -13,6 +13,7 @@ import { Button } from "@/components/ui/button"
 
 const defaultSettings = {
     customer: {
+        email: true,
         phone: true,
         document: true,
         address: true,
@@ -46,7 +47,12 @@ export function RegistrationManager() {
 
         if (registrationSettings) {
             // If data exists, reset the form with it
-            form.reset(registrationSettings);
+            const completeSettings = {
+                ...defaultSettings,
+                customer: { ...defaultSettings.customer, ...registrationSettings.customer },
+                product: { ...defaultSettings.product, ...registrationSettings.product }
+            };
+            form.reset(completeSettings);
         } else if (firestore) {
             // If no data and not loading, it means the document doesn't exist.
             // Create it with default settings.
@@ -95,6 +101,19 @@ export function RegistrationManager() {
                 <div>
                     <h3 className="text-lg font-medium mb-4">Cadastro de Clientes</h3>
                     <div className="space-y-4">
+                        <FormField
+                            control={form.control}
+                            name="customer.email"
+                            render={({ field }) => (
+                                <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
+                                    <FormLabel className="font-normal">E-mail obrigatório</FormLabel>
+                                    <Switch
+                                        checked={field.value}
+                                        onCheckedChange={field.onChange}
+                                    />
+                                </FormItem>
+                            )}
+                        />
                         <FormField
                             control={form.control}
                             name="customer.phone"
