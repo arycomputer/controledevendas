@@ -14,6 +14,20 @@ import { useToast } from '@/hooks/use-toast';
 import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
 import { collection, doc, deleteDoc } from 'firebase/firestore';
 import { AuthGuard } from '@/components/app/auth-guard';
+import { Badge } from '@/components/ui/badge';
+
+const statusLabels: { [key: string]: string } = {
+    pending: 'Pendente',
+    approved: 'Aprovado',
+    rejected: 'Rejeitado',
+};
+
+const statusColors: { [key: string]: string } = {
+    pending: 'bg-yellow-500 hover:bg-yellow-600',
+    approved: 'bg-green-600 hover:bg-green-700',
+    rejected: 'bg-red-500 hover:bg-red-600',
+};
+
 
 function BudgetsPageContent() {
     const router = useRouter();
@@ -95,6 +109,7 @@ function BudgetsPageContent() {
                                 <TableHead>Cliente</TableHead>
                                 <TableHead>Data</TableHead>
                                 <TableHead>Validade</TableHead>
+                                <TableHead className="text-center">Status</TableHead>
                                 <TableHead className="text-right">Valor Total</TableHead>
                                 <TableHead>
                                     <span className="sr-only">Ações</span>
@@ -104,7 +119,7 @@ function BudgetsPageContent() {
                         <TableBody>
                             {isLoading ? (
                                 <TableRow>
-                                    <TableCell colSpan={5} className="h-24 text-center">
+                                    <TableCell colSpan={6} className="h-24 text-center">
                                         <Loader2 className="h-6 w-6 animate-spin mx-auto" />
                                     </TableCell>
                                 </TableRow>
@@ -117,6 +132,11 @@ function BudgetsPageContent() {
                                             <TableCell className="font-medium">{customer?.name || 'N/A'}</TableCell>
                                             <TableCell>{new Date(budget.budgetDate).toLocaleDateString('pt-BR')}</TableCell>
                                             <TableCell>{new Date(budget.validUntil).toLocaleDateString('pt-BR')}</TableCell>
+                                             <TableCell className="text-center">
+                                                <Badge variant='default' className={statusColors[budget.status]}>
+                                                    {statusLabels[budget.status]}
+                                                </Badge>
+                                            </TableCell>
                                             <TableCell className="text-right font-semibold">
                                                 {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(budget.totalAmount)}
                                             </TableCell>
@@ -131,9 +151,9 @@ function BudgetsPageContent() {
                                                     <DropdownMenuContent align="end">
                                                         <DropdownMenuLabel>Ações</DropdownMenuLabel>
                                                         <DropdownMenuItem onClick={() => handleViewClick(budget.id)}>Visualizar</DropdownMenuItem>
-                                                        <DropdownMenuItem onClick={() => handleEditClick(budget.id)}>Editar</DropdownMenuItem>
+                                                        <DropdownMenuItem onClick={() => handleEditClick(budget.id)} disabled={budget.status !== 'pending'}>Editar</DropdownMenuItem>
                                                         <DropdownMenuSeparator />
-                                                        <DropdownMenuItem onClick={() => handleDeleteClick(budget)} className="text-destructive focus:text-destructive focus:bg-destructive/10">Excluir</DropdownMenuItem>
+                                                        <DropdownMenuItem onClick={() => handleDeleteClick(budget)} className="text-destructive focus:text-destructive focus:bg-destructive/10" disabled={budget.status === 'approved'}>Excluir</DropdownMenuItem>
                                                     </DropdownMenuContent>
                                                 </DropdownMenu>
                                             </TableCell>
@@ -142,7 +162,7 @@ function BudgetsPageContent() {
                                 })
                              ) : (
                                 <TableRow>
-                                    <TableCell colSpan={5} className="h-24 text-center">
+                                    <TableCell colSpan={6} className="h-24 text-center">
                                         Nenhum orçamento encontrado.
                                     </TableCell>
                                 </TableRow>
@@ -172,5 +192,3 @@ export default function BudgetsPage() {
         </AuthGuard>
     )
 }
-
-    

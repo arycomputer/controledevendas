@@ -2,7 +2,7 @@
 
 import { useParams, useRouter } from "next/navigation"
 import Link from "next/link"
-import { ArrowLeft, Loader2, Printer } from "lucide-react"
+import { ArrowLeft, Loader2, Printer, FileText } from "lucide-react"
 import React from 'react';
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card"
@@ -10,19 +10,44 @@ import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { useDoc, useCollection, useFirestore, useMemoFirebase } from "@/firebase"
-import type { Budget, Customer, Product } from "@/lib/types"
-import { collection, doc } from "firebase/firestore"
+import type { Budget, Customer, Product, Sale } from "@/lib/types"
+import { collection, doc, setDoc, updateDoc } from "firebase/firestore"
 import { AuthGuard } from "@/components/app/auth-guard"
 import { useCompany } from "@/context/company-context";
+import { useToast } from "@/hooks/use-toast";
+import { v4 as uuidv4 } from 'uuid';
+import { Badge } from "@/components/ui/badge";
+
+const statusLabels: { [key: string]: string } = {
+    pending: 'Pendente',
+    approved: 'Aprovado',
+    rejected: 'Rejeitado',
+};
+
+const statusColors: { [key: string]: string } = {
+    pending: 'bg-yellow-500 hover:bg-yellow-600',
+    approved: 'bg-green-600 hover:bg-green-700',
+    rejected: 'bg-red-500 hover:bg-red-600',
+};
 
 function BudgetDetailsPageContent() {
     const params = useParams();
     const router = useRouter();
     const firestore = useFirestore();
+    const { toast } = useToast();
     const budgetId = params.id as string;
     const { companyData } = useCompany();
 
     const printRef = React.useRef<HTMLDivElement>(null);
+
+    const budgetDocRef = useMemoFirebase(() => doc(firestore, 'budgets', budgetId), [firestore, budgetId]);
+    const { data: budget, isLoading: budgetLoading } = useDoc<Budget>(budgetDocRef);
+    
+    const customerDocRef = useMemoFirebase(() => budget ? doc(firestore, 'customers', budget.customerId) : null, [firestore, budget]);
+    const { data: customer, isLoading: customerLoading } = useDoc<Customer>(customerDocRef);
+    
+    const productsCollectionRef = useMemoFirebase(() => collection(firestore, 'parts'), [firestore]);
+    const { data: products, isLoading: productsLoading } = useCollection<Product>(productsCollectionRef);
 
     const handlePrint = () => {
         const printContent = printRef.current;
@@ -63,16 +88,64 @@ function BudgetDetailsPageContent() {
             printWindow?.print();
         }
     }
-
-
-    const budgetDocRef = useMemoFirebase(() => doc(firestore, 'budgets', budgetId), [firestore, budgetId]);
-    const { data: budget, isLoading: budgetLoading } = useDoc<Budget>(budgetDocRef);
     
-    const customerDocRef = useMemoFirebase(() => budget ? doc(firestore, 'customers', budget.customerId) : null, [firestore, budget]);
-    const { data: customer, isLoading: customerLoading } = useDoc<Customer>(customerDocRef);
-    
-    const productsCollectionRef = useMemoFirebase(() => collection(firestore, 'parts'), [firestore]);
-    const { data: products, isLoading: productsLoading } = useCollection<Product>(productsCollectionRef);
+     const handleConvertToSale = async () => {
+        if (!firestore || !products || !budget) return;
+        try {
+            // Stock validation
+            for (const item of budget.items) {
+                const product = products.find(p => p.id === item.productId);
+                if (product && product.type === 'piece' && (product.quantity === undefined || product.quantity < item.quantity)) {
+                    toast({
+                        title: "Erro de Estoque",
+                        description: `Estoque insuficiente para o produto "${product.name}". Disponível: ${product.quantity || 0}.`,
+                        variant: "destructive",
+                    });
+                    return;
+                }
+            }
+
+            // Update stock
+            for (const item of budget.items) {
+                const product = products.find(p => p.id === item.productId);
+                if (product && product.type === 'piece') {
+                    const productRef = doc(firestore, 'parts', product.id);
+                    const newQuantity = (product.quantity || 0) - item.quantity;
+                    await updateDoc(productRef, { quantity: newQuantity });
+                }
+            }
+            
+            const saleId = uuidv4();
+            const saleData: Sale = {
+                id: saleId,
+                customerId: budget.customerId,
+                items: budget.items,
+                totalAmount: budget.totalAmount,
+                saleDate: new Date().toISOString(),
+                paymentMethod: 'cash', // Default
+                status: 'pending', // Default
+                downPayment: 0,
+                amountReceivable: budget.totalAmount,
+            };
+            await setDoc(doc(firestore, "sales", saleId), saleData);
+            
+            await updateDoc(budgetDocRef, { status: 'approved' });
+
+            toast({
+                title: "Sucesso!",
+                description: "Orçamento convertido em venda.",
+            })
+            router.push(`/sales/${saleId}`)
+        } catch (error) {
+            console.error("Error converting budget to sale: ", error)
+            toast({
+                title: "Erro!",
+                description: "Não foi possível converter o orçamento em venda.",
+                variant: 'destructive',
+            })
+        }
+    }
+
 
     const isLoading = budgetLoading || customerLoading || productsLoading;
     
@@ -108,18 +181,23 @@ function BudgetDetailsPageContent() {
         <>
             <Card className="max-w-4xl mx-auto">
                 <CardHeader>
-                    <div className="flex justify-between items-center no-print">
+                    <div className="flex justify-between items-start no-print">
                         <div>
                             <CardTitle>Detalhes do Orçamento</CardTitle>
                             <CardDescription className="font-mono text-xs mt-1">#{budget.id.toUpperCase()}</CardDescription>
                         </div>
-                        <div className="flex gap-2">
+                        <div className="flex items-center gap-2">
                             <Button variant="outline" onClick={() => router.back()}>
                                 <ArrowLeft className="mr-2 h-4 w-4" /> Voltar
                             </Button>
                              <Button onClick={handlePrint}>
                                 <Printer className="mr-2 h-4 w-4" /> Imprimir
                             </Button>
+                            {budget.status === 'pending' && (
+                                <Button onClick={handleConvertToSale}>
+                                    <FileText className="mr-2 h-4 w-4" /> Converter em Venda
+                                </Button>
+                            )}
                         </div>
                     </div>
                 </CardHeader>
@@ -140,9 +218,16 @@ function BudgetDetailsPageContent() {
                             <p>{customer.phone}</p>
                         </div>
                         <div className="info-item">
-                            <h4 className="font-semibold">Datas</h4>
+                            <h4 className="font-semibold">Datas e Status</h4>
                             <p>Data do Orçamento: {new Date(budget.budgetDate).toLocaleDateString('pt-BR')}</p>
                             <p>Válido até: {new Date(budget.validUntil).toLocaleDateString('pt-BR')}</p>
+                             <p className="flex items-center gap-2">
+                                Status:
+                                <Badge variant='default' className={`${statusColors[budget.status]} no-print`}>
+                                    {statusLabels[budget.status]}
+                                </Badge>
+                                <span className="print-only">{statusLabels[budget.status]}</span>
+                            </p>
                         </div>
                     </div>
 
@@ -202,5 +287,3 @@ export default function BudgetDetailsPage() {
         </AuthGuard>
     )
 }
-
-    
