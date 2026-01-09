@@ -127,6 +127,32 @@
         "totalAmount": {
           "type": "number",
           "description": "The total amount of the sale transaction."
+        },
+        "paymentMethod": {
+          "type": "string",
+          "enum": [
+            "cash",
+            "pix",
+            "credit_card",
+            "debit_card"
+          ],
+          "description": "The payment method used for the sale."
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "paid",
+            "pending"
+          ],
+          "description": "The payment status of the sale."
+        },
+        "downPayment": {
+          "type": "number",
+          "description": "The amount paid as a down payment."
+        },
+        "amountReceivable": {
+          "type": "number",
+          "description": "The remaining amount to be received."
         }
       },
       "required": [
@@ -134,7 +160,9 @@
         "customerId",
         "items",
         "saleDate",
-        "totalAmount"
+        "totalAmount",
+        "paymentMethod",
+        "status"
       ]
     },
     "User": {

@@ -89,10 +89,9 @@ function SalesPageContent() {
                     <Table>
                         <TableHeader>
                             <TableRow>
-                                <TableHead>ID da Venda</TableHead>
                                 <TableHead>Cliente</TableHead>
                                 <TableHead>Data</TableHead>
-                                <TableHead className="text-center">Itens</TableHead>
+                                <TableHead className="text-center">Status</TableHead>
                                 <TableHead className="text-right">Valor Total</TableHead>
                                 <TableHead>
                                     <span className="sr-only">Ações</span>
@@ -102,22 +101,22 @@ function SalesPageContent() {
                         <TableBody>
                             {isLoading ? (
                                 <TableRow>
-                                    <TableCell colSpan={6} className="h-24 text-center">
+                                    <TableCell colSpan={5} className="h-24 text-center">
                                         <Loader2 className="h-6 w-6 animate-spin mx-auto" />
                                     </TableCell>
                                 </TableRow>
                             ) : sortedSales.length > 0 ? (
                                 sortedSales.map((sale: Sale) => {
                                     const customer = customers?.find(c => c.id === sale.customerId);
-                                    const totalItems = sale.items.reduce((sum, item) => sum + item.quantity, 0);
-
+                                    
                                     return (
                                         <TableRow key={sale.id}>
-                                            <TableCell className="font-mono text-xs">{sale.id.toUpperCase()}</TableCell>
                                             <TableCell className="font-medium">{customer?.name || 'N/A'}</TableCell>
                                             <TableCell>{new Date(sale.saleDate).toLocaleDateString('pt-BR')}</TableCell>
                                             <TableCell className="text-center">
-                                                <Badge variant="secondary">{totalItems} item(s)</Badge>
+                                                <Badge variant={sale.status === 'paid' ? 'default' : 'destructive'} className={sale.status === 'paid' ? 'bg-green-600 hover:bg-green-700' : ''}>
+                                                    {sale.status === 'paid' ? 'Pago' : 'A Receber'}
+                                                </Badge>
                                             </TableCell>
                                             <TableCell className="text-right font-semibold">
                                                 {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(sale.totalAmount)}
@@ -143,7 +142,7 @@ function SalesPageContent() {
                                 })
                              ) : (
                                 <TableRow>
-                                    <TableCell colSpan={6} className="h-24 text-center">
+                                    <TableCell colSpan={5} className="h-24 text-center">
                                         Nenhuma venda encontrada.
                                     </TableCell>
                                 </TableRow>

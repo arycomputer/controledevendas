@@ -14,6 +14,14 @@ import type { Sale, Customer, Product } from "@/lib/types"
 import { collection, doc } from "firebase/firestore"
 import { AuthGuard } from "@/components/app/auth-guard"
 
+const paymentMethodLabels: { [key: string]: string } = {
+    cash: 'Dinheiro',
+    pix: 'Pix',
+    credit_card: 'Cartão de Crédito',
+    debit_card: 'Cartão de Débito',
+};
+
+
 function SaleDetailsPageContent() {
     const params = useParams();
     const router = useRouter();
@@ -76,7 +84,7 @@ function SaleDetailsPageContent() {
                 </div>
             </CardHeader>
             <CardContent className="space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-sm">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-sm">
                     <div className="space-y-1">
                         <h3 className="font-semibold">Cliente</h3>
                         <p className="text-muted-foreground">{customer.name}</p>
@@ -87,6 +95,16 @@ function SaleDetailsPageContent() {
                         <h3 className="font-semibold">Detalhes da Venda</h3>
                         <p className="text-muted-foreground">Data: {new Date(sale.saleDate).toLocaleDateString('pt-BR')}</p>
                         <p className="text-muted-foreground">Itens: <Badge variant="secondary" className="ml-1">{totalItems}</Badge></p>
+                    </div>
+                    <div className="space-y-1">
+                        <h3 className="font-semibold">Pagamento</h3>
+                        <p className="text-muted-foreground">Forma: {paymentMethodLabels[sale.paymentMethod]}</p>
+                        <p className="text-muted-foreground flex items-center gap-2">
+                            Status:
+                             <Badge variant={sale.status === 'paid' ? 'default' : 'destructive'} className={sale.status === 'paid' ? 'bg-green-600 hover:bg-green-700' : ''}>
+                                {sale.status === 'paid' ? 'Pago' : 'A Receber'}
+                            </Badge>
+                        </p>
                     </div>
                 </div>
 
@@ -125,11 +143,27 @@ function SaleDetailsPageContent() {
 
                  <Separator />
 
-                <div className="flex justify-between items-center text-lg font-bold">
-                    <span>Total da Venda</span>
-                    <span>
-                        {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(sale.totalAmount)}
-                    </span>
+                 <div className="grid grid-cols-2 gap-4 text-sm">
+                    <div></div>
+                     <div className="space-y-2">
+                        <div className="flex justify-between items-center">
+                            <span className="text-muted-foreground">Subtotal</span>
+                            <span>{new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(sale.totalAmount)}</span>
+                        </div>
+                        {sale.status === 'pending' && (
+                        <div className="flex justify-between items-center">
+                            <span className="text-muted-foreground">Entrada</span>
+                            <span>- {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(sale.downPayment || 0)}</span>
+                        </div>
+                        )}
+                         <Separator />
+                          <div className="flex justify-between items-center font-bold text-base">
+                            <span>{sale.status === 'paid' ? 'Total Pago' : 'Total a Receber'}</span>
+                            <span className={sale.status === 'pending' ? 'text-destructive' : 'text-green-600'}>
+                                {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(sale.status === 'paid' ? sale.totalAmount : sale.amountReceivable || 0)}
+                            </span>
+                        </div>
+                    </div>
                 </div>
 
             </CardContent>
