@@ -129,6 +129,8 @@ function BudgetDetailsPageContent() {
             };
             await setDoc(doc(firestore, "sales", saleId), saleData);
 
+            await updateDoc(budgetDocRef, { status: "approved" });
+
             toast({
                 title: "Sucesso!",
                 description: "Orçamento convertido em venda.",

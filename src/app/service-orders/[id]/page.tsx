@@ -127,7 +127,7 @@ function ServiceOrderDetailsPageContent() {
         <>
             <Card className="max-w-4xl mx-auto">
                 <CardHeader>
-                    <div className="flex justify-between items-center">
+                    <div className="flex justify-between items-center no-print">
                         <div>
                             <CardTitle>Detalhes da Ordem de Serviço</CardTitle>
                             <CardDescription className="font-mono text-xs mt-1">#{order.id.toUpperCase()}</CardDescription>
