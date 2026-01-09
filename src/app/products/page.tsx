@@ -78,8 +78,7 @@ function ProductsPageContent() {
                     <Table>
                         <TableHeader>
                             <TableRow>
-                                <TableHead className="w-[25%]">Nome</TableHead>
-                                <TableHead className="w-[40%]">Descrição</TableHead>
+                                <TableHead>Nome</TableHead>
                                 <TableHead>Tipo</TableHead>
                                 <TableHead className="text-right">Preço</TableHead>
                                 <TableHead className="text-right">Estoque</TableHead>
@@ -91,7 +90,7 @@ function ProductsPageContent() {
                         <TableBody>
                             {isLoading ? (
                                 <TableRow>
-                                    <TableCell colSpan={6} className="h-24 text-center">
+                                    <TableCell colSpan={5} className="h-24 text-center">
                                         <Loader2 className="h-6 w-6 animate-spin mx-auto" />
                                     </TableCell>
                                 </TableRow>
@@ -99,7 +98,6 @@ function ProductsPageContent() {
                                 products.map((product: Product) => (
                                     <TableRow key={product.id} onDoubleClick={() => handleEditClick(product.id)} className="cursor-pointer">
                                         <TableCell className="font-medium">{product.name}</TableCell>
-                                        <TableCell className="text-muted-foreground">{product.description}</TableCell>
                                         <TableCell>
                                             <Badge variant={product.type === 'piece' ? 'secondary' : 'outline'}>
                                                 {product.type === 'piece' ? 'Peça' : 'Serviço'}
@@ -129,7 +127,7 @@ function ProductsPageContent() {
                                 ))
                             ) : (
                                 <TableRow>
-                                     <TableCell colSpan={6} className="h-24 text-center">
+                                     <TableCell colSpan={5} className="h-24 text-center">
                                         Nenhum item encontrado.
                                     </TableCell>
                                 </TableRow>
