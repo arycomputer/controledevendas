@@ -12,6 +12,7 @@ interface CompanyData {
   phone?: string;
   email?: string;
   address?: string;
+  theme?: string;
 }
 
 interface CompanyContextType {
@@ -27,6 +28,7 @@ const defaultCompanyData: CompanyData = {
   phone: "(11) 99999-8888",
   email: "contato@minhaempresa.com",
   address: "Rua Exemplo, 123, Cidade - UF",
+  theme: "light",
 };
 
 const CompanyContext = createContext<CompanyContextType | undefined>(undefined);
@@ -49,32 +51,25 @@ export const CompanyProvider = ({ children }: { children: ReactNode }) => {
   const isLoading = isUserLoading || (user && !isInitialized);
 
   useEffect(() => {
-    // Prevent running initialization multiple times
     if (isUserLoading || isSettingsLoading || isInitialized || !user) {
         if (!user && !isUserLoading) {
-            // If user logs out, reset initialization state
             setCompanyDataState(defaultCompanyData);
             setIsInitialized(false);
         }
         return;
     }
 
-    // Mark as initialized to prevent re-running
     setIsInitialized(true);
     
     if (remoteCompanyData) {
-      // If data is found in Firestore, use it
       setCompanyDataState(remoteCompanyData);
     } else if (settingsDocRef) {
-      // If no data, it means the document doesn't exist. Create it.
       setDoc(settingsDocRef, defaultCompanyData)
         .then(() => {
-          // After creating, set the local state to the default data.
           setCompanyDataState(defaultCompanyData);
         })
         .catch((error) => {
           console.error("Failed to create default company data:", error);
-          // Fallback to default data even if Firestore write fails
           setCompanyDataState(defaultCompanyData);
         });
     }
