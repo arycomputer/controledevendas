@@ -3,7 +3,7 @@
 import React, { useState, useMemo } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { PlusCircle, MoreHorizontal, Loader2, Eye, Edit, Trash2, CheckCircle, XCircle } from 'lucide-react';
+import { PlusCircle, MoreHorizontal, Loader2, Eye, Edit, Trash2, CheckCircle, XCircle, ArrowUpDown, Search } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -15,6 +15,7 @@ import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
 import { collection, doc, deleteDoc, updateDoc } from 'firebase/firestore';
 import { AuthGuard } from '@/components/app/auth-guard';
 import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
 
 const statusLabels: { [key: string]: string } = {
     pending: 'Pendente',
@@ -42,11 +43,59 @@ function BudgetsPageContent() {
 
     const [dialogOpen, setDialogOpen] = useState(false);
     const [budgetToDelete, setBudgetToDelete] = useState<Budget | null>(null);
+    const [searchTerm, setSearchTerm] = useState('');
+    const [sortConfig, setSortConfig] = useState<{ key: keyof Budget | 'customerName'; direction: 'ascending' | 'descending' }>({ key: 'budgetDate', direction: 'descending' });
 
-    const sortedBudgets = useMemo(() => {
-        if (!budgets) return [];
-        return [...budgets].sort((a, b) => new Date(b.budgetDate).getTime() - new Date(a.budgetDate).getTime());
-    }, [budgets]);
+
+    const processedBudgets = useMemo(() => {
+        if (!budgets || !customers) return [];
+        
+        let filteredBudgets = budgets.map(budget => {
+            const customer = customers.find(c => c.id === budget.customerId);
+            return {
+                ...budget,
+                customerName: customer?.name || 'N/A'
+            };
+        });
+
+        if (searchTerm) {
+            const lowercasedTerm = searchTerm.toLowerCase();
+            filteredBudgets = filteredBudgets.filter(budget => 
+                budget.customerName.toLowerCase().includes(lowercasedTerm) ||
+                budget.id.toLowerCase().includes(lowercasedTerm)
+            );
+        }
+
+        filteredBudgets.sort((a, b) => {
+            const key = sortConfig.key;
+            let aValue: any = a[key as keyof typeof a];
+            let bValue: any = b[key as keyof typeof b];
+            
+            if (key === 'budgetDate' || key === 'validUntil') {
+                aValue = new Date(aValue).getTime();
+                bValue = new Date(bValue).getTime();
+            }
+
+            if (aValue < bValue) {
+                return sortConfig.direction === 'ascending' ? -1 : 1;
+            }
+            if (aValue > bValue) {
+                return sortConfig.direction === 'ascending' ? 1 : -1;
+            }
+            return 0;
+        });
+
+        return filteredBudgets;
+
+    }, [budgets, customers, searchTerm, sortConfig]);
+
+    const requestSort = (key: keyof Budget | 'customerName') => {
+        let direction: 'ascending' | 'descending' = 'ascending';
+        if (sortConfig.key === key && sortConfig.direction === 'ascending') {
+            direction = 'descending';
+        }
+        setSortConfig({ key, direction });
+    };
 
     const handleDeleteClick = (budget: Budget) => {
         setBudgetToDelete(budget);
@@ -119,16 +168,50 @@ function BudgetsPageContent() {
                             </Link>
                         </Button>
                     </div>
+                     <div className="relative mt-4">
+                        <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                        <Input 
+                            placeholder="Buscar por cliente ou ID..." 
+                            className="w-full pl-8" 
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                        />
+                    </div>
                 </CardHeader>
                 <CardContent>
                     <Table>
                         <TableHeader>
                             <TableRow>
-                                <TableHead>Cliente</TableHead>
-                                <TableHead>Data</TableHead>
-                                <TableHead>Validade</TableHead>
-                                <TableHead className="text-center">Status</TableHead>
-                                <TableHead className="text-right">Valor Total</TableHead>
+                                <TableHead>
+                                     <Button variant="ghost" onClick={() => requestSort('customerName')}>
+                                        Cliente
+                                        <ArrowUpDown className="ml-2 h-4 w-4" />
+                                    </Button>
+                                </TableHead>
+                                <TableHead>
+                                    <Button variant="ghost" onClick={() => requestSort('budgetDate')}>
+                                        Data
+                                        <ArrowUpDown className="ml-2 h-4 w-4" />
+                                    </Button>
+                                </TableHead>
+                                <TableHead>
+                                     <Button variant="ghost" onClick={() => requestSort('validUntil')}>
+                                        Validade
+                                        <ArrowUpDown className="ml-2 h-4 w-4" />
+                                    </Button>
+                                </TableHead>
+                                <TableHead className="text-center">
+                                    <Button variant="ghost" onClick={() => requestSort('status')}>
+                                        Status
+                                        <ArrowUpDown className="ml-2 h-4 w-4" />
+                                    </Button>
+                                </TableHead>
+                                <TableHead className="text-right">
+                                     <Button variant="ghost" onClick={() => requestSort('totalAmount')}>
+                                        Valor Total
+                                        <ArrowUpDown className="ml-2 h-4 w-4" />
+                                    </Button>
+                                </TableHead>
                                 <TableHead>
                                     <span className="sr-only">Ações</span>
                                 </TableHead>
@@ -141,13 +224,11 @@ function BudgetsPageContent() {
                                         <Loader2 className="h-6 w-6 animate-spin mx-auto" />
                                     </TableCell>
                                 </TableRow>
-                            ) : sortedBudgets.length > 0 ? (
-                                sortedBudgets.map((budget: Budget) => {
-                                    const customer = customers?.find(c => c.id === budget.customerId);
-                                    
+                            ) : processedBudgets.length > 0 ? (
+                                processedBudgets.map((budget) => {
                                     return (
                                         <TableRow key={budget.id} onDoubleClick={() => handleViewClick(budget.id)} className="cursor-pointer">
-                                            <TableCell className="font-medium">{customer?.name || 'N/A'}</TableCell>
+                                            <TableCell className="font-medium">{budget.customerName}</TableCell>
                                             <TableCell>{new Date(budget.budgetDate).toLocaleDateString('pt-BR')}</TableCell>
                                             <TableCell>{new Date(budget.validUntil).toLocaleDateString('pt-BR')}</TableCell>
                                              <TableCell className="text-center">

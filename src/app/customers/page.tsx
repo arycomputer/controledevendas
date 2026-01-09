@@ -3,7 +3,7 @@
 import React, { useState, useMemo } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { PlusCircle, Search, MoreHorizontal, Loader2, Edit, Trash2 } from 'lucide-react';
+import { PlusCircle, Search, MoreHorizontal, Loader2, Edit, Trash2, ArrowUpDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -21,6 +21,7 @@ function CustomersPageContent() {
     const { toast } = useToast();
     const firestore = useFirestore();
     const [searchTerm, setSearchTerm] = useState('');
+    const [sortConfig, setSortConfig] = useState<{ key: keyof Customer; direction: 'ascending' | 'descending' }>({ key: 'name', direction: 'ascending' });
     
     const customersCollection = useMemoFirebase(() => collection(firestore, 'customers'), [firestore]);
     const { data: customers, isLoading } = useCollection<Customer>(customersCollection);
@@ -28,16 +29,47 @@ function CustomersPageContent() {
     const [dialogOpen, setDialogOpen] = useState(false);
     const [customerToDelete, setCustomerToDelete] = useState<Customer | null>(null);
     
-    const filteredCustomers = useMemo(() => {
+    const sortedAndFilteredCustomers = useMemo(() => {
         if (!customers) return [];
-        if (!searchTerm) return customers;
-        const lowercasedTerm = searchTerm.toLowerCase();
-        return customers.filter(customer => 
-            customer.name.toLowerCase().includes(lowercasedTerm) ||
-            (customer.phone && customer.phone.includes(searchTerm)) ||
-            (customer.document && customer.document.replace(/[^\d]/g, "").includes(searchTerm.replace(/[^\d]/g, "")))
-        );
-    }, [searchTerm, customers]);
+        let filteredCustomers = [...customers];
+
+        if (searchTerm) {
+            const lowercasedTerm = searchTerm.toLowerCase();
+            filteredCustomers = customers.filter(customer => 
+                customer.name.toLowerCase().includes(lowercasedTerm) ||
+                (customer.email && customer.email.toLowerCase().includes(lowercasedTerm)) ||
+                (customer.phone && customer.phone.includes(searchTerm)) ||
+                (customer.document && customer.document.replace(/[^\d]/g, "").includes(searchTerm.replace(/[^\d]/g, "")))
+            );
+        }
+
+        filteredCustomers.sort((a, b) => {
+            const aValue = a[sortConfig.key];
+            const bValue = b[sortConfig.key];
+            
+            if (aValue === null || aValue === undefined) return 1;
+            if (bValue === null || bValue === undefined) return -1;
+            
+            if (aValue < bValue) {
+                return sortConfig.direction === 'ascending' ? -1 : 1;
+            }
+            if (aValue > bValue) {
+                return sortConfig.direction === 'ascending' ? 1 : -1;
+            }
+            return 0;
+        });
+
+        return filteredCustomers;
+    }, [searchTerm, customers, sortConfig]);
+
+    const requestSort = (key: keyof Customer) => {
+        let direction: 'ascending' | 'descending' = 'ascending';
+        if (sortConfig.key === key && sortConfig.direction === 'ascending') {
+            direction = 'descending';
+        }
+        setSortConfig({ key, direction });
+    };
+
 
     const handleDeleteClick = (customer: Customer) => {
         setCustomerToDelete(customer);
@@ -88,7 +120,7 @@ function CustomersPageContent() {
                     <div className="relative mt-4">
                         <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                         <Input 
-                            placeholder="Buscar por nome, telefone ou documento..." 
+                            placeholder="Buscar por nome, e-mail, telefone ou documento..." 
                             className="w-full pl-8" 
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
@@ -99,10 +131,30 @@ function CustomersPageContent() {
                     <Table>
                         <TableHeader>
                             <TableRow>
-                                <TableHead>Nome</TableHead>
-                                <TableHead>Contato</TableHead>
-                                <TableHead>Documento</TableHead>
-                                <TableHead>Endereço</TableHead>
+                                <TableHead>
+                                    <Button variant="ghost" onClick={() => requestSort('name')}>
+                                        Nome
+                                        <ArrowUpDown className="ml-2 h-4 w-4" />
+                                    </Button>
+                                </TableHead>
+                                <TableHead>
+                                     <Button variant="ghost" onClick={() => requestSort('email')}>
+                                        Contato
+                                        <ArrowUpDown className="ml-2 h-4 w-4" />
+                                    </Button>
+                                </TableHead>
+                                <TableHead>
+                                     <Button variant="ghost" onClick={() => requestSort('document')}>
+                                        Documento
+                                        <ArrowUpDown className="ml-2 h-4 w-4" />
+                                    </Button>
+                                </TableHead>
+                                <TableHead>
+                                     <Button variant="ghost" onClick={() => requestSort('address')}>
+                                        Endereço
+                                        <ArrowUpDown className="ml-2 h-4 w-4" />
+                                    </Button>
+                                </TableHead>
                                 <TableHead>
                                     <span className="sr-only">Ações</span>
                                 </TableHead>
@@ -115,8 +167,8 @@ function CustomersPageContent() {
                                         <Loader2 className="h-6 w-6 animate-spin mx-auto" />
                                     </TableCell>
                                 </TableRow>
-                            ) : filteredCustomers.length > 0 ? (
-                                filteredCustomers.map((customer: Customer) => (
+                            ) : sortedAndFilteredCustomers.length > 0 ? (
+                                sortedAndFilteredCustomers.map((customer: Customer) => (
                                     <TableRow key={customer.id} onDoubleClick={() => handleEditClick(customer.id)} className="cursor-pointer">
                                         <TableCell className="font-medium">{customer.name}</TableCell>
                                         <TableCell>

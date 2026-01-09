@@ -3,7 +3,7 @@
 import React, { useState, useMemo } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { PlusCircle, MoreHorizontal, Loader2, Eye, Edit, Trash2 } from 'lucide-react';
+import { PlusCircle, MoreHorizontal, Loader2, Eye, Edit, Trash2, ArrowUpDown, Search } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -15,6 +15,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
 import { collection, doc, deleteDoc } from 'firebase/firestore';
 import { AuthGuard } from '@/components/app/auth-guard';
+import { Input } from '@/components/ui/input';
 
 const statusLabels: { [key: string]: string } = {
     pending: 'Pendente',
@@ -44,11 +45,60 @@ function ServiceOrdersPageContent() {
 
     const [dialogOpen, setDialogOpen] = useState(false);
     const [orderToCancel, setOrderToCancel] = useState<ServiceOrder | null>(null);
+    const [searchTerm, setSearchTerm] = useState('');
+    const [sortConfig, setSortConfig] = useState<{ key: keyof ServiceOrder | 'customerName'; direction: 'ascending' | 'descending' }>({ key: 'entryDate', direction: 'descending' });
 
-    const sortedServiceOrders = useMemo(() => {
-        if (!serviceOrders) return [];
-        return [...serviceOrders].sort((a, b) => new Date(b.entryDate).getTime() - new Date(a.entryDate).getTime());
-    }, [serviceOrders]);
+    const processedOrders = useMemo(() => {
+        if (!serviceOrders || !customers) return [];
+        
+        let filteredOrders = serviceOrders.map(order => {
+            const customer = customers.find(c => c.id === order.customerId);
+            return {
+                ...order,
+                customerName: customer?.name || 'N/A'
+            };
+        });
+
+        if (searchTerm) {
+            const lowercasedTerm = searchTerm.toLowerCase();
+            filteredOrders = filteredOrders.filter(order => 
+                order.customerName.toLowerCase().includes(lowercasedTerm) ||
+                order.itemDescription.toLowerCase().includes(lowercasedTerm) ||
+                order.status.toLowerCase().includes(lowercasedTerm) ||
+                order.id.toLowerCase().includes(lowercasedTerm)
+            );
+        }
+
+        filteredOrders.sort((a, b) => {
+            const key = sortConfig.key;
+            let aValue: any = a[key as keyof typeof a];
+            let bValue: any = b[key as keyof typeof b];
+            
+            if (key === 'entryDate') {
+                aValue = new Date(aValue).getTime();
+                bValue = new Date(bValue).getTime();
+            }
+
+            if (aValue < bValue) {
+                return sortConfig.direction === 'ascending' ? -1 : 1;
+            }
+            if (aValue > bValue) {
+                return sortConfig.direction === 'ascending' ? 1 : -1;
+            }
+            return 0;
+        });
+
+        return filteredOrders;
+
+    }, [serviceOrders, customers, searchTerm, sortConfig]);
+
+    const requestSort = (key: keyof ServiceOrder | 'customerName') => {
+        let direction: 'ascending' | 'descending' = 'ascending';
+        if (sortConfig.key === key && sortConfig.direction === 'ascending') {
+            direction = 'descending';
+        }
+        setSortConfig({ key, direction });
+    };
 
     const handleCancelClick = (order: ServiceOrder) => {
         setOrderToCancel(order);
@@ -103,16 +153,50 @@ function ServiceOrdersPageContent() {
                             </Link>
                         </Button>
                     </div>
+                     <div className="relative mt-4">
+                        <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                        <Input 
+                            placeholder="Buscar por cliente, item, status ou ID..." 
+                            className="w-full pl-8" 
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                        />
+                    </div>
                 </CardHeader>
                 <CardContent>
                     <Table>
                         <TableHeader>
                             <TableRow>
-                                <TableHead>Cliente</TableHead>
-                                <TableHead>Item</TableHead>
-                                <TableHead>Data de Entrada</TableHead>
-                                <TableHead className="text-center">Status</TableHead>
-                                <TableHead className="text-right">Valor Total</TableHead>
+                                <TableHead>
+                                     <Button variant="ghost" onClick={() => requestSort('customerName')}>
+                                        Cliente
+                                        <ArrowUpDown className="ml-2 h-4 w-4" />
+                                    </Button>
+                                </TableHead>
+                                <TableHead>
+                                     <Button variant="ghost" onClick={() => requestSort('itemDescription')}>
+                                        Item
+                                        <ArrowUpDown className="ml-2 h-4 w-4" />
+                                    </Button>
+                                </TableHead>
+                                <TableHead>
+                                    <Button variant="ghost" onClick={() => requestSort('entryDate')}>
+                                        Data de Entrada
+                                        <ArrowUpDown className="ml-2 h-4 w-4" />
+                                    </Button>
+                                </TableHead>
+                                <TableHead className="text-center">
+                                    <Button variant="ghost" onClick={() => requestSort('status')}>
+                                        Status
+                                        <ArrowUpDown className="ml-2 h-4 w-4" />
+                                    </Button>
+                                </TableHead>
+                                <TableHead className="text-right">
+                                    <Button variant="ghost" onClick={() => requestSort('totalAmount')}>
+                                        Valor Total
+                                        <ArrowUpDown className="ml-2 h-4 w-4" />
+                                    </Button>
+                                </TableHead>
                                 <TableHead>
                                     <span className="sr-only">Ações</span>
                                 </TableHead>
@@ -125,13 +209,12 @@ function ServiceOrdersPageContent() {
                                         <Loader2 className="h-6 w-6 animate-spin mx-auto" />
                                     </TableCell>
                                 </TableRow>
-                            ) : sortedServiceOrders.length > 0 ? (
-                                sortedServiceOrders.map((order: ServiceOrder) => {
-                                    const customer = customers?.find(c => c.id === order.customerId);
+                            ) : processedOrders.length > 0 ? (
+                                processedOrders.map((order: ServiceOrder & { customerName: string }) => {
                                     
                                     return (
                                         <TableRow key={order.id} onDoubleClick={() => handleViewClick(order.id)} className="cursor-pointer">
-                                            <TableCell className="font-medium">{customer?.name || 'N/A'}</TableCell>
+                                            <TableCell className="font-medium">{order.customerName}</TableCell>
                                             <TableCell>{order.itemDescription}</TableCell>
                                             <TableCell>{new Date(order.entryDate).toLocaleDateString('pt-BR')}</TableCell>
                                             <TableCell className="text-center">

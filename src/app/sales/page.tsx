@@ -3,7 +3,7 @@
 import React, { useState, useMemo } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { PlusCircle, MoreHorizontal, Loader2, Eye, XCircle } from 'lucide-react';
+import { PlusCircle, MoreHorizontal, Loader2, Eye, XCircle, ArrowUpDown, Search } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -15,6 +15,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
 import { collection, doc, deleteDoc } from 'firebase/firestore';
 import { AuthGuard } from '@/components/app/auth-guard';
+import { Input } from '@/components/ui/input';
 
 function SalesPageContent() {
     const router = useRouter();
@@ -29,11 +30,59 @@ function SalesPageContent() {
 
     const [dialogOpen, setDialogOpen] = useState(false);
     const [saleToCancel, setSaleToCancel] = useState<Sale | null>(null);
+    const [searchTerm, setSearchTerm] = useState('');
+    const [sortConfig, setSortConfig] = useState<{ key: keyof Sale | 'customerName'; direction: 'ascending' | 'descending' }>({ key: 'saleDate', direction: 'descending' });
 
-    const sortedSales = useMemo(() => {
-        if (!sales) return [];
-        return [...sales].sort((a, b) => new Date(b.saleDate).getTime() - new Date(a.saleDate).getTime());
-    }, [sales]);
+    const processedSales = useMemo(() => {
+        if (!sales || !customers) return [];
+
+        let filteredSales = sales.map(sale => {
+            const customer = customers.find(c => c.id === sale.customerId);
+            return {
+                ...sale,
+                customerName: customer?.name || 'N/A'
+            };
+        });
+
+        if (searchTerm) {
+            const lowercasedTerm = searchTerm.toLowerCase();
+            filteredSales = filteredSales.filter(sale =>
+                sale.customerName.toLowerCase().includes(lowercasedTerm) ||
+                sale.status.toLowerCase().includes(lowercasedTerm) ||
+                sale.id.toLowerCase().includes(lowercasedTerm)
+            );
+        }
+
+        filteredSales.sort((a, b) => {
+            const key = sortConfig.key;
+            let aValue: any = a[key as keyof typeof a];
+            let bValue: any = b[key as keyof typeof b];
+            
+            if (key === 'saleDate') {
+                aValue = new Date(aValue).getTime();
+                bValue = new Date(bValue).getTime();
+            }
+
+            if (aValue < bValue) {
+                return sortConfig.direction === 'ascending' ? -1 : 1;
+            }
+            if (aValue > bValue) {
+                return sortConfig.direction === 'ascending' ? 1 : -1;
+            }
+            return 0;
+        });
+
+        return filteredSales;
+
+    }, [sales, customers, searchTerm, sortConfig]);
+
+    const requestSort = (key: keyof Sale | 'customerName') => {
+        let direction: 'ascending' | 'descending' = 'ascending';
+        if (sortConfig.key === key && sortConfig.direction === 'ascending') {
+            direction = 'descending';
+        }
+        setSortConfig({ key, direction });
+    };
 
     const handleCancelClick = (sale: Sale) => {
         setSaleToCancel(sale);
@@ -84,15 +133,44 @@ function SalesPageContent() {
                             </Link>
                         </Button>
                     </div>
+                    <div className="relative mt-4">
+                        <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                        <Input 
+                            placeholder="Buscar por cliente, status ou ID..." 
+                            className="w-full pl-8" 
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                        />
+                    </div>
                 </CardHeader>
                 <CardContent>
                     <Table>
                         <TableHeader>
                             <TableRow>
-                                <TableHead>Cliente</TableHead>
-                                <TableHead>Data</TableHead>
-                                <TableHead className="text-center">Status</TableHead>
-                                <TableHead className="text-right">Valor Total</TableHead>
+                                <TableHead>
+                                     <Button variant="ghost" onClick={() => requestSort('customerName')}>
+                                        Cliente
+                                        <ArrowUpDown className="ml-2 h-4 w-4" />
+                                    </Button>
+                                </TableHead>
+                                <TableHead>
+                                    <Button variant="ghost" onClick={() => requestSort('saleDate')}>
+                                        Data
+                                        <ArrowUpDown className="ml-2 h-4 w-4" />
+                                    </Button>
+                                </TableHead>
+                                <TableHead className="text-center">
+                                    <Button variant="ghost" onClick={() => requestSort('status')}>
+                                        Status
+                                        <ArrowUpDown className="ml-2 h-4 w-4" />
+                                    </Button>
+                                </TableHead>
+                                <TableHead className="text-right">
+                                     <Button variant="ghost" onClick={() => requestSort('totalAmount')}>
+                                        Valor Total
+                                        <ArrowUpDown className="ml-2 h-4 w-4" />
+                                    </Button>
+                                </TableHead>
                                 <TableHead>
                                     <span className="sr-only">Ações</span>
                                 </TableHead>
@@ -105,13 +183,11 @@ function SalesPageContent() {
                                         <Loader2 className="h-6 w-6 animate-spin mx-auto" />
                                     </TableCell>
                                 </TableRow>
-                            ) : sortedSales.length > 0 ? (
-                                sortedSales.map((sale: Sale) => {
-                                    const customer = customers?.find(c => c.id === sale.customerId);
-                                    
+                            ) : processedSales.length > 0 ? (
+                                processedSales.map((sale) => {
                                     return (
                                         <TableRow key={sale.id} onDoubleClick={() => handleViewClick(sale.id)} className="cursor-pointer">
-                                            <TableCell className="font-medium">{customer?.name || 'N/A'}</TableCell>
+                                            <TableCell className="font-medium">{sale.customerName}</TableCell>
                                             <TableCell>{new Date(sale.saleDate).toLocaleDateString('pt-BR')}</TableCell>
                                             <TableCell className="text-center">
                                                 <Badge variant={sale.status === 'paid' ? 'default' : 'destructive'} className={sale.status === 'paid' ? 'bg-green-600 hover:bg-green-700' : ''}>
