@@ -119,6 +119,17 @@ service cloud.firestore {
     match /serviceOrders/{serviceOrderId} {
       allow read, write: if isSignedIn();
     }
+    
+    /**
+     * @description Manages budget records. All authenticated users can read and write budget data.
+     * @path /budgets/{budgetId}
+     * @allow (get) An authenticated user reads a specific budget document.
+     * @deny (get) An unauthenticated (anonymous) user tries to read a budget.
+     * @principle Grants full CRUD access to any authenticated user, treating all data as shared.
+     */
+    match /budgets/{budgetId} {
+        allow read, write: if isSignedIn();
+    }
 
     /**
      * @description Manages user roles and data.
@@ -143,3 +154,5 @@ service cloud.firestore {
     }
   }
 }
+
+    

@@ -284,6 +284,76 @@
         "totalAmount",
         "status"
       ]
+    },
+    "Budget": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Budget",
+      "type": "object",
+      "description": "Represents a budget or quote for a customer.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Budget entity."
+        },
+        "customerId": {
+          "type": "string",
+          "description": "Reference to Customer."
+        },
+        "items": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "productId": {
+                "type": "string"
+              },
+              "quantity": {
+                "type": "number"
+              },
+              "unitPrice": {
+                "type": "number"
+              }
+            },
+            "required": [
+              "productId",
+              "quantity",
+              "unitPrice"
+            ]
+          }
+        },
+        "budgetDate": {
+          "type": "string",
+          "description": "The date the budget was created.",
+          "format": "date-time"
+        },
+        "validUntil": {
+          "type": "string",
+          "description": "The date the budget is valid until.",
+          "format": "date-time"
+        },
+        "totalAmount": {
+          "type": "number",
+          "description": "The total amount of the budget."
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "pending",
+            "approved",
+            "rejected"
+          ],
+          "description": "The status of the budget."
+        }
+      },
+      "required": [
+        "id",
+        "customerId",
+        "items",
+        "budgetDate",
+        "validUntil",
+        "totalAmount",
+        "status"
+      ]
     }
   },
   "auth": {
@@ -335,6 +405,16 @@
         }
       },
       {
+        "path": "budgets/{budgetId}",
+        "definition": {
+          "entityName": "Budget",
+          "schema": {
+            "$ref": "#/backend/entities/Budget"
+          },
+          "description": "Stores budget data. Any authenticated user can manage budgets."
+        }
+      },
+      {
         "path": "users/{userId}",
         "definition": {
           "entityName": "User",
@@ -357,3 +437,5 @@
     ]
   }
 }
+
+    

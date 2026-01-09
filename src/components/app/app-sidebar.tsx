@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, Users, ShoppingCart, Package, Settings, LogOut, FileText } from 'lucide-react';
+import { LayoutDashboard, Users, ShoppingCart, Package, Settings, LogOut, FileText, ClipboardList } from 'lucide-react';
 import Image from 'next/image';
 import {
   Sidebar,
@@ -23,6 +23,7 @@ const navItems = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/customers', label: 'Clientes', icon: Users },
   { href: '/products', label: 'Produtos', icon: Package },
+  { href: '/budgets', label: 'Orçamentos', icon: ClipboardList },
   { href: '/sales', label: 'Vendas', icon: ShoppingCart },
   { href: '/service-orders', label: 'Ordens de Serviço', icon: FileText },
   { href: '/settings', label: 'Configurações', icon: Settings },
@@ -87,3 +88,5 @@ export function AppSidebar() {
     </Sidebar>
   );
 }
+
+    
