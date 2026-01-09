@@ -110,7 +110,7 @@ function SalesPageContent() {
                                     const customer = customers?.find(c => c.id === sale.customerId);
                                     
                                     return (
-                                        <TableRow key={sale.id}>
+                                        <TableRow key={sale.id} onDoubleClick={() => handleViewClick(sale.id)} className="cursor-pointer">
                                             <TableCell className="font-medium">{customer?.name || 'N/A'}</TableCell>
                                             <TableCell>{new Date(sale.saleDate).toLocaleDateString('pt-BR')}</TableCell>
                                             <TableCell className="text-center">

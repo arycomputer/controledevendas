@@ -128,7 +128,7 @@ function BudgetsPageContent() {
                                     const customer = customers?.find(c => c.id === budget.customerId);
                                     
                                     return (
-                                        <TableRow key={budget.id}>
+                                        <TableRow key={budget.id} onDoubleClick={() => handleViewClick(budget.id)} className="cursor-pointer">
                                             <TableCell className="font-medium">{customer?.name || 'N/A'}</TableCell>
                                             <TableCell>{new Date(budget.budgetDate).toLocaleDateString('pt-BR')}</TableCell>
                                             <TableCell>{new Date(budget.validUntil).toLocaleDateString('pt-BR')}</TableCell>

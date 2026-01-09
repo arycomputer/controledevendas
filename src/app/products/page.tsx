@@ -97,7 +97,7 @@ function ProductsPageContent() {
                                 </TableRow>
                             ) : products && products.length > 0 ? (
                                 products.map((product: Product) => (
-                                    <TableRow key={product.id}>
+                                    <TableRow key={product.id} onDoubleClick={() => handleEditClick(product.id)} className="cursor-pointer">
                                         <TableCell className="font-medium">{product.name}</TableCell>
                                         <TableCell className="text-muted-foreground">{product.description}</TableCell>
                                         <TableCell>

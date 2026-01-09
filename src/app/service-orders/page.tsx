@@ -130,7 +130,7 @@ function ServiceOrdersPageContent() {
                                     const customer = customers?.find(c => c.id === order.customerId);
                                     
                                     return (
-                                        <TableRow key={order.id}>
+                                        <TableRow key={order.id} onDoubleClick={() => handleViewClick(order.id)} className="cursor-pointer">
                                             <TableCell className="font-medium">{customer?.name || 'N/A'}</TableCell>
                                             <TableCell>{order.itemDescription}</TableCell>
                                             <TableCell>{new Date(order.entryDate).toLocaleDateString('pt-BR')}</TableCell>

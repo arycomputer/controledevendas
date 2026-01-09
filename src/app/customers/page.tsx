@@ -117,7 +117,7 @@ function CustomersPageContent() {
                                 </TableRow>
                             ) : filteredCustomers.length > 0 ? (
                                 filteredCustomers.map((customer: Customer) => (
-                                    <TableRow key={customer.id}>
+                                    <TableRow key={customer.id} onDoubleClick={() => handleEditClick(customer.id)} className="cursor-pointer">
                                         <TableCell className="font-medium">{customer.name}</TableCell>
                                         <TableCell>
                                             <div className="text-sm">{customer.email}</div>
