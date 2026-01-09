@@ -1,6 +1,5 @@
 'use client';
 
-import type { Metadata } from 'next';
 import './globals.css';
 import { Toaster } from "@/components/ui/toaster";
 import { AppSidebar } from '@/components/app/app-sidebar';
@@ -8,14 +7,9 @@ import { SidebarProvider, SidebarInset } from '@/components/ui/sidebar';
 import { CompanyProvider, useCompany } from '@/context/company-context';
 import { FirebaseClientProvider } from '@/firebase';
 
-// export const metadata: Metadata = {
-//   title: 'Controle de Vendas',
-//   description: 'Gerenciamento de vendas, clientes e produtos.',
-// };
-
-function AppLayout({ children }: { children: React.ReactNode }) {
+function AppTheme({ children }: { children: React.ReactNode }) {
   const { companyData } = useCompany();
-  
+
   return (
     <html lang="pt-BR" suppressHydrationWarning className={companyData.theme}>
       <head>
@@ -26,15 +20,7 @@ function AppLayout({ children }: { children: React.ReactNode }) {
         <link href="https://fonts.googleapis.com/css2?family=PT+Sans:wght@400;700&display=swap" rel="stylesheet" />
       </head>
       <body className="font-body antialiased">
-        <SidebarProvider>
-          <AppSidebar />
-          <SidebarInset>
-            <div className="p-4 sm:p-6 lg:p-8">
-              {children}
-            </div>
-          </SidebarInset>
-        </SidebarProvider>
-        <Toaster />
+        {children}
       </body>
     </html>
   )
@@ -48,7 +34,17 @@ export default function RootLayout({
   return (
     <FirebaseClientProvider>
       <CompanyProvider>
-          <AppLayout>{children}</AppLayout>
+        <AppTheme>
+          <SidebarProvider>
+            <AppSidebar />
+            <SidebarInset>
+              <div className="p-4 sm:p-6 lg:p-8">
+                {children}
+              </div>
+            </SidebarInset>
+          </SidebarProvider>
+          <Toaster />
+        </AppTheme>
       </CompanyProvider>
     </FirebaseClientProvider>
   );
