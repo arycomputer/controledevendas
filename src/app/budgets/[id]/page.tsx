@@ -65,7 +65,7 @@ function BudgetDetailsPageContent() {
                     .section-title { font-weight: bold; margin-bottom: 0.5rem; font-size: 1.1rem; border-bottom: 1px solid #eee; padding-bottom: 0.5rem; }
                     .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; font-size: 0.9rem; }
                     .info-item h4 { font-weight: bold; margin: 0 0 0.25rem 0; }
-                    .info-item p { margin: 0; color: #555; }
+                    .info-item p, .info-item div { margin: 0; color: #555; }
                     table { width: 100%; border-collapse: collapse; margin-top: 1rem; }
                     th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
                     th { background-color: #f2f2f2; }
@@ -221,13 +221,13 @@ function BudgetDetailsPageContent() {
                             <h4 className="font-semibold">Datas e Status</h4>
                             <p>Data do Orçamento: {new Date(budget.budgetDate).toLocaleDateString('pt-BR')}</p>
                             <p>Válido até: {new Date(budget.validUntil).toLocaleDateString('pt-BR')}</p>
-                             <p className="flex items-center gap-2">
+                             <div className="flex items-center gap-2">
                                 Status:
                                 <Badge variant='default' className={`${statusColors[budget.status]} no-print`}>
                                     {statusLabels[budget.status]}
                                 </Badge>
                                 <span className="print-only">{statusLabels[budget.status]}</span>
-                            </p>
+                            </div>
                         </div>
                     </div>
 

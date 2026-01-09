@@ -56,7 +56,7 @@ function ServiceOrderDetailsPageContent() {
                     .section-title { font-weight: bold; margin-bottom: 0.5rem; font-size: 1.1rem; border-bottom: 1px solid #eee; padding-bottom: 0.5rem; }
                     .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; font-size: 0.9rem; }
                     .info-item h4 { font-weight: bold; margin: 0 0 0.25rem 0; }
-                    .info-item p { margin: 0; color: #555; }
+                    .info-item p, .info-item div { margin: 0; color: #555; }
                     table { width: 100%; border-collapse: collapse; margin-top: 1rem; }
                     th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
                     th { background-color: #f2f2f2; }
@@ -169,13 +169,13 @@ function ServiceOrderDetailsPageContent() {
                             <h4 className="font-semibold">Datas e Status</h4>
                             <p>Entrada: {new Date(order.entryDate).toLocaleDateString('pt-BR')}</p>
                             {order.exitDate && <p>Saída: {new Date(order.exitDate).toLocaleDateString('pt-BR')}</p>}
-                            <p className="flex items-center gap-2">
+                            <div className="flex items-center gap-2">
                                 Status:
                                 <Badge variant='default' className={`${statusColors[order.status]} no-print`}>
                                     {statusLabels[order.status]}
                                 </Badge>
                                 <span className="print-only">{statusLabels[order.status]}</span>
-                            </p>
+                            </div>
                         </div>
                         <div className="info-item">
                             <h4 className="font-semibold">Problema Relatado</h4>

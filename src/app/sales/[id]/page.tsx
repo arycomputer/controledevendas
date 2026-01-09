@@ -99,12 +99,12 @@ function SaleDetailsPageContent() {
                     <div className="space-y-1">
                         <h3 className="font-semibold">Pagamento</h3>
                         <p className="text-muted-foreground">Forma: {paymentMethodLabels[sale.paymentMethod]}</p>
-                        <p className="text-muted-foreground flex items-center gap-2">
+                        <div className="text-muted-foreground flex items-center gap-2">
                             Status:
                              <Badge variant={sale.status === 'paid' ? 'default' : 'destructive'} className={sale.status === 'paid' ? 'bg-green-600 hover:bg-green-700' : ''}>
                                 {sale.status === 'paid' ? 'Pago' : 'A Receber'}
                             </Badge>
-                        </p>
+                        </div>
                     </div>
                 </div>
 
