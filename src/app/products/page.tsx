@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { PlusCircle, MoreHorizontal, Loader2, Edit, Trash2 } from 'lucide-react';
+import { PlusCircle, MoreHorizontal, Loader2, Edit, Trash2, Link as LinkIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -82,6 +82,7 @@ function ProductsPageContent() {
                                 <TableHead>Tipo</TableHead>
                                 <TableHead className="text-right">Preço</TableHead>
                                 <TableHead className="text-right">Estoque</TableHead>
+                                <TableHead>Link</TableHead>
                                 <TableHead>
                                     <span className="sr-only">Ações</span>
                                 </TableHead>
@@ -90,7 +91,7 @@ function ProductsPageContent() {
                         <TableBody>
                             {isLoading ? (
                                 <TableRow>
-                                    <TableCell colSpan={5} className="h-24 text-center">
+                                    <TableCell colSpan={6} className="h-24 text-center">
                                         <Loader2 className="h-6 w-6 animate-spin mx-auto" />
                                     </TableCell>
                                 </TableRow>
@@ -107,6 +108,15 @@ function ProductsPageContent() {
                                             {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(product.price)}
                                         </TableCell>
                                         <TableCell className="text-right">{product.type === 'piece' ? product.quantity : 'N/A'}</TableCell>
+                                        <TableCell>
+                                            {product.link && (
+                                                <Button variant="ghost" size="icon" asChild>
+                                                    <a href={product.link} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()}>
+                                                        <LinkIcon className="h-4 w-4" />
+                                                    </a>
+                                                </Button>
+                                            )}
+                                        </TableCell>
                                         <TableCell className="text-right">
                                             <DropdownMenu>
                                                 <DropdownMenuTrigger asChild>
@@ -127,7 +137,7 @@ function ProductsPageContent() {
                                 ))
                             ) : (
                                 <TableRow>
-                                     <TableCell colSpan={5} className="h-24 text-center">
+                                     <TableCell colSpan={6} className="h-24 text-center">
                                         Nenhum item encontrado.
                                     </TableCell>
                                 </TableRow>
@@ -158,3 +168,5 @@ export default function ProductsPage() {
         </AuthGuard>
     )
 }
+
+    

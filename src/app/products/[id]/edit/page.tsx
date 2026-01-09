@@ -33,6 +33,7 @@ const createProductFormSchema = (settings: any) => z.object({
     price: z.coerce.number().min(0.01, "O preço deve ser maior que zero."),
     type: z.enum(['piece', 'service'], { required_error: "É necessário selecionar um tipo." }),
     quantity: z.any().optional(),
+    link: z.string().url("Por favor, insira um URL válido.").optional().or(z.literal('')),
 }).refine(data => !settings?.product?.description || (data.description && data.description.length >= 5), {
     message: "A descrição deve ter pelo menos 5 caracteres.",
     path: ["description"],
@@ -73,6 +74,7 @@ function EditProductPageContent() {
       price: product?.price || 0,
       type: product?.type || "piece",
       quantity: product?.quantity ?? 0,
+      link: product?.link || "",
     }), [product]),
   })
   
@@ -84,6 +86,7 @@ function EditProductPageContent() {
         price: product.price,
         type: product.type,
         quantity: product.quantity ?? '',
+        link: product.link || "",
       });
     }
   }, [product, form]);
@@ -205,6 +208,19 @@ function EditProductPageContent() {
                   )}
                 />
             )}
+             <FormField
+              control={form.control}
+              name="link"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Link</FormLabel>
+                  <FormControl>
+                    <Input placeholder="https://..." {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <FormField
                 control={form.control}
@@ -261,3 +277,5 @@ export default function EditProductPage() {
         </AuthGuard>
     )
 }
+
+    

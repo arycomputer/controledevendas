@@ -73,6 +73,10 @@
             "service"
           ],
           "description": "The type of the item."
+        },
+        "link": {
+          "type": "string",
+          "description": "An optional external link for the product."
         }
       },
       "required": [
