@@ -40,8 +40,9 @@ export const CompanyProvider = ({ children }: { children: ReactNode }) => {
   const firestore = useFirestore();
   
   const settingsDocRef = useMemoFirebase(() => {
-    return firestore ? doc(firestore, 'settings', 'companyData') : null;
-  }, [firestore]);
+    // Only create the doc ref if we have a user and firestore instance
+    return firestore && user ? doc(firestore, 'settings', 'companyData') : null;
+  }, [firestore, user]);
   
   const { data: remoteCompanyData, isLoading: isSettingsLoading } = useDoc<CompanyData>(settingsDocRef);
 
@@ -52,34 +53,44 @@ export const CompanyProvider = ({ children }: { children: ReactNode }) => {
   
   const [isInitialized, setIsInitialized] = useState(false);
 
-  const isLoading = isUserLoading || isSettingsLoading || !isInitialized;
+  const isLoading = isUserLoading || (user && isSettingsLoading && !isInitialized);
 
   useEffect(() => {
-    if (isSettingsLoading || isUserLoading || isInitialized) {
+    // If we're loading the user or settings, or if we're already initialized, don't do anything.
+    if (isUserLoading || isSettingsLoading || isInitialized) {
+      // If there's no user and we're not loading, it's initialized with defaults.
+      if (!user && !isUserLoading) {
+        setIsInitialized(true);
+      }
       return;
     }
 
-    if (remoteCompanyData) {
-      const fullData = { ...defaultCompanyData, ...remoteCompanyData };
-      setCompanyDataState(fullData);
-      setSavedCompanyData(fullData);
-      setIsInitialized(true);
-    } else if (!isSettingsLoading && settingsDocRef) {
-      // Doc doesn't exist, create it with defaults
-      setDoc(settingsDocRef, defaultCompanyData)
-        .then(() => {
-          setCompanyDataState(defaultCompanyData);
-          setSavedCompanyData(defaultCompanyData);
-          setIsInitialized(true);
-        })
-        .catch((error) => {
-          console.error("Failed to create default company data:", error);
-          setCompanyDataState(defaultCompanyData);
-          setSavedCompanyData(defaultCompanyData);
-          setIsInitialized(true); // Proceed with defaults on error
-        });
+    // This block runs when user is loaded, but settings might not be yet.
+    if (user) {
+      if (remoteCompanyData) {
+        const fullData = { ...defaultCompanyData, ...remoteCompanyData };
+        setCompanyDataState(fullData);
+        setSavedCompanyData(fullData);
+        setIsInitialized(true);
+      } else if (!isSettingsLoading && settingsDocRef) {
+        // User is loaded, settings are not, and doc doesn't exist. Create it.
+        setDoc(settingsDocRef, defaultCompanyData)
+          .then(() => {
+            setCompanyDataState(defaultCompanyData);
+            setSavedCompanyData(defaultCompanyData);
+            setIsInitialized(true);
+          })
+          .catch((error) => {
+            console.error("Failed to create default company data:", error);
+            // Proceed with defaults even on error.
+            setCompanyDataState(defaultCompanyData);
+            setSavedCompanyData(defaultCompanyData);
+            setIsInitialized(true);
+          });
+      }
     }
-  }, [isSettingsLoading, isUserLoading, remoteCompanyData, settingsDocRef, isInitialized]);
+
+  }, [user, isUserLoading, remoteCompanyData, isSettingsLoading, settingsDocRef, isInitialized]);
   
   // Only updates the local state for UI previews
   const handleSetCompanyData = useCallback((data: Partial<CompanyData>) => {
@@ -108,6 +119,7 @@ export const CompanyProvider = ({ children }: { children: ReactNode }) => {
     savedCompanyData,
   };
   
+  // Show a loader while user state is resolving or initial settings are loading
   if (isLoading) {
      return (
         <div className="flex items-center justify-center h-screen bg-background">
