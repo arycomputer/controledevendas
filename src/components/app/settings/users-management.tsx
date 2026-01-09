@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useMemo } from "react"
-import { MoreHorizontal, PlusCircle, Loader2 } from "lucide-react"
+import { MoreHorizontal, PlusCircle, Loader2, Edit, Trash2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu"
@@ -114,9 +114,9 @@ export function UsersManagement() {
                                         </DropdownMenuTrigger>
                                         <DropdownMenuContent align="end">
                                             <DropdownMenuLabel>Ações</DropdownMenuLabel>
-                                            <DropdownMenuItem onClick={() => handleAction('edit', user)}>Editar</DropdownMenuItem>
+                                            <DropdownMenuItem onClick={() => handleAction('edit', user)}><Edit className="mr-2 h-4 w-4" />Editar</DropdownMenuItem>
                                             <DropdownMenuSeparator />
-                                            <DropdownMenuItem onClick={() => handleAction('delete', user)} className="text-destructive focus:text-destructive focus:bg-destructive/10">Remover</DropdownMenuItem>
+                                            <DropdownMenuItem onClick={() => handleAction('delete', user)} className="text-destructive focus:text-destructive focus:bg-destructive/10"><Trash2 className="mr-2 h-4 w-4" />Remover</DropdownMenuItem>
                                         </DropdownMenuContent>
                                     </DropdownMenu>
                                 </TableCell>

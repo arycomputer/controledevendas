@@ -3,7 +3,7 @@
 import React, { useState, useMemo } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { PlusCircle, MoreHorizontal, Loader2 } from 'lucide-react';
+import { PlusCircle, MoreHorizontal, Loader2, Eye, Edit, Trash2, CheckCircle, XCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -168,17 +168,17 @@ function BudgetsPageContent() {
                                                     </DropdownMenuTrigger>
                                                     <DropdownMenuContent align="end">
                                                         <DropdownMenuLabel>Ações</DropdownMenuLabel>
-                                                        <DropdownMenuItem onClick={() => handleViewClick(budget.id)}>Visualizar</DropdownMenuItem>
-                                                        <DropdownMenuItem onClick={() => handleEditClick(budget.id)} disabled={budget.status !== 'pending'}>Editar</DropdownMenuItem>
+                                                        <DropdownMenuItem onClick={() => handleViewClick(budget.id)}><Eye className="mr-2 h-4 w-4" />Visualizar</DropdownMenuItem>
+                                                        <DropdownMenuItem onClick={() => handleEditClick(budget.id)} disabled={budget.status !== 'pending'}><Edit className="mr-2 h-4 w-4" />Editar</DropdownMenuItem>
                                                         {budget.status === 'pending' && (
                                                             <>
                                                                 <DropdownMenuSeparator />
-                                                                <DropdownMenuItem onClick={() => handleStatusChange(budget.id, 'approved')}>Aprovar</DropdownMenuItem>
-                                                                <DropdownMenuItem onClick={() => handleStatusChange(budget.id, 'rejected')} className="text-destructive focus:text-destructive focus:bg-destructive/10">Rejeitar</DropdownMenuItem>
+                                                                <DropdownMenuItem onClick={() => handleStatusChange(budget.id, 'approved')}><CheckCircle className="mr-2 h-4 w-4" />Aprovar</DropdownMenuItem>
+                                                                <DropdownMenuItem onClick={() => handleStatusChange(budget.id, 'rejected')} className="text-destructive focus:text-destructive focus:bg-destructive/10"><XCircle className="mr-2 h-4 w-4" />Rejeitar</DropdownMenuItem>
                                                             </>
                                                         )}
                                                         <DropdownMenuSeparator />
-                                                        <DropdownMenuItem onClick={() => handleDeleteClick(budget)} className="text-destructive focus:text-destructive focus:bg-destructive/10" disabled={budget.status === 'approved'}>Excluir</DropdownMenuItem>
+                                                        <DropdownMenuItem onClick={() => handleDeleteClick(budget)} className="text-destructive focus:text-destructive focus:bg-destructive/10" disabled={budget.status === 'approved'}><Trash2 className="mr-2 h-4 w-4" />Excluir</DropdownMenuItem>
                                                     </DropdownMenuContent>
                                                 </DropdownMenu>
                                             </TableCell>

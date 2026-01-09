@@ -3,7 +3,7 @@
 import React, { useState, useMemo } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { PlusCircle, MoreHorizontal, Loader2 } from 'lucide-react';
+import { PlusCircle, MoreHorizontal, Loader2, Eye, Edit, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -152,10 +152,10 @@ function ServiceOrdersPageContent() {
                                                     </DropdownMenuTrigger>
                                                     <DropdownMenuContent align="end">
                                                         <DropdownMenuLabel>Ações</DropdownMenuLabel>
-                                                        <DropdownMenuItem onClick={() => handleViewClick(order.id)}>Visualizar</DropdownMenuItem>
-                                                        <DropdownMenuItem onClick={() => handleEditClick(order.id)}>Editar</DropdownMenuItem>
+                                                        <DropdownMenuItem onClick={() => handleViewClick(order.id)}><Eye className="mr-2 h-4 w-4" />Visualizar</DropdownMenuItem>
+                                                        <DropdownMenuItem onClick={() => handleEditClick(order.id)}><Edit className="mr-2 h-4 w-4" />Editar</DropdownMenuItem>
                                                         <DropdownMenuSeparator />
-                                                        <DropdownMenuItem onClick={() => handleCancelClick(order)} className="text-destructive focus:text-destructive focus:bg-destructive/10">Cancelar</DropdownMenuItem>
+                                                        <DropdownMenuItem onClick={() => handleCancelClick(order)} className="text-destructive focus:text-destructive focus:bg-destructive/10"><Trash2 className="mr-2 h-4 w-4" />Cancelar</DropdownMenuItem>
                                                     </DropdownMenuContent>
                                                 </DropdownMenu>
                                             </TableCell>
