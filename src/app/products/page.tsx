@@ -81,8 +81,6 @@ function ProductsPageContent() {
                                 <TableHead>Nome</TableHead>
                                 <TableHead>Tipo</TableHead>
                                 <TableHead className="text-right">Preço</TableHead>
-                                <TableHead className="text-right">Estoque</TableHead>
-                                <TableHead>Link</TableHead>
                                 <TableHead>
                                     <span className="sr-only">Ações</span>
                                 </TableHead>
@@ -91,7 +89,7 @@ function ProductsPageContent() {
                         <TableBody>
                             {isLoading ? (
                                 <TableRow>
-                                    <TableCell colSpan={6} className="h-24 text-center">
+                                    <TableCell colSpan={4} className="h-24 text-center">
                                         <Loader2 className="h-6 w-6 animate-spin mx-auto" />
                                     </TableCell>
                                 </TableRow>
@@ -106,16 +104,6 @@ function ProductsPageContent() {
                                         </TableCell>
                                         <TableCell className="text-right">
                                             {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(product.price)}
-                                        </TableCell>
-                                        <TableCell className="text-right">{product.type === 'piece' ? product.quantity : 'N/A'}</TableCell>
-                                        <TableCell>
-                                            {product.link && (
-                                                <Button variant="ghost" size="icon" asChild>
-                                                    <a href={product.link} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()}>
-                                                        <LinkIcon className="h-4 w-4" />
-                                                    </a>
-                                                </Button>
-                                            )}
                                         </TableCell>
                                         <TableCell className="text-right">
                                             <DropdownMenu>
@@ -137,7 +125,7 @@ function ProductsPageContent() {
                                 ))
                             ) : (
                                 <TableRow>
-                                     <TableCell colSpan={6} className="h-24 text-center">
+                                     <TableCell colSpan={4} className="h-24 text-center">
                                         Nenhum item encontrado.
                                     </TableCell>
                                 </TableRow>
@@ -168,5 +156,3 @@ export default function ProductsPage() {
         </AuthGuard>
     )
 }
-
-    
