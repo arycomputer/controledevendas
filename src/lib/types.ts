@@ -58,7 +58,7 @@ export const ServiceOrderSchema = z.object({
   customerId: z.string(),
   entryDate: z.string(), // ISO date string
   exitDate: z.string().optional(), // ISO date string
-  vehicleDescription: z.string(),
+  itemDescription: z.string(),
   problemDescription: z.string(),
   items: z.array(SaleItemSchema),
   totalAmount: z.number(),

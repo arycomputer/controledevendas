@@ -209,7 +209,7 @@
       "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "ServiceOrder",
       "type": "object",
-      "description": "Represents a service order for a customer's vehicle.",
+      "description": "Represents a service order for a customer's item.",
       "properties": {
         "id": {
           "type": "string",
@@ -221,17 +221,17 @@
         },
         "entryDate": {
           "type": "string",
-          "description": "The date the vehicle entered for service.",
+          "description": "The date the item entered for service.",
           "format": "date-time"
         },
         "exitDate": {
           "type": "string",
-          "description": "The date the vehicle was delivered after service.",
+          "description": "The date the item was delivered after service.",
           "format": "date-time"
         },
-        "vehicleDescription": {
+        "itemDescription": {
           "type": "string",
-          "description": "Description of the vehicle (e.g., model, year, plate)."
+          "description": "Description of the item (e.g., model, brand, serial number)."
         },
         "problemDescription": {
           "type": "string",
@@ -278,7 +278,7 @@
         "id",
         "customerId",
         "entryDate",
-        "vehicleDescription",
+        "itemDescription",
         "problemDescription",
         "items",
         "totalAmount",

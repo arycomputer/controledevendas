@@ -159,8 +159,8 @@ function ServiceOrderDetailsPageContent() {
                             <p>{customer.phone}</p>
                         </div>
                         <div className="info-item">
-                            <h4 className="font-semibold">Veículo</h4>
-                            <p>{order.vehicleDescription}</p>
+                            <h4 className="font-semibold">Item</h4>
+                            <p>{order.itemDescription}</p>
                         </div>
                     </div>
 

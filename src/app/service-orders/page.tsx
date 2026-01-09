@@ -109,7 +109,7 @@ function ServiceOrdersPageContent() {
                         <TableHeader>
                             <TableRow>
                                 <TableHead>Cliente</TableHead>
-                                <TableHead>Veículo</TableHead>
+                                <TableHead>Item</TableHead>
                                 <TableHead>Data de Entrada</TableHead>
                                 <TableHead className="text-center">Status</TableHead>
                                 <TableHead className="text-right">Valor Total</TableHead>
@@ -132,7 +132,7 @@ function ServiceOrdersPageContent() {
                                     return (
                                         <TableRow key={order.id}>
                                             <TableCell className="font-medium">{customer?.name || 'N/A'}</TableCell>
-                                            <TableCell>{order.vehicleDescription}</TableCell>
+                                            <TableCell>{order.itemDescription}</TableCell>
                                             <TableCell>{new Date(order.entryDate).toLocaleDateString('pt-BR')}</TableCell>
                                             <TableCell className="text-center">
                                                 <Badge variant='default' className={statusColors[order.status]}>

@@ -29,7 +29,7 @@ const serviceOrderFormSchema = z.object({
   customerId: z.string({ required_error: "É necessário selecionar um cliente." }).min(1, "É necessário selecionar um cliente."),
   entryDate: z.date({ required_error: "A data de entrada é obrigatória."}),
   exitDate: z.date().optional(),
-  vehicleDescription: z.string().min(5, "Descreva o veículo com mais detalhes."),
+  itemDescription: z.string().min(5, "Descreva o item com mais detalhes."),
   problemDescription: z.string().min(10, "Descreva o problema com mais detalhes."),
   items: z.array(z.object({
     productId: z.string().min(1, "Selecione um produto ou serviço."),
@@ -64,7 +64,7 @@ function EditServiceOrderPageContent() {
         customerId: order?.customerId || "",
         entryDate: order ? new Date(order.entryDate) : new Date(),
         exitDate: order?.exitDate ? new Date(order.exitDate) : undefined,
-        vehicleDescription: order?.vehicleDescription || "",
+        itemDescription: order?.itemDescription || "",
         problemDescription: order?.problemDescription || "",
         items: order?.items || [],
         status: order?.status || 'pending',
@@ -298,12 +298,12 @@ function EditServiceOrderPageContent() {
 
             <FormField
               control={form.control}
-              name="vehicleDescription"
+              name="itemDescription"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Descrição do Veículo</FormLabel>
+                  <FormLabel>Descrição do Item</FormLabel>
                   <FormControl>
-                    <Input placeholder="Ex: Toyota Corolla 2022, Placa ABC-1234" {...field} />
+                    <Input placeholder="Ex: Notebook Dell Vostro, N/S ABC-1234" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -316,7 +316,7 @@ function EditServiceOrderPageContent() {
                 <FormItem>
                   <FormLabel>Problema/Serviço Solicitado</FormLabel>
                   <FormControl>
-                    <Textarea placeholder="Ex: Barulho na suspensão dianteira ao passar em lombadas." className="resize-none" {...field} />
+                    <Textarea placeholder="Ex: Tela não liga, faz barulho ao iniciar." className="resize-none" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
