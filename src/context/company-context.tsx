@@ -38,31 +38,25 @@ export const CompanyProvider = ({ children }: { children: ReactNode }) => {
   const firestore = useFirestore();
   
   const settingsDocRef = useMemoFirebase(() => {
-    if (firestore && user) {
-        return doc(firestore, 'settings', 'companyData');
-    }
-    return null;
-  }, [firestore, user]);
+    return firestore ? doc(firestore, 'settings', 'companyData') : null;
+  }, [firestore]);
   
   const { data: remoteCompanyData, isLoading: isSettingsLoading } = useDoc<CompanyData>(settingsDocRef);
   const [companyData, setCompanyDataState] = useState<CompanyData>(defaultCompanyData);
   const [isInitialized, setIsInitialized] = useState(false);
 
-  const isLoading = isUserLoading || (user && !isInitialized);
+  const isLoading = isUserLoading || isSettingsLoading || !isInitialized;
 
   useEffect(() => {
-    if (isUserLoading || isSettingsLoading || isInitialized || !user) {
-        if (!user && !isUserLoading) {
-            setCompanyDataState(defaultCompanyData);
-            setIsInitialized(false);
-        }
+    // Wait until firebase hooks are done loading and we have a user object
+    if (isUserLoading || isSettingsLoading || isInitialized) {
         return;
     }
-
-    setIsInitialized(true);
     
+    setIsInitialized(true);
+
     if (remoteCompanyData) {
-      setCompanyDataState(remoteCompanyData);
+      setCompanyDataState(prev => ({...prev, ...remoteCompanyData}));
     } else if (settingsDocRef) {
       setDoc(settingsDocRef, defaultCompanyData)
         .then(() => {
@@ -70,17 +64,23 @@ export const CompanyProvider = ({ children }: { children: ReactNode }) => {
         })
         .catch((error) => {
           console.error("Failed to create default company data:", error);
-          setCompanyDataState(defaultCompanyData);
+          setCompanyDataState(defaultCompanyData); // Fallback to default on error
         });
     }
 
-  }, [isUserLoading, isSettingsLoading, remoteCompanyData, user, settingsDocRef, isInitialized]);
+  }, [isUserLoading, isSettingsLoading, remoteCompanyData, settingsDocRef, isInitialized]);
   
   const handleSetCompanyData = async (data: Partial<CompanyData>) => {
     if (!settingsDocRef) return;
     const updatedData = { ...companyData, ...data };
-    setCompanyDataState(updatedData);
-    await setDoc(settingsDocRef, updatedData, { merge: true });
+    setCompanyDataState(updatedData); // Optimistic update
+    try {
+        await setDoc(settingsDocRef, updatedData, { merge: true });
+    } catch (error) {
+        console.error("Failed to save company data:", error);
+        // Optional: revert state on error
+        // setCompanyDataState(companyData); 
+    }
   };
 
   const contextValue = {
@@ -88,11 +88,11 @@ export const CompanyProvider = ({ children }: { children: ReactNode }) => {
     setCompanyData: handleSetCompanyData,
     isLoading: isLoading,
   };
-
+  
   if (isLoading) {
      return (
-        <div className="flex items-center justify-center h-screen">
-            <Loader2 className="h-12 w-12 animate-spin" />
+        <div className="flex items-center justify-center h-screen bg-background">
+            <Loader2 className="h-12 w-12 animate-spin text-primary" />
         </div>
     );
   }
