@@ -114,9 +114,9 @@ export function UsersManagement() {
                                         </DropdownMenuTrigger>
                                         <DropdownMenuContent align="end">
                                             <DropdownMenuLabel>Ações</DropdownMenuLabel>
-                                            <DropdownMenuItem onClick={() => handleAction('edit', user)}><Edit className="mr-2 h-4 w-4" />Editar</DropdownMenuItem>
+                                            <DropdownMenuItem onClick={() => handleAction('edit', user)}><Edit /></DropdownMenuItem>
                                             <DropdownMenuSeparator />
-                                            <DropdownMenuItem onClick={() => handleAction('delete', user)} className="text-destructive focus:text-destructive focus:bg-destructive/10"><Trash2 className="mr-2 h-4 w-4" />Remover</DropdownMenuItem>
+                                            <DropdownMenuItem onClick={() => handleAction('delete', user)} className="text-destructive focus:text-destructive focus:bg-destructive/10"><Trash2 /></DropdownMenuItem>
                                         </DropdownMenuContent>
                                     </DropdownMenu>
                                 </TableCell>

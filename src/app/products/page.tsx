@@ -119,9 +119,9 @@ function ProductsPageContent() {
                                                 </DropdownMenuTrigger>
                                                 <DropdownMenuContent align="end">
                                                     <DropdownMenuLabel>Ações</DropdownMenuLabel>
-                                                    <DropdownMenuItem onClick={() => handleEditClick(product.id)}><Edit className="mr-2 h-4 w-4" />Editar</DropdownMenuItem>
+                                                    <DropdownMenuItem onClick={() => handleEditClick(product.id)}><Edit /></DropdownMenuItem>
                                                     <DropdownMenuSeparator />
-                                                    <DropdownMenuItem onClick={() => handleDeleteClick(product)} className="text-destructive focus:text-destructive focus:bg-destructive/10"><Trash2 className="mr-2 h-4 w-4" />Excluir</DropdownMenuItem>
+                                                    <DropdownMenuItem onClick={() => handleDeleteClick(product)} className="text-destructive focus:text-destructive focus:bg-destructive/10"><Trash2 /></DropdownMenuItem>
                                                 </DropdownMenuContent>
                                             </DropdownMenu>
                                         </TableCell>

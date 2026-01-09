@@ -131,9 +131,9 @@ function SalesPageContent() {
                                                     </DropdownMenuTrigger>
                                                     <DropdownMenuContent align="end">
                                                         <DropdownMenuLabel>Ações</DropdownMenuLabel>
-                                                        <DropdownMenuItem onClick={() => handleViewClick(sale.id)}><Eye className="mr-2 h-4 w-4" />Visualizar</DropdownMenuItem>
+                                                        <DropdownMenuItem onClick={() => handleViewClick(sale.id)}><Eye /></DropdownMenuItem>
                                                         <DropdownMenuSeparator />
-                                                        <DropdownMenuItem onClick={() => handleCancelClick(sale)} className="text-destructive focus:text-destructive focus:bg-destructive/10"><XCircle className="mr-2 h-4 w-4" />Cancelar Venda</DropdownMenuItem>
+                                                        <DropdownMenuItem onClick={() => handleCancelClick(sale)} className="text-destructive focus:text-destructive focus:bg-destructive/10"><XCircle /></DropdownMenuItem>
                                                     </DropdownMenuContent>
                                                 </DropdownMenu>
                                             </TableCell>
