@@ -21,20 +21,33 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { useToast } from "@/hooks/use-toast"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { useEffect, useMemo } from "react"
-import { doc, updateDoc, deleteField } from "firebase/firestore"
+import { doc, updateDoc } from "firebase/firestore"
 import { useDoc, useFirestore, useMemoFirebase } from "@/firebase"
 import { Loader2 } from "lucide-react"
 import { AuthGuard } from "@/components/app/auth-guard"
 import type { Product } from "@/lib/types"
 
-type ProductFormValues = z.infer<typeof productFormSchema>;
-const productFormSchema = z.object({
+const createProductFormSchema = (settings: any) => z.object({
     name: z.string().min(2, "O nome deve ter pelo menos 2 caracteres."),
     description: z.string().optional(),
     price: z.coerce.number().min(0.01, "O preço deve ser maior que zero."),
     type: z.enum(['piece', 'service'], { required_error: "É necessário selecionar um tipo." }),
     quantity: z.any().optional(),
+}).refine(data => !settings?.product?.description || (data.description && data.description.length >= 5), {
+    message: "A descrição deve ter pelo menos 5 caracteres.",
+    path: ["description"],
+}).refine(data => {
+    if (data.type === 'piece' && settings?.product?.quantity) {
+        return data.quantity !== undefined && data.quantity !== null && data.quantity !== '' && !isNaN(data.quantity);
+    }
+    return true;
+}, {
+    message: "Quantidade é obrigatória para peças.",
+    path: ["quantity"],
 });
+
+type ProductFormValues = z.infer<Return<typeof createProductFormSchema>>;
+
 
 function EditProductPageContent() {
   const router = useRouter()
@@ -49,40 +62,29 @@ function EditProductPageContent() {
   
   const productDocRef = useMemoFirebase(() => doc(firestore, 'parts', productId), [firestore, productId]);
   const { data: product, isLoading: productLoading } = useDoc<Product>(productDocRef);
+  
+  const productFormSchema = createProductFormSchema(registrationSettings);
 
   const form = useForm<ProductFormValues>({
-    resolver: zodResolver(
-      z.object({
-        name: z.string().min(2, "O nome deve ter pelo menos 2 caracteres."),
-        description: z.string().optional(),
-        price: z.coerce.number().min(0.01, "O preço deve ser maior que zero."),
-        type: z.enum(['piece', 'service'], { required_error: "É necessário selecionar um tipo." }),
-        quantity: z.any().optional(),
-      }).refine(data => !registrationSettings?.product?.description || (data.description && data.description.length >= 5), {
-        message: "A descrição deve ter pelo menos 5 caracteres.",
-        path: ["description"],
-      }).refine(data => {
-        if (data.type === 'piece' && registrationSettings?.product?.quantity) {
-          return data.quantity !== undefined && data.quantity !== null && data.quantity !== '' && !isNaN(data.quantity);
-        }
-        return true;
-      }, {
-        message: "Quantidade é obrigatória para peças.",
-        path: ["quantity"],
-      })
-    ),
-    defaultValues: {
-      name: "",
-      description: "",
-      price: 0,
-      type: "piece",
-      quantity: 0,
-    },
+    resolver: zodResolver(productFormSchema),
+    defaultValues: useMemo(() => ({
+      name: product?.name || "",
+      description: product?.description || "",
+      price: product?.price || 0,
+      type: product?.type || "piece",
+      quantity: product?.quantity ?? 0,
+    }), [product]),
   })
   
   useEffect(() => {
     if (product) {
-      form.reset(product);
+      form.reset({
+        name: product.name,
+        description: product.description,
+        price: product.price,
+        type: product.type,
+        quantity: product.quantity ?? '',
+      });
     }
   }, [product, form]);
 
@@ -90,18 +92,18 @@ function EditProductPageContent() {
 
   useEffect(() => {
     if (productType === 'service') {
-        form.setValue('quantity', undefined);
+        form.setValue('quantity', 1000);
     }
   }, [productType, form]);
 
   async function onSubmit(data: ProductFormValues) {
     try {
-        const finalData: Partial<ProductFormValues> & { quantity?: number | ReturnType<typeof deleteField> } = {
+        const finalData: Partial<ProductFormValues> & { quantity?: number } = {
             ...data,
         };
 
         if (data.type === 'service') {
-            finalData.quantity = deleteField();
+            finalData.quantity = 1000;
         } else {
             finalData.quantity = data.quantity ? Number(data.quantity) : 0;
         }
@@ -189,19 +191,19 @@ function EditProductPageContent() {
               )}
             />
             {productSettings.description && (
-              <FormField
-                control={form.control}
-                name="description"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Descrição</FormLabel>
-                    <FormControl>
-                      <Textarea placeholder="Ex: Para motor 1.0 8v / Serviço de troca de óleo do motor" className="resize-none" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+                <FormField
+                  control={form.control}
+                  name="description"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Descrição</FormLabel>
+                      <FormControl>
+                        <Textarea placeholder="Ex: Para motor 1.0 8v / Serviço de troca de óleo do motor" className="resize-none" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
             )}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <FormField
@@ -217,7 +219,7 @@ function EditProductPageContent() {
                     </FormItem>
                 )}
                 />
-                {(productType === 'piece' && productSettings.quantity) && (
+                {productType === 'piece' && productSettings.quantity && (
                   <FormField
                     control={form.control}
                     name="quantity"
