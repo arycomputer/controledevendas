@@ -1,4 +1,4 @@
-'use client'
+"use client"
 
 import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis, Tooltip } from "recharts"
 import {
@@ -40,29 +40,27 @@ export function SalesChart({ sales }: SalesChartProps) {
 
   return (
     <ChartContainer config={chartConfig} className="h-[300px] w-full">
-      <ResponsiveContainer width="100%" height="100%">
-        <BarChart data={chartData} margin={{ top: 5, right: 20, left: -10, bottom: 5 }}>
-          <XAxis
-            dataKey="name"
-            stroke="hsl(var(--muted-foreground))"
-            fontSize={12}
-            tickLine={false}
-            axisLine={false}
-          />
-          <YAxis
-            stroke="hsl(var(--muted-foreground))"
-            fontSize={12}
-            tickLine={false}
-            axisLine={false}
-            tickFormatter={(value) => `R$${value}`}
-          />
-          <Tooltip 
-             content={<ChartTooltipContent formatter={(value) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value as number)} />} 
-             cursor={{ fill: 'hsl(var(--accent) / 0.1)' }}
-          />
-          <Bar dataKey="total" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
-        </BarChart>
-      </ResponsiveContainer>
+      <BarChart data={chartData} margin={{ top: 5, right: 20, left: -10, bottom: 5 }}>
+        <XAxis
+          dataKey="name"
+          stroke="hsl(var(--muted-foreground))"
+          fontSize={12}
+          tickLine={false}
+          axisLine={false}
+        />
+        <YAxis
+          stroke="hsl(var(--muted-foreground))"
+          fontSize={12}
+          tickLine={false}
+          axisLine={false}
+          tickFormatter={(value) => `R$${value}`}
+        />
+        <Tooltip 
+            content={<ChartTooltipContent formatter={(value) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value as number)} />} 
+            cursor={{ fill: 'hsl(var(--accent) / 0.1)' }}
+        />
+        <Bar dataKey="total" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
+      </BarChart>
     </ChartContainer>
   )
 }
