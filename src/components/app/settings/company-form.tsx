@@ -58,10 +58,11 @@ export function CompanyForm() {
           description: "O novo logo foi carregado com sucesso.",
         });
       } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : "Ocorreu um erro desconhecido.";
         console.error("Upload failed:", error);
         toast({
           title: "Falha no Upload",
-          description: "Não foi possível carregar a imagem. Verifique o console para mais detalhes.",
+          description: errorMessage,
           variant: "destructive",
         });
         setLogoPreview(savedCompanyData.logo || null); // Revert preview on error

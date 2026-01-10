@@ -63,7 +63,7 @@ function NewProductPageContent() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
-  const [imageUrl, setImageUrl] = useState('');
+  const [imageUrlInput, setImageUrlInput] = useState('');
 
   const settingsDocRef = useMemoFirebase(() => doc(firestore, 'settings', 'registration'), [firestore]);
   const { data: registrationSettings, isLoading: settingsLoading } = useDoc(settingsDocRef);
@@ -100,10 +100,11 @@ function NewProductPageContent() {
           description: "A imagem do produto foi carregada.",
         });
       } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : "Ocorreu um erro desconhecido.";
         console.error("Upload failed:", error);
         toast({
           title: "Falha no Upload",
-          description: "Não foi possível carregar a imagem.",
+          description: errorMessage,
           variant: "destructive",
         });
         setImagePreview(null);
@@ -114,20 +115,21 @@ function NewProductPageContent() {
   };
   
   const handleUrlUpload = async () => {
-    if (!imageUrl) {
+    if (!imageUrlInput) {
         toast({ title: "URL Inválido", description: "Por favor, insira um URL de imagem válido.", variant: "destructive" });
         return;
     }
     setIsUploading(true);
-    setImagePreview(imageUrl);
+    setImagePreview(imageUrlInput);
     try {
-        const uploadedUrl = await uploadImageFromUrl(imageUrl);
+        const uploadedUrl = await uploadImageFromUrl(imageUrlInput);
         form.setValue("imageUrl", uploadedUrl, { shouldDirty: true });
         setImagePreview(uploadedUrl);
         toast({ title: "Upload Concluído", description: "A imagem foi carregada a partir do link." });
     } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : "Ocorreu um erro desconhecido.";
         console.error("Upload from URL failed:", error);
-        toast({ title: "Falha no Upload", description: "Não foi possível carregar a imagem a partir do link.", variant: "destructive" });
+        toast({ title: "Falha no Upload", description: errorMessage, variant: "destructive" });
         setImagePreview(null);
     } finally {
         setIsUploading(false);
@@ -265,8 +267,8 @@ function NewProductPageContent() {
                         <Input 
                             type="text" 
                             placeholder="https://exemplo.com/imagem.png"
-                            value={imageUrl}
-                            onChange={(e) => setImageUrl(e.target.value)}
+                            value={imageUrlInput}
+                            onChange={(e) => setImageUrlInput(e.target.value)}
                             disabled={isUploading}
                         />
                         <Button type="button" variant="outline" onClick={handleUrlUpload} disabled={isUploading}>
@@ -361,5 +363,3 @@ export default function NewProductPage() {
         </AuthGuard>
     )
 }
-
-    

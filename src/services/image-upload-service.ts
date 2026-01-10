@@ -1,3 +1,4 @@
+
 // A função para converter um arquivo em uma string base64
 const toBase64 = (file: File): Promise<string> =>
   new Promise((resolve, reject) => {
@@ -48,14 +49,13 @@ export async function uploadImage(imageFile: File): Promise<string> {
     if (result.status === "success" && result.data?.url) {
       return result.data.url;
     } else {
-      // Extrai a mensagem de erro específica da API, se disponível
       const apiErrorMessage = result.error?.message || "Resposta inesperada da API Postimages.";
       throw new Error(`Erro da API Postimages: ${apiErrorMessage}`);
     }
   } catch (error) {
-    console.error("Erro no upload para o Postimages:", error);
-    // Propaga o erro para ser tratado pela UI
-    throw error;
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    console.error("Erro no upload para o Postimages:", errorMessage);
+    throw new Error(`Falha no upload para o Postimages: ${errorMessage}`);
   }
 }
 
@@ -97,7 +97,8 @@ export async function uploadImageFromUrl(imageUrl: string): Promise<string> {
       throw new Error(`Erro da API Postimages: ${apiErrorMessage}`);
     }
   } catch (error) {
-    console.error("Erro no upload do link para o Postimages:", error);
-    throw error;
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    console.error("Erro no upload do link para o Postimages:", errorMessage);
+    throw new Error(`Falha no upload do link para o Postimages: ${errorMessage}`);
   }
 }
