@@ -33,30 +33,26 @@ export async function uploadImage(imageFile: File): Promise<string> {
 
   try {
     const dataUrl = await toBase64(imageFile);
-    // A API espera apenas os dados em base64, sem o prefixo do Data URL.
     const base64Image = dataUrl.split(',')[1];
 
     if (!base64Image) {
         throw new Error("Não foi possível extrair os dados em base64 da imagem.");
     }
 
-    const body = new URLSearchParams({
-        key: apiKey,
-        image: base64Image,
-        gallery: 'AppVendas'
-    });
-    
+    const formData = new FormData();
+    formData.append("key", apiKey);
+    formData.append("image", base64Image);
+    formData.append("gallery", "AppVendas");
+
     const response = await fetch(apiUrl, {
       method: "POST",
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded'
-      },
-      body: body.toString(),
+      body: formData,
     });
 
     const result = await response.json();
 
     if (!response.ok || result.status !== "success") {
+      console.error('Postimages API Error Response:', result); // Log para depuração
       const apiErrorMessage = result?.error?.message || result?.error || "Resposta inesperada da API Postimages.";
       throw new Error(`Erro da API Postimages: ${apiErrorMessage}`);
     }
@@ -103,6 +99,7 @@ export async function uploadImageFromUrl(imageUrl: string): Promise<string> {
     const result = await response.json();
 
     if (!response.ok || result.status !== "success") {
+       console.error('Postimages API Error Response (from URL):', result); // Log para depuração
        const apiErrorMessage = result?.error?.message || result?.error || "Resposta inesperada da API Postimages ao carregar a URL.";
       throw new Error(`Erro da API Postimages: ${apiErrorMessage}`);
     }
