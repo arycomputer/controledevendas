@@ -250,7 +250,7 @@ function NewProductPageContent() {
                             type="file" 
                             ref={fileInputRef} 
                             className="hidden" 
-                            accept="image/*"
+                            accept="image/png, image/jpeg, image/gif, image/webp"
                             onChange={handleImageChange}
                             disabled={isUploading}
                         />
@@ -361,3 +361,5 @@ export default function NewProductPage() {
         </AuthGuard>
     )
 }
+
+    
