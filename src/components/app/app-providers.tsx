@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { FirebaseClientProvider } from '@/firebase';
 import { CompanyProvider, useCompany } from '@/context/company-context';
 import { SidebarProvider, SidebarInset } from '@/components/ui/sidebar';
@@ -22,12 +22,19 @@ function AppThemeController({ children }: { children: React.ReactNode }) {
 
 export function AppProviders({ children }: { children: React.ReactNode }) {
   const isMobile = useIsMobile();
+  const [isMounted, setIsMounted] = useState(false);
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
+  const sidebarDefaultOpen = isMounted ? !isMobile : false;
 
   return (
     <FirebaseClientProvider>
       <CompanyProvider>
         <AppThemeController>
-          <SidebarProvider defaultOpen={!isMobile}>
+          <SidebarProvider defaultOpen={sidebarDefaultOpen}>
             <AppSidebar />
             <SidebarInset>
               <main className="p-4 sm:p-6 lg:p-8">
