@@ -17,18 +17,14 @@ function AppTheme({ children }: { children: React.ReactNode }) {
   // Render a basic theme during loading to avoid flash of unstyled content
   const theme = isLoading ? 'light' : companyData.theme;
 
-  return (
-    <html lang="pt-BR" suppressHydrationWarning className={theme}>
-      <head>
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link href="https://fonts.googleapis.com/css2?family=PT+Sans:wght@400;700&display=swap" rel="stylesheet" />
-      </head>
-      <body className="font-body antialiased">
-        {children}
-      </body>
-    </html>
-  )
+  // This component now only adds the class to the html tag.
+  // We use useEffect to avoid server/client mismatch on the className.
+  React.useEffect(() => {
+    document.documentElement.className = theme || 'light';
+  }, [theme]);
+
+
+  return <>{children}</>;
 }
 
 
@@ -60,8 +56,17 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <AppProviders>
-      {children}
-    </AppProviders>
+    <html lang="pt-BR" suppressHydrationWarning>
+       <head>
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link href="https://fonts.googleapis.com/css2?family=PT+Sans:wght@400;700&display=swap" rel="stylesheet" />
+      </head>
+      <body className="font-body antialiased">
+        <AppProviders>
+          {children}
+        </AppProviders>
+      </body>
+    </html>
   );
 }
