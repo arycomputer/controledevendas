@@ -43,8 +43,7 @@ export async function uploadImage(imageFile: File): Promise<string> {
     const formData = new FormData();
     formData.append("key", apiKey);
     formData.append("image", base64Image);
-    // Opcional: você pode adicionar um nome para a imagem se desejar
-    // formData.append("name", imageFile.name);
+    formData.append("name", imageFile.name);
 
     const response = await fetch(apiUrl, {
       method: "POST",
