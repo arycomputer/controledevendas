@@ -1,3 +1,4 @@
+require('dotenv').config();
 
 // A função para converter um arquivo em uma string base64
 const toBase64 = (file: File): Promise<string> =>
@@ -81,6 +82,10 @@ export async function uploadImage(imageFile: File): Promise<string> {
 export async function uploadImageFromUrl(imageUrl: string): Promise<string> {
   const apiKey = process.env.NEXT_PUBLIC_IMGBB_API_KEY;
   const apiUrl = `https://api.imgbb.com/1/upload?key=${apiKey}&image=${encodeURIComponent(imageUrl)}`;
+  
+  if (!apiKey) {
+    throw new Error("A variável de ambiente NEXT_PUBLIC_IMGBB_API_KEY não está definida.");
+  }
   
   try {
     const response = await fetch(apiUrl, {
