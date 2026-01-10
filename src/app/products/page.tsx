@@ -2,8 +2,9 @@
 
 import React, { useState, useMemo } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { useRouter } from 'next/navigation';
-import { PlusCircle, MoreHorizontal, Loader2, Edit, Trash2, Link as LinkIcon, Search, ArrowUpDown } from 'lucide-react';
+import { PlusCircle, MoreHorizontal, Loader2, Edit, Trash2, Link as LinkIcon, Search, ArrowUpDown, ImageIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -131,6 +132,7 @@ function ProductsPageContent() {
                     <Table>
                         <TableHeader>
                             <TableRow>
+                                <TableHead className="w-16">Imagem</TableHead>
                                 <TableHead>
                                      <Button variant="ghost" onClick={() => requestSort('name')}>
                                         Nome
@@ -157,13 +159,22 @@ function ProductsPageContent() {
                         <TableBody>
                             {isLoading ? (
                                 <TableRow>
-                                    <TableCell colSpan={4} className="h-24 text-center">
+                                    <TableCell colSpan={5} className="h-24 text-center">
                                         <Loader2 className="h-6 w-6 animate-spin mx-auto" />
                                     </TableCell>
                                 </TableRow>
                             ) : sortedAndFilteredProducts && sortedAndFilteredProducts.length > 0 ? (
                                 sortedAndFilteredProducts.map((product: Product) => (
                                     <TableRow key={product.id} onDoubleClick={() => handleEditClick(product.id)} className="cursor-pointer">
+                                        <TableCell>
+                                            <div className="relative h-12 w-12 rounded-md overflow-hidden border bg-muted flex items-center justify-center">
+                                                {product.imageUrl ? (
+                                                    <Image src={product.imageUrl} alt={product.name} fill className="object-cover" />
+                                                ) : (
+                                                    <ImageIcon className="h-6 w-6 text-muted-foreground" />
+                                                )}
+                                            </div>
+                                        </TableCell>
                                         <TableCell className="font-medium">{product.name}</TableCell>
                                         <TableCell>
                                             <Badge variant={product.type === 'piece' ? 'secondary' : 'outline'}>
@@ -198,7 +209,7 @@ function ProductsPageContent() {
                                 ))
                             ) : (
                                 <TableRow>
-                                     <TableCell colSpan={4} className="h-24 text-center">
+                                     <TableCell colSpan={5} className="h-24 text-center">
                                         Nenhum item encontrado.
                                     </TableCell>
                                 </TableRow>

@@ -6,6 +6,8 @@ import { useForm } from "react-hook-form"
 import * as z from "zod"
 import { useRouter } from "next/navigation"
 import { v4 as uuidv4 } from 'uuid';
+import React, { useRef, useState, useMemo } from "react";
+import Image from "next/image";
 
 import { Button } from "@/components/ui/button"
 import {
@@ -24,8 +26,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useDoc, useFirestore, useMemoFirebase } from "@/firebase"
 import { doc, setDoc } from "firebase/firestore"
 import { AuthGuard } from "@/components/app/auth-guard"
-import { useMemo } from "react"
-import { Loader2 } from "lucide-react"
+import { Loader2, UploadCloud, ImageIcon } from "lucide-react"
+import { uploadImage } from "@/services/image-upload-service";
 
 
 const createProductFormSchema = (settings: any) => z.object({
@@ -35,6 +37,7 @@ const createProductFormSchema = (settings: any) => z.object({
     type: z.enum(['piece', 'service'], { required_error: "É necessário selecionar um tipo." }),
     quantity: z.any().optional(),
     link: z.string().url("Por favor, insira um URL válido.").optional().or(z.literal('')),
+    imageUrl: z.string().optional(),
 }).refine(data => !settings?.product?.description || (data.description && data.description.length >= 5), {
     message: "A descrição deve ter pelo menos 5 caracteres.",
     path: ["description"],
@@ -55,6 +58,10 @@ function NewProductPageContent() {
   const router = useRouter()
   const { toast } = useToast()
   const firestore = useFirestore();
+  
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
 
   const settingsDocRef = useMemoFirebase(() => doc(firestore, 'settings', 'registration'), [firestore]);
   const { data: registrationSettings, isLoading: settingsLoading } = useDoc(settingsDocRef);
@@ -70,10 +77,39 @@ function NewProductPageContent() {
       type: "piece",
       quantity: 0,
       link: "",
+      imageUrl: "",
     },
   })
   
   const productType = form.watch("type");
+
+  const handleImageChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      setIsUploading(true);
+      setImagePreview(URL.createObjectURL(file)); 
+
+      try {
+        const imageUrl = await uploadImage(file);
+        form.setValue("imageUrl", imageUrl, { shouldDirty: true });
+        toast({
+          title: "Upload Concluído",
+          description: "A imagem do produto foi carregada.",
+        });
+      } catch (error) {
+        console.error("Upload failed:", error);
+        toast({
+          title: "Falha no Upload",
+          description: "Não foi possível carregar a imagem.",
+          variant: "destructive",
+        });
+        setImagePreview(null);
+      } finally {
+        setIsUploading(false);
+      }
+    }
+  };
+
 
   async function onSubmit(data: ProductFormValues) {
     if (!firestore) return;
@@ -121,40 +157,77 @@ function NewProductPageContent() {
       <CardContent>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-             <FormField
-              control={form.control}
-              name="type"
-              render={({ field }) => (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-6">
+                    <FormField
+                    control={form.control}
+                    name="type"
+                    render={({ field }) => (
+                        <FormItem>
+                        <FormLabel>Tipo</FormLabel>
+                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                            <FormControl>
+                            <SelectTrigger>
+                                <SelectValue placeholder="Selecione o tipo" />
+                            </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                            <SelectItem value="piece">Peça</SelectItem>
+                            <SelectItem value="service">Serviço</SelectItem>
+                            </SelectContent>
+                        </Select>
+                        <FormMessage />
+                        </FormItem>
+                    )}
+                    />
+                    <FormField
+                    control={form.control}
+                    name="name"
+                    render={({ field }) => (
+                        <FormItem>
+                        <FormLabel>Nome</FormLabel>
+                        <FormControl>
+                            <Input placeholder="Ex: Filtro de Ar / Troca de Óleo" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                        </FormItem>
+                    )}
+                    />
+                </div>
                 <FormItem>
-                  <FormLabel>Tipo</FormLabel>
-                   <Select onValueChange={field.onChange} defaultValue={field.value}>
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Selecione o tipo" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      <SelectItem value="piece">Peça</SelectItem>
-                      <SelectItem value="service">Serviço</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
+                    <FormLabel>Imagem do Produto</FormLabel>
+                    <div className="flex items-center gap-4">
+                        <div className="relative h-28 w-28 rounded-md overflow-hidden border-2 border-dashed flex items-center justify-center">
+                            {imagePreview ? (
+                                <Image src={imagePreview} alt="Pré-visualização" fill className="object-cover"/>
+                            ) : (
+                                <div className="text-center text-muted-foreground">
+                                    <ImageIcon className="mx-auto h-8 w-8"/>
+                                    <span className="text-xs">Sem imagem</span>
+                                </div>
+                            )}
+                            {isUploading && (
+                                <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+                                    <Loader2 className="h-6 w-6 animate-spin text-white" />
+                                </div>
+                            )}
+                        </div>
+                        <Input 
+                            type="file" 
+                            ref={fileInputRef} 
+                            className="hidden" 
+                            accept="image/*"
+                            onChange={handleImageChange}
+                            disabled={isUploading}
+                        />
+                        <Button type="button" variant="outline" size="sm" onClick={() => fileInputRef.current?.click()} disabled={isUploading}>
+                            <UploadCloud className="mr-2 h-4 w-4"/>
+                            {imagePreview ? 'Alterar' : 'Enviar'}
+                        </Button>
+                    </div>
                 </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="name"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Nome</FormLabel>
-                  <FormControl>
-                    <Input placeholder="Ex: Filtro de Ar / Troca de Óleo" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+            </div>
+            
             {productSettings.description && (
                 <FormField
                   control={form.control}
@@ -239,5 +312,3 @@ export default function NewProductPage() {
         </AuthGuard>
     )
 }
-
-    

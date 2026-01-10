@@ -5,6 +5,8 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
 import * as z from "zod"
 import { useRouter, useParams } from "next/navigation"
+import React, { useEffect, useMemo, useRef, useState } from "react"
+import Image from "next/image"
 
 import { Button } from "@/components/ui/button"
 import {
@@ -20,12 +22,12 @@ import { Textarea } from "@/components/ui/textarea"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { useToast } from "@/hooks/use-toast"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { useEffect, useMemo } from "react"
 import { doc, updateDoc } from "firebase/firestore"
 import { useDoc, useFirestore, useMemoFirebase } from "@/firebase"
-import { Loader2 } from "lucide-react"
+import { Loader2, UploadCloud, ImageIcon } from "lucide-react"
 import { AuthGuard } from "@/components/app/auth-guard"
 import type { Product } from "@/lib/types"
+import { uploadImage } from "@/services/image-upload-service"
 
 const createProductFormSchema = (settings: any) => z.object({
     name: z.string().min(2, "O nome deve ter pelo menos 2 caracteres."),
@@ -34,6 +36,7 @@ const createProductFormSchema = (settings: any) => z.object({
     type: z.enum(['piece', 'service'], { required_error: "É necessário selecionar um tipo." }),
     quantity: z.any().optional(),
     link: z.string().url("Por favor, insira um URL válido.").optional().or(z.literal('')),
+    imageUrl: z.string().optional(),
 }).refine(data => !settings?.product?.description || (data.description && data.description.length >= 5), {
     message: "A descrição deve ter pelo menos 5 caracteres.",
     path: ["description"],
@@ -55,8 +58,12 @@ function EditProductPageContent() {
   const params = useParams()
   const { toast } = useToast()
   const firestore = useFirestore()
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const productId = params.id as string;
+  
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
 
   const settingsDocRef = useMemoFirebase(() => doc(firestore, 'settings', 'registration'), [firestore]);
   const { data: registrationSettings, isLoading: settingsLoading } = useDoc(settingsDocRef);
@@ -75,6 +82,7 @@ function EditProductPageContent() {
       type: product?.type || "piece",
       quantity: product?.quantity ?? 0,
       link: product?.link || "",
+      imageUrl: product?.imageUrl || "",
     }), [product]),
   })
   
@@ -87,7 +95,11 @@ function EditProductPageContent() {
         type: product.type,
         quantity: product.quantity ?? '',
         link: product.link || "",
+        imageUrl: product.imageUrl || "",
       });
+       if (product.imageUrl) {
+        setImagePreview(product.imageUrl);
+      }
     }
   }, [product, form]);
 
@@ -98,6 +110,34 @@ function EditProductPageContent() {
         form.setValue('quantity', 1000);
     }
   }, [productType, form]);
+
+  const handleImageChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      setIsUploading(true);
+      const localPreviewUrl = URL.createObjectURL(file);
+      setImagePreview(localPreviewUrl);
+
+      try {
+        const imageUrl = await uploadImage(file);
+        form.setValue("imageUrl", imageUrl, { shouldDirty: true });
+        toast({
+          title: "Upload Concluído",
+          description: "A imagem do produto foi atualizada.",
+        });
+      } catch (error) {
+        console.error("Upload failed:", error);
+        toast({
+          title: "Falha no Upload",
+          description: "Não foi possível carregar a nova imagem.",
+          variant: "destructive",
+        });
+        setImagePreview(product?.imageUrl || null); // Revert on error
+      } finally {
+        setIsUploading(false);
+      }
+    }
+  };
 
   async function onSubmit(data: ProductFormValues) {
     try {
@@ -159,40 +199,76 @@ function EditProductPageContent() {
       <CardContent>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-             <FormField
-              control={form.control}
-              name="type"
-              render={({ field }) => (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-6">
+                    <FormField
+                      control={form.control}
+                      name="type"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Tipo</FormLabel>
+                          <Select onValueChange={field.onChange} defaultValue={field.value}>
+                            <FormControl>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Selecione o tipo" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              <SelectItem value="piece">Peça</SelectItem>
+                              <SelectItem value="service">Serviço</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="name"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Nome</FormLabel>
+                          <FormControl>
+                            <Input placeholder="Ex: Filtro de Ar / Troca de Óleo" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                </div>
                 <FormItem>
-                  <FormLabel>Tipo</FormLabel>
-                   <Select onValueChange={field.onChange} defaultValue={field.value}>
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Selecione o tipo" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      <SelectItem value="piece">Peça</SelectItem>
-                      <SelectItem value="service">Serviço</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
+                    <FormLabel>Imagem do Produto</FormLabel>
+                    <div className="flex items-center gap-4">
+                        <div className="relative h-28 w-28 rounded-md overflow-hidden border-2 border-dashed flex items-center justify-center">
+                            {imagePreview ? (
+                                <Image src={imagePreview} alt="Pré-visualização" fill className="object-cover"/>
+                            ) : (
+                                <div className="text-center text-muted-foreground">
+                                    <ImageIcon className="mx-auto h-8 w-8"/>
+                                    <span className="text-xs">Sem imagem</span>
+                                </div>
+                            )}
+                            {isUploading && (
+                                <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+                                    <Loader2 className="h-6 w-6 animate-spin text-white" />
+                                </div>
+                            )}
+                        </div>
+                        <Input 
+                            type="file" 
+                            ref={fileInputRef} 
+                            className="hidden" 
+                            accept="image/*"
+                            onChange={handleImageChange}
+                            disabled={isUploading}
+                        />
+                        <Button type="button" variant="outline" size="sm" onClick={() => fileInputRef.current?.click()} disabled={isUploading}>
+                            <UploadCloud className="mr-2 h-4 w-4"/>
+                            {imagePreview ? 'Alterar' : 'Enviar'}
+                        </Button>
+                    </div>
                 </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="name"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Nome</FormLabel>
-                  <FormControl>
-                    <Input placeholder="Ex: Filtro de Ar / Troca de Óleo" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+            </div>
             {productSettings.description && (
                 <FormField
                   control={form.control}
@@ -277,5 +353,3 @@ export default function EditProductPage() {
         </AuthGuard>
     )
 }
-
-    

@@ -21,6 +21,7 @@ export const ProductSchema = z.object({
   quantity: z.number().optional(),
   type: z.enum(['piece', 'service']),
   link: z.string().optional(),
+  imageUrl: z.string().optional(),
 });
 export type Product = z.infer<typeof ProductSchema>;
 
@@ -77,6 +78,3 @@ export const BudgetSchema = z.object({
   status: z.enum(['pending', 'approved', 'rejected']),
 });
 export type Budget = z.infer<typeof BudgetSchema>;
-
-    
-    
