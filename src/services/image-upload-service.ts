@@ -38,6 +38,7 @@ export async function uploadImage(imageFile: File): Promise<string> {
     const formData = new FormData();
     formData.append("key", apiKey);
     formData.append("image", base64Image);
+    formData.append("gallery", "AppVendas");
     
     const response = await fetch(apiUrl, {
       method: "POST",
@@ -83,6 +84,7 @@ export async function uploadImageFromUrl(imageUrl: string): Promise<string> {
     const formData = new FormData();
     formData.append("key", apiKey);
     formData.append("url", imageUrl);
+    formData.append("gallery", "AppVendas");
 
     const response = await fetch(apiUrl, {
       method: "POST",
