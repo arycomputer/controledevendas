@@ -1,4 +1,3 @@
-
 'use client'
 
 import { zodResolver } from "@hookform/resolvers/zod"
@@ -199,13 +198,13 @@ function NewSalePageContent() {
                    const isService = selectedProduct?.type === 'service';
 
                    return (
-                     <div key={field.id} className="grid grid-cols-[1fr_100px_100px_auto] items-end gap-4 p-4 border rounded-lg bg-muted/20">
+                     <div key={field.id} className="grid grid-cols-1 md:grid-cols-[1fr_100px_100px_auto] items-end gap-4 p-4 border rounded-lg bg-muted/20">
                         <FormField
                           control={form.control}
                           name={`items.${index}.productId`}
                           render={({ field }) => (
                             <FormItem>
-                              <FormLabel className="text-xs">Produto/Serviço</FormLabel>
+                              <FormLabel className="text-xs md:hidden">Produto/Serviço</FormLabel>
                               <Select onValueChange={(value) => handleProductChange(value, index)} defaultValue={field.value}>
                                 <FormControl>
                                   <SelectTrigger>
@@ -234,7 +233,7 @@ function NewSalePageContent() {
                           name={`items.${index}.quantity`}
                           render={({ field }) => (
                             <FormItem>
-                              <FormLabel className="text-xs">Qtd.</FormLabel>
+                              <FormLabel className="text-xs md:hidden">Qtd.</FormLabel>
                               <FormControl>
                                 <Input type="number" min="1" disabled={isService} {...field} />
                               </FormControl>

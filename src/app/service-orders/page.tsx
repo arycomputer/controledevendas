@@ -142,12 +142,12 @@ function ServiceOrdersPageContent() {
         <>
             <Card>
                 <CardHeader>
-                    <div className="flex justify-between items-start">
+                    <div className="flex flex-col sm:flex-row justify-between items-start gap-4">
                         <div>
                             <CardTitle>Ordens de Serviço</CardTitle>
                             <CardDescription>Gerencie todas as ordens de serviço abertas e concluídas.</CardDescription>
                         </div>
-                        <Button asChild>
+                        <Button asChild className="w-full sm:w-auto">
                             <Link href="/service-orders/new">
                                 <PlusCircle className="mr-2 h-4 w-4" /> Nova Ordem de Serviço
                             </Link>
@@ -173,15 +173,15 @@ function ServiceOrdersPageContent() {
                                         <ArrowUpDown className="ml-2 h-4 w-4" />
                                     </Button>
                                 </TableHead>
-                                <TableHead>
+                                <TableHead className="hidden md:table-cell">
                                      <Button variant="ghost" onClick={() => requestSort('itemDescription')}>
                                         Item
                                         <ArrowUpDown className="ml-2 h-4 w-4" />
                                     </Button>
                                 </TableHead>
-                                <TableHead>
+                                <TableHead className="hidden lg:table-cell">
                                     <Button variant="ghost" onClick={() => requestSort('entryDate')}>
-                                        Data de Entrada
+                                        Entrada
                                         <ArrowUpDown className="ml-2 h-4 w-4" />
                                     </Button>
                                 </TableHead>
@@ -193,7 +193,7 @@ function ServiceOrdersPageContent() {
                                 </TableHead>
                                 <TableHead className="text-right">
                                     <Button variant="ghost" onClick={() => requestSort('totalAmount')}>
-                                        Valor Total
+                                        Valor
                                         <ArrowUpDown className="ml-2 h-4 w-4" />
                                     </Button>
                                 </TableHead>
@@ -215,8 +215,8 @@ function ServiceOrdersPageContent() {
                                     return (
                                         <TableRow key={order.id} onDoubleClick={() => handleViewClick(order.id)} className="cursor-pointer">
                                             <TableCell className="font-medium">{order.customerName}</TableCell>
-                                            <TableCell>{order.itemDescription}</TableCell>
-                                            <TableCell>{new Date(order.entryDate).toLocaleDateString('pt-BR')}</TableCell>
+                                            <TableCell className="hidden md:table-cell">{order.itemDescription}</TableCell>
+                                            <TableCell className="hidden lg:table-cell">{new Date(order.entryDate).toLocaleDateString('pt-BR')}</TableCell>
                                             <TableCell className="text-center">
                                                 <Badge variant='default' className={statusColors[order.status]}>
                                                     {statusLabels[order.status]}
@@ -235,10 +235,10 @@ function ServiceOrdersPageContent() {
                                                     </DropdownMenuTrigger>
                                                     <DropdownMenuContent align="end">
                                                         <DropdownMenuLabel>Ações</DropdownMenuLabel>
-                                                        <DropdownMenuItem onClick={() => handleViewClick(order.id)}><Eye /></DropdownMenuItem>
-                                                        <DropdownMenuItem onClick={() => handleEditClick(order.id)}><Edit /></DropdownMenuItem>
+                                                        <DropdownMenuItem onClick={() => handleViewClick(order.id)}><Eye className="mr-2 h-4 w-4" /> Ver Detalhes</DropdownMenuItem>
+                                                        <DropdownMenuItem onClick={() => handleEditClick(order.id)}><Edit className="mr-2 h-4 w-4" /> Editar</DropdownMenuItem>
                                                         <DropdownMenuSeparator />
-                                                        <DropdownMenuItem onClick={() => handleCancelClick(order)} className="text-destructive focus:text-destructive focus:bg-destructive/10"><Trash2 /></DropdownMenuItem>
+                                                        <DropdownMenuItem onClick={() => handleCancelClick(order)} className="text-destructive focus:text-destructive focus:bg-destructive/10"><Trash2 className="mr-2 h-4 w-4" /> Cancelar</DropdownMenuItem>
                                                     </DropdownMenuContent>
                                                 </DropdownMenu>
                                             </TableCell>

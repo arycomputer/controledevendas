@@ -157,12 +157,12 @@ function BudgetsPageContent() {
         <>
             <Card>
                 <CardHeader>
-                    <div className="flex justify-between items-start">
+                    <div className="flex flex-col sm:flex-row justify-between items-start gap-4">
                         <div>
                             <CardTitle>Orçamentos</CardTitle>
                             <CardDescription>Crie e gerencie orçamentos para seus clientes.</CardDescription>
                         </div>
-                        <Button asChild>
+                        <Button asChild className="w-full sm:w-auto">
                             <Link href="/budgets/new">
                                 <PlusCircle className="mr-2 h-4 w-4" /> Novo Orçamento
                             </Link>
@@ -188,13 +188,13 @@ function BudgetsPageContent() {
                                         <ArrowUpDown className="ml-2 h-4 w-4" />
                                     </Button>
                                 </TableHead>
-                                <TableHead>
+                                <TableHead className="hidden md:table-cell">
                                     <Button variant="ghost" onClick={() => requestSort('budgetDate')}>
                                         Data
                                         <ArrowUpDown className="ml-2 h-4 w-4" />
                                     </Button>
                                 </TableHead>
-                                <TableHead>
+                                <TableHead className="hidden lg:table-cell">
                                      <Button variant="ghost" onClick={() => requestSort('validUntil')}>
                                         Validade
                                         <ArrowUpDown className="ml-2 h-4 w-4" />
@@ -229,8 +229,8 @@ function BudgetsPageContent() {
                                     return (
                                         <TableRow key={budget.id} onDoubleClick={() => handleViewClick(budget.id)} className="cursor-pointer">
                                             <TableCell className="font-medium">{budget.customerName}</TableCell>
-                                            <TableCell>{new Date(budget.budgetDate).toLocaleDateString('pt-BR')}</TableCell>
-                                            <TableCell>{new Date(budget.validUntil).toLocaleDateString('pt-BR')}</TableCell>
+                                            <TableCell className="hidden md:table-cell">{new Date(budget.budgetDate).toLocaleDateString('pt-BR')}</TableCell>
+                                            <TableCell className="hidden lg:table-cell">{new Date(budget.validUntil).toLocaleDateString('pt-BR')}</TableCell>
                                              <TableCell className="text-center">
                                                 <Badge variant='default' className={statusColors[budget.status]}>
                                                     {statusLabels[budget.status]}
@@ -249,17 +249,17 @@ function BudgetsPageContent() {
                                                     </DropdownMenuTrigger>
                                                     <DropdownMenuContent align="end">
                                                         <DropdownMenuLabel>Ações</DropdownMenuLabel>
-                                                        <DropdownMenuItem onClick={() => handleViewClick(budget.id)}><Eye /></DropdownMenuItem>
-                                                        <DropdownMenuItem onClick={() => handleEditClick(budget.id)} disabled={budget.status !== 'pending'}><Edit /></DropdownMenuItem>
+                                                        <DropdownMenuItem onClick={() => handleViewClick(budget.id)}><Eye className="mr-2 h-4 w-4" /> Ver Detalhes</DropdownMenuItem>
+                                                        <DropdownMenuItem onClick={() => handleEditClick(budget.id)} disabled={budget.status !== 'pending'}><Edit className="mr-2 h-4 w-4" /> Editar</DropdownMenuItem>
                                                         {budget.status === 'pending' && (
                                                             <>
                                                                 <DropdownMenuSeparator />
-                                                                <DropdownMenuItem onClick={() => handleStatusChange(budget.id, 'approved')}><CheckCircle /></DropdownMenuItem>
-                                                                <DropdownMenuItem onClick={() => handleStatusChange(budget.id, 'rejected')} className="text-destructive focus:text-destructive focus:bg-destructive/10"><XCircle /></DropdownMenuItem>
+                                                                <DropdownMenuItem onClick={() => handleStatusChange(budget.id, 'approved')}><CheckCircle className="mr-2 h-4 w-4" /> Aprovar</DropdownMenuItem>
+                                                                <DropdownMenuItem onClick={() => handleStatusChange(budget.id, 'rejected')} className="text-destructive focus:text-destructive focus:bg-destructive/10"><XCircle className="mr-2 h-4 w-4" /> Rejeitar</DropdownMenuItem>
                                                             </>
                                                         )}
                                                         <DropdownMenuSeparator />
-                                                        <DropdownMenuItem onClick={() => handleDeleteClick(budget)} className="text-destructive focus:text-destructive focus:bg-destructive/10" disabled={budget.status === 'approved'}><Trash2 /></DropdownMenuItem>
+                                                        <DropdownMenuItem onClick={() => handleDeleteClick(budget)} className="text-destructive focus:text-destructive focus:bg-destructive/10" disabled={budget.status === 'approved'}><Trash2 className="mr-2 h-4 w-4" /> Excluir</DropdownMenuItem>
                                                     </DropdownMenuContent>
                                                 </DropdownMenu>
                                             </TableCell>

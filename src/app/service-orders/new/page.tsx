@@ -182,7 +182,7 @@ function NewServiceOrderPageContent() {
                 control={form.control}
                 name="entryDate"
                 render={({ field }) => (
-                    <FormItem className="flex flex-col pt-2">
+                    <FormItem className="flex flex-col pt-2 md:pt-0">
                         <FormLabel>Data de Entrada</FormLabel>
                         <Popover>
                             <PopoverTrigger asChild>
@@ -253,13 +253,13 @@ function NewServiceOrderPageContent() {
                    const isService = selectedProduct?.type === 'service';
 
                    return (
-                     <div key={field.id} className="grid grid-cols-[1fr_100px_100px_auto] items-end gap-4 p-4 border rounded-lg bg-muted/20">
+                     <div key={field.id} className="grid grid-cols-1 md:grid-cols-[1fr_100px_100px_auto] items-end gap-4 p-4 border rounded-lg bg-muted/20">
                         <FormField
                           control={form.control}
                           name={`items.${index}.productId`}
                           render={({ field }) => (
                             <FormItem>
-                              <FormLabel className="text-xs">Produto/Serviço</FormLabel>
+                              <FormLabel className="text-xs md:hidden">Produto/Serviço</FormLabel>
                               <Select onValueChange={(value) => handleProductChange(value, index)} defaultValue={field.value}>
                                 <FormControl>
                                   <SelectTrigger>
@@ -288,7 +288,7 @@ function NewServiceOrderPageContent() {
                           name={`items.${index}.quantity`}
                           render={({ field }) => (
                             <FormItem>
-                              <FormLabel className="text-xs">Qtd.</FormLabel>
+                              <FormLabel className="text-xs md:hidden">Qtd.</FormLabel>
                               <FormControl>
                                 <Input type="number" min="1" disabled={isService} {...field} />
                               </FormControl>
@@ -325,14 +325,14 @@ function NewServiceOrderPageContent() {
             
             <Separator />
             
-            <div className="flex justify-end items-center gap-6">
-                <div className="text-lg">
+            <div className="flex flex-col sm:flex-row justify-end items-center gap-4 sm:gap-6">
+                <div className="text-lg text-right w-full sm:w-auto">
                     <span>Total da O.S.: </span>
                     <span className="font-bold">
                         {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(totalAmount)}
                     </span>
                 </div>
-                <div className="flex gap-2">
+                <div className="flex justify-end gap-2 w-full sm:w-auto">
                     <Button type="button" variant="outline" onClick={() => router.back()}>
                         Cancelar
                     </Button>

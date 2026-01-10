@@ -331,13 +331,13 @@ function EditServiceOrderPageContent() {
                    const isService = selectedProduct?.type === 'service';
 
                    return (
-                     <div key={field.id} className="grid grid-cols-[1fr_100px_100px_auto] items-end gap-4 p-4 border rounded-lg bg-muted/20">
+                     <div key={field.id} className="grid grid-cols-1 md:grid-cols-[1fr_100px_100px_auto] items-end gap-4 p-4 border rounded-lg bg-muted/20">
                         <FormField
                           control={form.control}
                           name={`items.${index}.productId`}
                           render={({ field }) => (
                             <FormItem>
-                              <FormLabel className="text-xs">Produto/Serviço</FormLabel>
+                              <FormLabel className="text-xs md:hidden">Produto/Serviço</FormLabel>
                               <Select onValueChange={(value) => handleProductChange(value, index)} value={field.value}>
                                 <FormControl>
                                   <SelectTrigger>
@@ -366,7 +366,7 @@ function EditServiceOrderPageContent() {
                           name={`items.${index}.quantity`}
                           render={({ field }) => (
                             <FormItem>
-                              <FormLabel className="text-xs">Qtd.</FormLabel>
+                              <FormLabel className="text-xs md:hidden">Qtd.</FormLabel>
                               <FormControl>
                                 <Input type="number" min="1" disabled={isService} {...field} />
                               </FormControl>
@@ -442,7 +442,7 @@ function EditServiceOrderPageContent() {
                         </FormItem>
                     )}
                 />
-                 <div className="flex justify-end items-center gap-6">
+                 <div className="flex justify-end items-center text-right w-full">
                     <div className="text-lg">
                         <span>Total da O.S.: </span>
                         <span className="font-bold">

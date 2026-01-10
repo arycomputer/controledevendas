@@ -64,7 +64,7 @@ export function AppSidebar() {
               <SidebarMenuButton
                 asChild
                 isActive={pathname === item.href || (item.href !== '/dashboard' && pathname.startsWith(item.href))}
-                tooltip={{children: item.label}}
+                tooltip={{children: item.label, side: 'right', align: 'center'}}
               >
                 <Link href={item.href}>
                   <item.icon className="h-5 w-5" />
@@ -78,7 +78,7 @@ export function AppSidebar() {
        <SidebarFooter>
         <SidebarMenu>
           <SidebarMenuItem>
-            <SidebarMenuButton onClick={handleSignOut} tooltip={{children: 'Sair'}}>
+            <SidebarMenuButton onClick={handleSignOut} tooltip={{children: 'Sair', side: 'right', align: 'center'}}>
               <LogOut className="h-5 w-5" />
               <span>Sair</span>
             </SidebarMenuButton>
@@ -88,5 +88,3 @@ export function AppSidebar() {
     </Sidebar>
   );
 }
-
-    

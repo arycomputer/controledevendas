@@ -107,12 +107,12 @@ function ProductsPageContent() {
         <>
             <Card>
                 <CardHeader>
-                    <div className="flex justify-between items-start">
+                    <div className="flex flex-col sm:flex-row justify-between items-start gap-4">
                         <div>
                             <CardTitle>Produtos e Serviços</CardTitle>
                             <CardDescription>Visualize e gerencie os itens do seu inventário.</CardDescription>
                         </div>
-                        <Button asChild>
+                        <Button asChild className="w-full sm:w-auto">
                             <Link href="/products/new">
                                 <PlusCircle className="mr-2 h-4 w-4" /> Novo Item
                             </Link>
@@ -132,14 +132,14 @@ function ProductsPageContent() {
                     <Table>
                         <TableHeader>
                             <TableRow>
-                                <TableHead className="w-16">Imagem</TableHead>
+                                <TableHead className="hidden sm:table-cell w-16">Imagem</TableHead>
                                 <TableHead>
                                      <Button variant="ghost" onClick={() => requestSort('name')}>
                                         Nome
                                         <ArrowUpDown className="ml-2 h-4 w-4" />
                                     </Button>
                                 </TableHead>
-                                <TableHead>
+                                <TableHead className="hidden md:table-cell">
                                     <Button variant="ghost" onClick={() => requestSort('type')}>
                                         Tipo
                                         <ArrowUpDown className="ml-2 h-4 w-4" />
@@ -166,7 +166,7 @@ function ProductsPageContent() {
                             ) : sortedAndFilteredProducts && sortedAndFilteredProducts.length > 0 ? (
                                 sortedAndFilteredProducts.map((product: Product) => (
                                     <TableRow key={product.id} onDoubleClick={() => handleEditClick(product.id)} className="cursor-pointer">
-                                        <TableCell>
+                                        <TableCell className="hidden sm:table-cell">
                                             <div className="relative h-12 w-12 rounded-md overflow-hidden border bg-muted flex items-center justify-center">
                                                 {product.imageUrl ? (
                                                     <Image src={product.imageUrl} alt={product.name} fill className="object-cover" />
@@ -176,7 +176,7 @@ function ProductsPageContent() {
                                             </div>
                                         </TableCell>
                                         <TableCell className="font-medium">{product.name}</TableCell>
-                                        <TableCell>
+                                        <TableCell className="hidden md:table-cell">
                                             <Badge variant={product.type === 'piece' ? 'secondary' : 'outline'}>
                                                 {product.type === 'piece' ? 'Peça' : 'Serviço'}
                                             </Badge>
@@ -196,12 +196,12 @@ function ProductsPageContent() {
                                                     <DropdownMenuLabel>Ações</DropdownMenuLabel>
                                                      {product.link && (
                                                         <DropdownMenuItem onClick={() => window.open(product.link, '_blank')}>
-                                                            <LinkIcon />
+                                                            <LinkIcon className="mr-2 h-4 w-4"/> Abrir Link
                                                         </DropdownMenuItem>
                                                     )}
-                                                    <DropdownMenuItem onClick={() => handleEditClick(product.id)}><Edit /></DropdownMenuItem>
+                                                    <DropdownMenuItem onClick={() => handleEditClick(product.id)}><Edit className="mr-2 h-4 w-4"/> Editar</DropdownMenuItem>
                                                     <DropdownMenuSeparator />
-                                                    <DropdownMenuItem onClick={() => handleDeleteClick(product)} className="text-destructive focus:text-destructive focus:bg-destructive/10"><Trash2 /></DropdownMenuItem>
+                                                    <DropdownMenuItem onClick={() => handleDeleteClick(product)} className="text-destructive focus:text-destructive focus:bg-destructive/10"><Trash2 className="mr-2 h-4 w-4" /> Excluir</DropdownMenuItem>
                                                 </DropdownMenuContent>
                                             </DropdownMenu>
                                         </TableCell>

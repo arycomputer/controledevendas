@@ -122,12 +122,12 @@ function SalesPageContent() {
         <>
             <Card>
                 <CardHeader>
-                    <div className="flex justify-between items-start">
+                    <div className="flex flex-col sm:flex-row justify-between items-start gap-4">
                         <div>
                             <CardTitle>Histórico de Vendas</CardTitle>
                             <CardDescription>Visualize todas as vendas registradas no sistema.</CardDescription>
                         </div>
-                        <Button asChild>
+                        <Button asChild className="w-full sm:w-auto">
                             <Link href="/sales/new">
                                 <PlusCircle className="mr-2 h-4 w-4" /> Nova Venda
                             </Link>
@@ -153,7 +153,7 @@ function SalesPageContent() {
                                         <ArrowUpDown className="ml-2 h-4 w-4" />
                                     </Button>
                                 </TableHead>
-                                <TableHead>
+                                <TableHead className="hidden md:table-cell">
                                     <Button variant="ghost" onClick={() => requestSort('saleDate')}>
                                         Data
                                         <ArrowUpDown className="ml-2 h-4 w-4" />
@@ -188,7 +188,7 @@ function SalesPageContent() {
                                     return (
                                         <TableRow key={sale.id} onDoubleClick={() => handleViewClick(sale.id)} className="cursor-pointer">
                                             <TableCell className="font-medium">{sale.customerName}</TableCell>
-                                            <TableCell>{new Date(sale.saleDate).toLocaleDateString('pt-BR')}</TableCell>
+                                            <TableCell className="hidden md:table-cell">{new Date(sale.saleDate).toLocaleDateString('pt-BR')}</TableCell>
                                             <TableCell className="text-center">
                                                 <Badge variant={sale.status === 'paid' ? 'default' : 'destructive'} className={sale.status === 'paid' ? 'bg-green-600 hover:bg-green-700' : ''}>
                                                     {sale.status === 'paid' ? 'Pago' : 'A Receber'}
@@ -207,9 +207,9 @@ function SalesPageContent() {
                                                     </DropdownMenuTrigger>
                                                     <DropdownMenuContent align="end">
                                                         <DropdownMenuLabel>Ações</DropdownMenuLabel>
-                                                        <DropdownMenuItem onClick={() => handleViewClick(sale.id)}><Eye /></DropdownMenuItem>
+                                                        <DropdownMenuItem onClick={() => handleViewClick(sale.id)}><Eye className="mr-2 h-4 w-4" /> Ver Detalhes</DropdownMenuItem>
                                                         <DropdownMenuSeparator />
-                                                        <DropdownMenuItem onClick={() => handleCancelClick(sale)} className="text-destructive focus:text-destructive focus:bg-destructive/10"><XCircle /></DropdownMenuItem>
+                                                        <DropdownMenuItem onClick={() => handleCancelClick(sale)} className="text-destructive focus:text-destructive focus:bg-destructive/10"><XCircle className="mr-2 h-4 w-4" /> Cancelar Venda</DropdownMenuItem>
                                                     </DropdownMenuContent>
                                                 </DropdownMenu>
                                             </TableCell>

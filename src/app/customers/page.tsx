@@ -106,12 +106,12 @@ function CustomersPageContent() {
         <>
             <Card>
                 <CardHeader>
-                    <div className="flex justify-between items-start">
+                    <div className="flex flex-col sm:flex-row justify-between items-start gap-4">
                         <div>
                             <CardTitle>Clientes</CardTitle>
                             <CardDescription>Gerencie seus clientes e veja seus detalhes de contato.</CardDescription>
                         </div>
-                        <Button asChild>
+                        <Button asChild className="w-full sm:w-auto">
                             <Link href="/customers/new">
                                 <PlusCircle className="mr-2 h-4 w-4" /> Novo Cliente
                             </Link>
@@ -137,19 +137,19 @@ function CustomersPageContent() {
                                         <ArrowUpDown className="ml-2 h-4 w-4" />
                                     </Button>
                                 </TableHead>
-                                <TableHead>
+                                <TableHead className="hidden md:table-cell">
                                      <Button variant="ghost" onClick={() => requestSort('email')}>
                                         Contato
                                         <ArrowUpDown className="ml-2 h-4 w-4" />
                                     </Button>
                                 </TableHead>
-                                <TableHead>
+                                <TableHead className="hidden lg:table-cell">
                                      <Button variant="ghost" onClick={() => requestSort('document')}>
                                         Documento
                                         <ArrowUpDown className="ml-2 h-4 w-4" />
                                     </Button>
                                 </TableHead>
-                                <TableHead>
+                                <TableHead className="hidden lg:table-cell">
                                      <Button variant="ghost" onClick={() => requestSort('address')}>
                                         Endereço
                                         <ArrowUpDown className="ml-2 h-4 w-4" />
@@ -171,12 +171,12 @@ function CustomersPageContent() {
                                 sortedAndFilteredCustomers.map((customer: Customer) => (
                                     <TableRow key={customer.id} onDoubleClick={() => handleEditClick(customer.id)} className="cursor-pointer">
                                         <TableCell className="font-medium">{customer.name}</TableCell>
-                                        <TableCell>
+                                        <TableCell className="hidden md:table-cell">
                                             <div className="text-sm">{customer.email}</div>
                                             <div className="text-xs text-muted-foreground">{customer.phone}</div>
                                         </TableCell>
-                                        <TableCell>{customer.document}</TableCell>
-                                        <TableCell>{customer.address}</TableCell>
+                                        <TableCell className="hidden lg:table-cell">{customer.document}</TableCell>
+                                        <TableCell className="hidden lg:table-cell">{customer.address}</TableCell>
                                         <TableCell className="text-right">
                                             <DropdownMenu>
                                                 <DropdownMenuTrigger asChild>
@@ -187,9 +187,9 @@ function CustomersPageContent() {
                                                 </DropdownMenuTrigger>
                                                 <DropdownMenuContent align="end">
                                                     <DropdownMenuLabel>Ações</DropdownMenuLabel>
-                                                    <DropdownMenuItem onClick={() => handleEditClick(customer.id)}><Edit /></DropdownMenuItem>
+                                                    <DropdownMenuItem onClick={() => handleEditClick(customer.id)}><Edit className="mr-2 h-4 w-4" /> Editar</DropdownMenuItem>
                                                     <DropdownMenuSeparator />
-                                                    <DropdownMenuItem onClick={() => handleDeleteClick(customer)} className="text-destructive focus:text-destructive focus:bg-destructive/10"><Trash2 /></DropdownMenuItem>
+                                                    <DropdownMenuItem onClick={() => handleDeleteClick(customer)} className="text-destructive focus:text-destructive focus:bg-destructive/10"><Trash2 className="mr-2 h-4 w-4" /> Excluir</DropdownMenuItem>
                                                 </DropdownMenuContent>
                                             </DropdownMenu>
                                         </TableCell>

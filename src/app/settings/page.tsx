@@ -7,18 +7,22 @@ import { UsersManagement } from "@/components/app/settings/users-management";
 import { RegistrationManager } from "@/components/app/settings/registration-manager";
 import { ThemeSelector } from "@/components/app/settings/theme-selector";
 import { AuthGuard } from "@/components/app/auth-guard";
+import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 
 function SettingsPageContent() {
     return (
         <div className="flex flex-col gap-8">
             <h1 className="text-3xl font-bold tracking-tight">Configurações</h1>
-            <Tabs defaultValue="company">
-                <TabsList className="grid w-full grid-cols-4 max-w-2xl">
-                    <TabsTrigger value="company">Empresa</TabsTrigger>
-                    <TabsTrigger value="users">Usuários</TabsTrigger>
-                    <TabsTrigger value="registration">Cadastros</TabsTrigger>
-                    <TabsTrigger value="themes">Temas</TabsTrigger>
-                </TabsList>
+            <Tabs defaultValue="company" className="w-full">
+                <ScrollArea className="w-full">
+                    <TabsList className="grid w-full grid-cols-4 min-w-[400px]">
+                        <TabsTrigger value="company">Empresa</TabsTrigger>
+                        <TabsTrigger value="users">Usuários</TabsTrigger>
+                        <TabsTrigger value="registration">Cadastros</TabsTrigger>
+                        <TabsTrigger value="themes">Temas</TabsTrigger>
+                    </TabsList>
+                    <ScrollBar orientation="horizontal" />
+                </ScrollArea>
                 <TabsContent value="company">
                     <Card>
                         <CardHeader>

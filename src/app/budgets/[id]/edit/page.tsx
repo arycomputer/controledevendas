@@ -175,7 +175,7 @@ function EditBudgetPageContent() {
                 control={form.control}
                 name="validUntil"
                 render={({ field }) => (
-                    <FormItem className="flex flex-col pt-2">
+                    <FormItem className="flex flex-col pt-2 md:pt-0">
                         <FormLabel>Válido Até</FormLabel>
                         <Popover>
                             <PopoverTrigger asChild>
@@ -219,13 +219,13 @@ function EditBudgetPageContent() {
                    const isService = selectedProduct?.type === 'service';
 
                    return (
-                     <div key={field.id} className="grid grid-cols-[1fr_100px_100px_auto] items-end gap-4 p-4 border rounded-lg bg-muted/20">
+                     <div key={field.id} className="grid grid-cols-1 md:grid-cols-[1fr_100px_100px_auto] items-end gap-4 p-4 border rounded-lg bg-muted/20">
                         <FormField
                           control={form.control}
                           name={`items.${index}.productId`}
                           render={({ field }) => (
                             <FormItem>
-                              <FormLabel className="text-xs">Produto/Serviço</FormLabel>
+                              <FormLabel className="text-xs md:hidden">Produto/Serviço</FormLabel>
                               <Select onValueChange={(value) => handleProductChange(value, index)} value={field.value}>
                                 <FormControl>
                                   <SelectTrigger>
@@ -252,7 +252,7 @@ function EditBudgetPageContent() {
                           name={`items.${index}.quantity`}
                           render={({ field }) => (
                             <FormItem>
-                              <FormLabel className="text-xs">Qtd.</FormLabel>
+                              <FormLabel className="text-xs md:hidden">Qtd.</FormLabel>
                               <FormControl>
                                 <Input type="number" min="1" disabled={isService} {...field} />
                               </FormControl>
@@ -289,20 +289,19 @@ function EditBudgetPageContent() {
             
             <Separator />
             
-            <div className="flex justify-end items-center gap-6">
-                 <div className="text-lg">
+            <div className="flex flex-col sm:flex-row justify-end items-center gap-4 sm:gap-6">
+                 <div className="text-lg text-right w-full sm:w-auto">
                     <span>Total do Orçamento: </span>
                     <span className="font-bold">
                         {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(totalAmount)}
                     </span>
                 </div>
-            </div>
-
-            <div className="flex justify-end gap-2 pt-4">
-                <Button type="button" variant="outline" onClick={() => router.push('/budgets')}>
-                    Cancelar
-                </Button>
-                <Button type="submit">Salvar Alterações</Button>
+                 <div className="flex justify-end gap-2 w-full sm:w-auto">
+                    <Button type="button" variant="outline" onClick={() => router.push('/budgets')}>
+                        Cancelar
+                    </Button>
+                    <Button type="submit">Salvar Alterações</Button>
+                </div>
             </div>
           </form>
         </Form>
@@ -318,5 +317,3 @@ export default function EditBudgetPage() {
         </AuthGuard>
     )
 }
-
-    
