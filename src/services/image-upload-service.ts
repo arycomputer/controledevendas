@@ -5,9 +5,13 @@ const toBase64 = (file: File): Promise<string> =>
     const reader = new FileReader();
     reader.readAsDataURL(file);
     reader.onload = () => {
-      // Remove o prefixo 'data:*/*;base64,'
-      const result = reader.result as string;
-      resolve(result.split(',')[1]);
+      const result = reader.result;
+      if (typeof result === 'string') {
+        // Remove o prefixo 'data:*/*;base64,'
+        resolve(result.split(',')[1]);
+      } else {
+        reject(new Error("Falha ao ler o arquivo como Data URL."));
+      }
     };
     reader.onerror = (error) => reject(error);
   });
@@ -28,34 +32,35 @@ export async function uploadImage(imageFile: File): Promise<string> {
     throw new Error("A variável de ambiente NEXT_PUBLIC_POSTIMAGES_API_KEY não está definida.");
   }
 
-  const base64Image = await toBase64(imageFile);
-
-  const formData = new FormData();
-  formData.append("key", apiKey);
-  formData.append("image", base64Image);
-  
   try {
+    const base64Image = await toBase64(imageFile);
+
+    const formData = new FormData();
+    formData.append("key", apiKey);
+    formData.append("image", base64Image);
+    
     const response = await fetch(apiUrl, {
       method: "POST",
       body: formData,
     });
 
-    if (!response.ok) {
-        throw new Error(`Falha na rede: A API Postimages respondeu com o status ${response.status}`);
-    }
-
     const result = await response.json();
 
-    if (result.status === "success" && result.data?.url) {
-      return result.data.url;
-    } else {
-      const apiErrorMessage = result.error?.message || "Resposta inesperada da API Postimages.";
+    if (!response.ok || result.status !== "success") {
+      const apiErrorMessage = result?.error?.message || result?.error || "Resposta inesperada da API Postimages.";
       throw new Error(`Erro da API Postimages: ${apiErrorMessage}`);
     }
+
+    if (result.data?.url) {
+      return result.data.url;
+    } else {
+      throw new Error("A API Postimages não retornou um URL de imagem válido.");
+    }
+
   } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : String(error);
-    console.error("Erro no upload para o Postimages:", errorMessage);
-    throw new Error(`Falha no upload para o Postimages: ${errorMessage}`);
+    const errorMessage = error instanceof Error ? error.message : "Ocorreu um erro desconhecido durante o upload.";
+    console.error("Erro no upload para o Postimages:", error);
+    throw new Error(`Falha no upload: ${errorMessage}`);
   }
 }
 
@@ -74,31 +79,31 @@ export async function uploadImageFromUrl(imageUrl: string): Promise<string> {
     throw new Error("A variável de ambiente NEXT_PUBLIC_POSTIMAGES_API_KEY não está definida.");
   }
   
-  const formData = new FormData();
-  formData.append("key", apiKey);
-  formData.append("url", imageUrl);
-
   try {
+    const formData = new FormData();
+    formData.append("key", apiKey);
+    formData.append("url", imageUrl);
+
     const response = await fetch(apiUrl, {
       method: "POST",
       body: formData,
     });
     
-    if (!response.ok) {
-        throw new Error(`Falha na rede: A API Postimages respondeu com o status ${response.status}`);
-    }
-
     const result = await response.json();
 
-    if (result.status === "success" && result.data?.url) {
-      return result.data.url;
-    } else {
-      const apiErrorMessage = result.error?.message || "Resposta inesperada da API Postimages ao carregar a URL.";
+    if (!response.ok || result.status !== "success") {
+       const apiErrorMessage = result?.error?.message || result?.error || "Resposta inesperada da API Postimages ao carregar a URL.";
       throw new Error(`Erro da API Postimages: ${apiErrorMessage}`);
     }
+
+    if (result.data?.url) {
+      return result.data.url;
+    } else {
+      throw new Error("A API Postimages não retornou um URL de imagem válido a partir do link.");
+    }
   } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : String(error);
-    console.error("Erro no upload do link para o Postimages:", errorMessage);
-    throw new Error(`Falha no upload do link para o Postimages: ${errorMessage}`);
+    const errorMessage = error instanceof Error ? error.message : "Ocorreu um erro desconhecido durante o upload.";
+    console.error("Erro no upload do link para o Postimages:", error);
+    throw new Error(`Falha no upload do link: ${errorMessage}`);
   }
 }
