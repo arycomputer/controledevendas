@@ -24,10 +24,11 @@ import { useToast } from "@/hooks/use-toast"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { doc, updateDoc } from "firebase/firestore"
 import { useDoc, useFirestore, useMemoFirebase } from "@/firebase"
-import { Loader2, UploadCloud, ImageIcon } from "lucide-react"
+import { Loader2, UploadCloud, ImageIcon, Link as LinkIcon } from "lucide-react"
 import { AuthGuard } from "@/components/app/auth-guard"
 import type { Product } from "@/lib/types"
-import { uploadImage } from "@/services/image-upload-service"
+import { uploadImage, uploadImageFromUrl } from "@/services/image-upload-service"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 
 const createProductFormSchema = (settings: any) => z.object({
     name: z.string().min(2, "O nome deve ter pelo menos 2 caracteres."),
@@ -64,6 +65,7 @@ function EditProductPageContent() {
   
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
+  const [imageUrl, setImageUrl] = useState('');
 
   const settingsDocRef = useMemoFirebase(() => doc(firestore, 'settings', 'registration'), [firestore]);
   const { data: registrationSettings, isLoading: settingsLoading } = useDoc(settingsDocRef);
@@ -119,8 +121,9 @@ function EditProductPageContent() {
       setImagePreview(localPreviewUrl);
 
       try {
-        const imageUrl = await uploadImage(file);
-        form.setValue("imageUrl", imageUrl, { shouldDirty: true });
+        const uploadedImageUrl = await uploadImage(file);
+        form.setValue("imageUrl", uploadedImageUrl, { shouldDirty: true });
+        setImagePreview(uploadedImageUrl);
         toast({
           title: "Upload Concluído",
           description: "A imagem do produto foi atualizada.",
@@ -138,6 +141,27 @@ function EditProductPageContent() {
       }
     }
   };
+  
+  const handleUrlUpload = async () => {
+    if (!imageUrl) {
+        toast({ title: "URL Inválido", description: "Por favor, insira um URL de imagem válido.", variant: "destructive" });
+        return;
+    }
+    setIsUploading(true);
+    setImagePreview(imageUrl);
+    try {
+        const uploadedUrl = await uploadImageFromUrl(imageUrl);
+        form.setValue("imageUrl", uploadedUrl, { shouldDirty: true });
+        setImagePreview(uploadedUrl);
+        toast({ title: "Upload Concluído", description: "A imagem foi carregada a partir do link." });
+    } catch (error) {
+        console.error("Upload from URL failed:", error);
+        toast({ title: "Falha no Upload", description: "Não foi possível carregar a imagem a partir do link.", variant: "destructive" });
+        setImagePreview(product?.imageUrl || null); // Revert on error
+    } finally {
+        setIsUploading(false);
+    }
+};
 
   async function onSubmit(data: ProductFormValues) {
     try {
@@ -238,22 +262,32 @@ function EditProductPageContent() {
                 </div>
                 <FormItem>
                     <FormLabel>Imagem do Produto</FormLabel>
-                    <div className="flex items-center gap-4">
-                        <div className="relative h-28 w-28 rounded-md overflow-hidden border-2 border-dashed flex items-center justify-center">
-                            {imagePreview ? (
+                    <div className="flex items-center justify-center h-28 w-28 rounded-md overflow-hidden border-2 border-dashed bg-muted">
+                        {imagePreview ? (
+                            <div className="relative h-full w-full">
                                 <Image src={imagePreview} alt="Pré-visualização" fill className="object-cover"/>
-                            ) : (
-                                <div className="text-center text-muted-foreground">
-                                    <ImageIcon className="mx-auto h-8 w-8"/>
-                                    <span className="text-xs">Sem imagem</span>
-                                </div>
-                            )}
-                            {isUploading && (
-                                <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
-                                    <Loader2 className="h-6 w-6 animate-spin text-white" />
-                                </div>
-                            )}
-                        </div>
+                                {isUploading && (
+                                    <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+                                        <Loader2 className="h-6 w-6 animate-spin text-white" />
+                                    </div>
+                                )}
+                            </div>
+                        ) : (
+                            <div className="text-center text-muted-foreground">
+                                <ImageIcon className="mx-auto h-8 w-8"/>
+                                <span className="text-xs">Sem imagem</span>
+                            </div>
+                        )}
+                    </div>
+                </FormItem>
+            </div>
+            <Tabs defaultValue="file">
+                <TabsList className="grid w-full grid-cols-2">
+                    <TabsTrigger value="file">Upload de Arquivo</TabsTrigger>
+                    <TabsTrigger value="url">Carregar de URL</TabsTrigger>
+                </TabsList>
+                <TabsContent value="file">
+                    <div className="flex items-center gap-2 rounded-md border p-4">
                         <Input 
                             type="file" 
                             ref={fileInputRef} 
@@ -262,13 +296,28 @@ function EditProductPageContent() {
                             onChange={handleImageChange}
                             disabled={isUploading}
                         />
-                        <Button type="button" variant="outline" size="sm" onClick={() => fileInputRef.current?.click()} disabled={isUploading}>
+                        <Button type="button" variant="outline" onClick={() => fileInputRef.current?.click()} disabled={isUploading} className="w-full">
                             <UploadCloud className="mr-2 h-4 w-4"/>
-                            {imagePreview ? 'Alterar' : 'Enviar'}
+                            {imagePreview ? 'Alterar Arquivo' : 'Enviar Arquivo'}
                         </Button>
                     </div>
-                </FormItem>
-            </div>
+                </TabsContent>
+                <TabsContent value="url">
+                    <div className="flex items-center gap-2 rounded-md border p-4">
+                        <Input 
+                            type="text" 
+                            placeholder="https://exemplo.com/imagem.png"
+                            value={imageUrl}
+                            onChange={(e) => setImageUrl(e.target.value)}
+                            disabled={isUploading}
+                        />
+                        <Button type="button" variant="outline" onClick={handleUrlUpload} disabled={isUploading}>
+                            <LinkIcon className="mr-2 h-4 w-4"/>
+                            Carregar Link
+                        </Button>
+                    </div>
+                </TabsContent>
+            </Tabs>
             {productSettings.description && (
                 <FormField
                   control={form.control}
