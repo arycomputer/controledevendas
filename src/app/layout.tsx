@@ -5,6 +5,7 @@ import { AppSidebar } from '@/components/app/app-sidebar';
 import { SidebarProvider, SidebarInset } from '@/components/ui/sidebar';
 import { CompanyProvider, useCompany } from '@/context/company-context';
 import { FirebaseClientProvider } from '@/firebase';
+import React from 'react';
 
 export const metadata: Metadata = {
   title: 'Controle de Vendas',
