@@ -5,6 +5,7 @@ import { FirebaseClientProvider } from '@/firebase';
 import { CompanyProvider, useCompany } from '@/context/company-context';
 import { SidebarProvider, SidebarInset } from '@/components/ui/sidebar';
 import { AppSidebar } from '@/components/app/app-sidebar';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 function AppThemeController({ children }: { children: React.ReactNode }) {
   const { companyData, isLoading } = useCompany();
@@ -20,11 +21,13 @@ function AppThemeController({ children }: { children: React.ReactNode }) {
 
 
 export function AppProviders({ children }: { children: React.ReactNode }) {
+  const isMobile = useIsMobile();
+
   return (
     <FirebaseClientProvider>
       <CompanyProvider>
         <AppThemeController>
-          <SidebarProvider>
+          <SidebarProvider defaultOpen={!isMobile}>
             <AppSidebar />
             <SidebarInset>
               <main className="p-4 sm:p-6 lg:p-8">
