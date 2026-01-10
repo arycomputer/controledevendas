@@ -5,12 +5,14 @@ import { useForm } from "react-hook-form"
 import * as z from "zod"
 import Image from "next/image"
 import React, { useRef, useState, useEffect } from "react"
+import { Loader2, UploadCloud } from "lucide-react"
 
 import { useToast } from "@/hooks/use-toast"
 import { Button } from "@/components/ui/button"
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
 import { useCompany } from "@/context/company-context"
+import { uploadImage } from "@/services/image-upload-service"
 
 const companyFormSchema = z.object({
   name: z.string().min(2, "O nome da empresa é obrigatório."),
@@ -26,8 +28,10 @@ type CompanyFormValues = z.infer<typeof companyFormSchema>
 export function CompanyForm() {
   const { toast } = useToast()
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const { savedCompanyData, setCompanyData, saveCompanyData } = useCompany(); // Use savedCompanyData for initialization
+  const { savedCompanyData, setCompanyData, saveCompanyData } = useCompany();
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
+
 
   const form = useForm<CompanyFormValues>({
     resolver: zodResolver(companyFormSchema),
@@ -35,26 +39,38 @@ export function CompanyForm() {
   })
   
   useEffect(() => {
-    // This effect now syncs the form with the definitive, saved data from context.
     form.reset(savedCompanyData);
     setLogoPreview(savedCompanyData.logo || null);
   }, [savedCompanyData, form]);
 
-  const handleLogoChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleLogoChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        const result = reader.result as string;
-        setLogoPreview(result);
-        form.setValue("logo", result, { shouldDirty: true });
-        setCompanyData({ logo: result }); // Update local context for preview
-      };
-      reader.readAsDataURL(file);
+      setIsUploading(true);
+      setLogoPreview(URL.createObjectURL(file)); // Show local preview immediately
+
+      try {
+        const imageUrl = await uploadImage(file);
+        form.setValue("logo", imageUrl, { shouldDirty: true });
+        setCompanyData({ logo: imageUrl }); // Update context for live UI updates
+        toast({
+          title: "Upload Concluído",
+          description: "O novo logo foi carregado com sucesso.",
+        });
+      } catch (error) {
+        console.error("Upload failed:", error);
+        toast({
+          title: "Falha no Upload",
+          description: "Não foi possível carregar a imagem. Verifique o console para mais detalhes.",
+          variant: "destructive",
+        });
+        setLogoPreview(savedCompanyData.logo || null); // Revert preview on error
+      } finally {
+        setIsUploading(false);
+      }
     }
   };
   
-  // This updates the local context on any form change for live preview
   useEffect(() => {
     const subscription = form.watch((value) => {
       setCompanyData(value as Partial<CompanyFormValues>);
@@ -65,13 +81,13 @@ export function CompanyForm() {
 
   async function onSubmit(data: CompanyFormValues) {
     try {
-        setCompanyData(data); // ensure local state is up to date
-        await saveCompanyData(); // save the current state to firebase
+        setCompanyData(data);
+        await saveCompanyData();
         toast({
-        title: "Sucesso!",
-        description: "Dados da empresa atualizados.",
+          title: "Sucesso!",
+          description: "Dados da empresa atualizados.",
         });
-        form.reset(data); // Mark form as not dirty, with the new saved data
+        form.reset(data);
     } catch (error) {
         toast({
             title: "Erro!",
@@ -99,6 +115,11 @@ export function CompanyForm() {
                     ) : (
                        <div className="h-full w-full bg-muted flex items-center justify-center text-xs text-muted-foreground">Sem logo</div>
                     )}
+                     {isUploading && (
+                        <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+                            <Loader2 className="h-6 w-6 animate-spin text-white" />
+                        </div>
+                    )}
                 </div>
                 <Input 
                     type="file" 
@@ -106,8 +127,12 @@ export function CompanyForm() {
                     className="hidden" 
                     accept="image/*"
                     onChange={handleLogoChange}
+                    disabled={isUploading}
                 />
-                <Button type="button" variant="outline" onClick={() => fileInputRef.current?.click()}>Alterar Logo</Button>
+                <Button type="button" variant="outline" onClick={() => fileInputRef.current?.click()} disabled={isUploading}>
+                    <UploadCloud className="mr-2 h-4 w-4"/>
+                    Alterar Logo
+                </Button>
             </div>
         </FormItem>
 
@@ -179,7 +204,7 @@ export function CompanyForm() {
           )}
         />
          <div className="flex justify-end pt-4">
-            <Button type="submit" disabled={!form.formState.isDirty}>Salvar Alterações</Button>
+            <Button type="submit" disabled={!form.formState.isDirty || isUploading}>Salvar Alterações</Button>
         </div>
       </form>
     </Form>
