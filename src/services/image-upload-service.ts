@@ -7,8 +7,7 @@ const toBase64 = (file: File): Promise<string> =>
     reader.onload = () => {
       const result = reader.result;
       if (typeof result === 'string') {
-        // Remove o prefixo 'data:*/*;base64,'
-        resolve(result.split(',')[1]);
+        resolve(result);
       } else {
         reject(new Error("Falha ao ler o arquivo como Data URL."));
       }
@@ -35,14 +34,18 @@ export async function uploadImage(imageFile: File): Promise<string> {
   try {
     const base64Image = await toBase64(imageFile);
 
-    const formData = new FormData();
-    formData.append("key", apiKey);
-    formData.append("image", base64Image);
-    formData.append("gallery", "AppVendas");
+    const body = new URLSearchParams({
+        key: apiKey,
+        image: base64Image,
+        gallery: 'AppVendas'
+    });
     
     const response = await fetch(apiUrl, {
       method: "POST",
-      body: formData,
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded'
+      },
+      body: body.toString(),
     });
 
     const result = await response.json();
