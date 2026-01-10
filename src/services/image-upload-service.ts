@@ -32,7 +32,13 @@ export async function uploadImage(imageFile: File): Promise<string> {
   }
 
   try {
-    const base64Image = await toBase64(imageFile);
+    const dataUrl = await toBase64(imageFile);
+    // A API espera apenas os dados em base64, sem o prefixo do Data URL.
+    const base64Image = dataUrl.split(',')[1];
+
+    if (!base64Image) {
+        throw new Error("Não foi possível extrair os dados em base64 da imagem.");
+    }
 
     const body = new URLSearchParams({
         key: apiKey,
