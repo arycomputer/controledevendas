@@ -39,15 +39,22 @@ export async function uploadImage(imageFile: File): Promise<string> {
       body: formData,
     });
 
+    if (!response.ok) {
+        throw new Error(`Falha na rede: A API Postimages respondeu com o status ${response.status}`);
+    }
+
     const result = await response.json();
 
-    if (result.status === "success") {
+    if (result.status === "success" && result.data?.url) {
       return result.data.url;
     } else {
-      throw new Error(result.error?.message || "Ocorreu um erro desconhecido durante o upload da imagem.");
+      // Extrai a mensagem de erro específica da API, se disponível
+      const apiErrorMessage = result.error?.message || "Resposta inesperada da API Postimages.";
+      throw new Error(`Erro da API Postimages: ${apiErrorMessage}`);
     }
   } catch (error) {
     console.error("Erro no upload para o Postimages:", error);
+    // Propaga o erro para ser tratado pela UI
     throw error;
   }
 }
@@ -76,13 +83,18 @@ export async function uploadImageFromUrl(imageUrl: string): Promise<string> {
       method: "POST",
       body: formData,
     });
+    
+    if (!response.ok) {
+        throw new Error(`Falha na rede: A API Postimages respondeu com o status ${response.status}`);
+    }
 
     const result = await response.json();
 
-    if (result.status === "success") {
+    if (result.status === "success" && result.data?.url) {
       return result.data.url;
     } else {
-      throw new Error(result.error?.message || "Ocorreu um erro desconhecido durante o upload do link da imagem.");
+      const apiErrorMessage = result.error?.message || "Resposta inesperada da API Postimages ao carregar a URL.";
+      throw new Error(`Erro da API Postimages: ${apiErrorMessage}`);
     }
   } catch (error) {
     console.error("Erro no upload do link para o Postimages:", error);
