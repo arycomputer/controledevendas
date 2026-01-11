@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useEffect, useState } from 'react';
@@ -9,7 +10,6 @@ import { useIsMobile } from '@/hooks/use-mobile';
 
 function AppThemeController({ children }: { children: React.ReactNode }) {
   const { companyData, isLoading } = useCompany();
-
   const theme = isLoading ? 'light' : companyData.theme;
 
   React.useEffect(() => {
@@ -19,8 +19,7 @@ function AppThemeController({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
-
-export function AppProviders({ children }: { children: React.ReactNode }) {
+function ResponsiveSidebarLayout({ children }: { children: React.ReactNode }) {
   const isMobile = useIsMobile();
   const [isMounted, setIsMounted] = useState(false);
 
@@ -28,20 +27,29 @@ export function AppProviders({ children }: { children: React.ReactNode }) {
     setIsMounted(true);
   }, []);
 
+  // Set a consistent default on the server and update on the client.
   const sidebarDefaultOpen = isMounted ? !isMobile : false;
 
+  return (
+    <SidebarProvider defaultOpen={sidebarDefaultOpen}>
+      <AppSidebar />
+      <SidebarInset>
+        <main className="p-4 sm:p-6 lg:p-8">
+          {children}
+        </main>
+      </SidebarInset>
+    </SidebarProvider>
+  );
+}
+
+export function AppProviders({ children }: { children: React.ReactNode }) {
   return (
     <FirebaseClientProvider>
       <CompanyProvider>
         <AppThemeController>
-          <SidebarProvider defaultOpen={sidebarDefaultOpen}>
-            <AppSidebar />
-            <SidebarInset>
-              <main className="p-4 sm:p-6 lg:p-8">
-                {children}
-              </main>
-            </SidebarInset>
-          </SidebarProvider>
+          <ResponsiveSidebarLayout>
+            {children}
+          </ResponsiveSidebarLayout>
         </AppThemeController>
       </CompanyProvider>
     </FirebaseClientProvider>
