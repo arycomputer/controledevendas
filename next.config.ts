@@ -2,6 +2,13 @@ import type {NextConfig} from 'next';
 
 const nextConfig: NextConfig = {
   /* config options here */
+  devIndicators: {
+    allowedDevOrigins: [
+      // This is the domain of your Cloud Workstation instance.
+      // Adding it here tells Next.js that it's a trusted source.
+      '*.cluster-hlmk2l2htragyudeyf6f3tzsi6.cloudworkstations.dev',
+    ],
+  },
   typescript: {
     ignoreBuildErrors: true,
   },
