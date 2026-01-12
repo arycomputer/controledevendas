@@ -62,8 +62,8 @@ export function ThemeSelector() {
                             <div className="flex justify-end">
                                 {companyData.theme === theme.name && <Check className="h-5 w-5 text-primary" />}
                             </div>
-                            <div className="flex items-center gap-1">
-                                <div className="h-5 w-5 rounded-full" style={{backgroundColor: theme.colors[1]}}></div>
+                             <div className="flex items-center gap-1">
+                                <div className="h-5 w-5 rounded-sm" style={{backgroundColor: theme.colors[1]}}></div>
                                 <div className="h-3 flex-grow rounded-sm" style={{backgroundColor: theme.colors[1]}}></div>
                             </div>
                         </div>
