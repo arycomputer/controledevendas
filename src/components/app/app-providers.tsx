@@ -3,8 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import { FirebaseClientProvider } from '@/firebase';
 import { CompanyProvider, useCompany } from '@/context/company-context';
-import { SidebarProvider, SidebarInset } from '@/components/ui/sidebar';
-import { AppSidebar } from '@/components/app/app-sidebar';
+import { SidebarProvider } from '@/components/ui/sidebar';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { Loader2 } from 'lucide-react';
 
@@ -24,7 +23,7 @@ function AppThemeController({ children }: { children: React.ReactNode }) {
 }
 
 
-function ResponsiveSidebarLayout({ children }: { children: React.ReactNode }) {
+export function AppProviders({ children }: { children: React.ReactNode }) {
   const isMobile = useIsMobile();
   const [isMounted, setIsMounted] = useState(false);
 
@@ -36,44 +35,13 @@ function ResponsiveSidebarLayout({ children }: { children: React.ReactNode }) {
   const sidebarDefaultOpen = !isMobile && isMounted;
 
   return (
-    <SidebarProvider defaultOpen={sidebarDefaultOpen}>
-      <AppSidebar />
-      <SidebarInset>
-        <main className="p-4 sm:p-6 lg:p-8">
-          {children}
-        </main>
-      </SidebarInset>
-    </SidebarProvider>
-  );
-}
-
-function AppProvidersContent({ children }: { children: React.ReactNode }) {
-    const { isLoading } = useCompany();
-
-    if (isLoading) {
-        return (
-            <div className="flex items-center justify-center h-screen bg-background">
-                <Loader2 className="h-12 w-12 animate-spin text-primary" />
-            </div>
-        );
-    }
-    
-    return (
-        <AppThemeController>
-            <ResponsiveSidebarLayout>
-                {children}
-            </ResponsiveSidebarLayout>
-        </AppThemeController>
-    );
-}
-
-export function AppProviders({ children }: { children: React.ReactNode }) {
-  return (
     <FirebaseClientProvider>
       <CompanyProvider>
-        <AppProvidersContent>
-            {children}
-        </AppProvidersContent>
+          <AppThemeController>
+            <SidebarProvider defaultOpen={sidebarDefaultOpen}>
+              {children}
+            </SidebarProvider>
+          </AppThemeController>
       </CompanyProvider>
     </FirebaseClientProvider>
   )
