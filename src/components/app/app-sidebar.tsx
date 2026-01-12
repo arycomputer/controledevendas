@@ -43,15 +43,17 @@ export function AppSidebar() {
 
   return (
     <Sidebar variant="inset" collapsible="icon">
-      <SidebarHeader className="flex items-center gap-2">
-        <SidebarTrigger />
+      <SidebarHeader className="flex flex-col items-center gap-4 p-4">
+        <div className="w-full flex justify-start">
+            <SidebarTrigger />
+        </div>
         {state === 'expanded' && companyData.logo && (
-          <div className="relative h-8 w-8 rounded-md overflow-hidden">
+          <div className="relative w-full h-20 rounded-md overflow-hidden">
              <Image 
                 src={companyData.logo} 
                 alt="Logo da empresa" 
                 fill 
-                className="object-cover"
+                className="object-contain"
                 data-ai-hint="logo company"
             />
           </div>
