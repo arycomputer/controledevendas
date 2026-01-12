@@ -45,7 +45,7 @@ function LoginPage() {
     };
 
     return (
-        <div className="flex items-center justify-center h-screen bg-background">
+        <div className="flex items-center justify-center h-screen bg-muted">
             <Card className="w-full max-w-sm">
                 <CardHeader>
                     <CardTitle>Acesso Restrito</CardTitle>
