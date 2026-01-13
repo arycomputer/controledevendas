@@ -81,5 +81,8 @@ export const BudgetSchema = z.object({
   itemDescription: z.string().optional(),
   problemDescription: z.string().optional(),
   serialNumber: z.string().optional(),
+  imageUrls: z.array(z.string()).optional(),
 });
 export type Budget = z.infer<typeof BudgetSchema>;
+
+    

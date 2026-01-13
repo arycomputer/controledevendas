@@ -4,7 +4,9 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm, useFieldArray } from "react-hook-form"
 import * as z from "zod"
 import { useRouter, useParams } from "next/navigation"
-import { PlusCircle, Trash2, Loader2, Calendar as CalendarIcon } from "lucide-react"
+import { PlusCircle, Trash2, Loader2, Calendar as CalendarIcon, UploadCloud, X } from "lucide-react"
+import Image from "next/image"
+import React from "react"
 
 import { Button } from "@/components/ui/button"
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
@@ -12,7 +14,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Separator } from "@/components/ui/separator"
 import { useToast } from "@/hooks/use-toast"
-import { useEffect, useMemo } from "react"
+import { useEffect, useMemo, useState, useRef } from "react"
 import { useCollection, useDoc, useFirestore, useMemoFirebase } from "@/firebase"
 import { collection, doc, updateDoc } from "firebase/firestore"
 import type { Customer, Product, Budget } from "@/lib/types"
@@ -23,6 +25,7 @@ import { cn } from "@/lib/utils"
 import { format } from "date-fns"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
+import { uploadImage } from "@/services/image-upload-service"
 
 const budgetFormSchema = z.object({
   customerId: z.string({ required_error: "É necessário selecionar um cliente." }).min(1, "É necessário selecionar um cliente."),
@@ -35,6 +38,7 @@ const budgetFormSchema = z.object({
     quantity: z.coerce.number().int().min(1, "Mínimo 1."),
     unitPrice: z.coerce.number(),
   })).min(1, "Adicione pelo menos um item."),
+  imageUrls: z.array(z.string()).optional(),
 })
 
 type BudgetFormValues = z.infer<typeof budgetFormSchema>
@@ -45,6 +49,8 @@ function EditBudgetPageContent() {
   const { toast } = useToast()
   const firestore = useFirestore()
   const budgetId = params.id as string
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [isUploading, setIsUploading] = useState(false);
 
   const budgetDocRef = useMemoFirebase(() => doc(firestore, 'budgets', budgetId), [firestore, budgetId]);
   const { data: budget, isLoading: budgetLoading } = useDoc<Budget>(budgetDocRef);
@@ -64,6 +70,7 @@ function EditBudgetPageContent() {
         problemDescription: budget?.problemDescription || "",
         serialNumber: budget?.serialNumber || "",
         items: budget?.items || [],
+        imageUrls: budget?.imageUrls || [],
     }), [budget]),
   })
 
@@ -82,10 +89,50 @@ function EditBudgetPageContent() {
   })
   
   const watchedItems = form.watch("items");
+  const watchedImageUrls = form.watch("imageUrls");
 
   const totalAmount = useMemo(() => watchedItems.reduce((acc, current) => {
     return acc + ((current.unitPrice || 0) * (current.quantity || 0));
   }, 0), [watchedItems]);
+
+  const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = event.target.files;
+    if (!files) return;
+
+    setIsUploading(true);
+    const currentUrls = form.getValues("imageUrls") || [];
+
+    try {
+        const uploadPromises = Array.from(files).map(file => uploadImage(file));
+        const newImageUrls = await Promise.all(uploadPromises);
+        
+        form.setValue("imageUrls", [...currentUrls, ...newImageUrls], { shouldDirty: true });
+
+        toast({
+            title: "Upload Concluído",
+            description: `${files.length} imagem(ns) carregada(s) com sucesso.`,
+        });
+
+    } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : "Ocorreu um erro desconhecido.";
+        toast({
+            title: "Falha no Upload",
+            description: errorMessage,
+            variant: "destructive",
+        });
+    } finally {
+        setIsUploading(false);
+        if (fileInputRef.current) {
+            fileInputRef.current.value = "";
+        }
+    }
+  };
+
+  const removeImage = (indexToRemove: number) => {
+    const currentUrls = form.getValues("imageUrls") || [];
+    const newUrls = currentUrls.filter((_, index) => index !== indexToRemove);
+    form.setValue("imageUrls", newUrls, { shouldDirty: true });
+  }
 
   async function onSubmit(data: BudgetFormValues) {
     if (!firestore || !products) return;
@@ -266,6 +313,47 @@ function EditBudgetPageContent() {
             </div>
 
             <Separator />
+
+            <div>
+                <h3 className="text-lg font-medium mb-4">Fotos do Equipamento</h3>
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 mb-4">
+                    {watchedImageUrls?.map((url, index) => (
+                        <div key={index} className="relative aspect-square group">
+                            <Image src={url} alt={`Imagem do equipamento ${index + 1}`} fill className="object-cover rounded-md border" />
+                            <Button
+                                type="button"
+                                variant="destructive"
+                                size="icon"
+                                className="absolute top-1 right-1 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
+                                onClick={() => removeImage(index)}
+                            >
+                                <X className="h-4 w-4" />
+                                <span className="sr-only">Remover imagem</span>
+                            </Button>
+                        </div>
+                    ))}
+                     {isUploading && (
+                        <div className="relative aspect-square group flex items-center justify-center border-2 border-dashed rounded-md bg-muted">
+                           <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                        </div>
+                    )}
+                </div>
+                <Input
+                    type="file"
+                    ref={fileInputRef}
+                    className="hidden"
+                    accept="image/png, image/jpeg, image/gif, image/webp"
+                    onChange={handleImageUpload}
+                    disabled={isUploading}
+                    multiple
+                />
+                <Button type="button" variant="outline" onClick={() => fileInputRef.current?.click()} disabled={isUploading}>
+                    <UploadCloud className="mr-2 h-4 w-4" />
+                    Adicionar Imagens
+                </Button>
+            </div>
+
+            <Separator />
             
             <div>
               <FormLabel>Itens do Orçamento</FormLabel>
@@ -373,3 +461,5 @@ export default function EditBudgetPage() {
         </AuthGuard>
     )
 }
+
+    

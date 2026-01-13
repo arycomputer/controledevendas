@@ -365,6 +365,11 @@
         "serialNumber": {
           "type": "string",
           "description": "The serial number of the item for service."
+        },
+        "imageUrls": {
+            "type": "array",
+            "items": { "type": "string" },
+            "description": "A list of URLs for images of the equipment's condition."
         }
       },
       "required": [
@@ -459,3 +464,5 @@
     ]
   }
 }
+
+    

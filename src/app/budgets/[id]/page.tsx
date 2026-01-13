@@ -4,6 +4,7 @@ import { useParams, useRouter } from "next/navigation"
 import Link from "next/link"
 import { ArrowLeft, Loader2, Printer, FileText } from "lucide-react"
 import React from 'react';
+import Image from "next/image";
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -193,7 +194,7 @@ function BudgetDetailsPageContent() {
                              <Button onClick={handlePrint}>
                                 <Printer className="mr-2 h-4 w-4" /> Imprimir
                             </Button>
-                            {budget.status === 'approved' && (
+                            {budget.status === 'pending' && (
                                 <Button onClick={handleConvertToSale}>
                                     <FileText className="mr-2 h-4 w-4" /> Converter em Venda
                                 </Button>
@@ -248,6 +249,24 @@ function BudgetDetailsPageContent() {
                                         <p>{budget.problemDescription}</p>
                                     </div>
                                 )}
+                            </div>
+                        </>
+                    )}
+                    
+                    {budget.imageUrls && budget.imageUrls.length > 0 && (
+                        <>
+                            <Separator className="my-4"/>
+                            <div>
+                                <h4 className="font-semibold text-sm mb-4">Fotos do Equipamento</h4>
+                                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+                                    {budget.imageUrls.map((url, index) => (
+                                        <a key={index} href={url} target="_blank" rel="noopener noreferrer">
+                                            <div className="relative aspect-square group overflow-hidden rounded-md border">
+                                                <Image src={url} alt={`Imagem do equipamento ${index + 1}`} fill className="object-cover transition-transform group-hover:scale-105" />
+                                            </div>
+                                        </a>
+                                    ))}
+                                </div>
                             </div>
                         </>
                     )}
@@ -309,3 +328,5 @@ export default function BudgetDetailsPage() {
         </AuthGuard>
     )
 }
+
+    
