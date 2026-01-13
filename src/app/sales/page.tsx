@@ -62,9 +62,9 @@ function SalesPageContent() {
             let aValue: any = a[key as keyof typeof a];
             let bValue: any = b[key as keyof typeof b];
             
-            if (key === 'saleDate') {
-                aValue = new Date(aValue).getTime();
-                bValue = new Date(bValue).getTime();
+            if (key === 'saleDate' || key === 'paymentDate') {
+                aValue = aValue ? new Date(aValue).getTime() : 0;
+                bValue = bValue ? new Date(bValue).getTime() : 0;
             }
 
             if (aValue < bValue) {
@@ -80,7 +80,7 @@ function SalesPageContent() {
 
     }, [sales, customers, searchTerm, sortConfig]);
 
-    const requestSort = (key: keyof Sale | 'customerName') => {
+    const requestSort = (key: keyof Sale | 'customerName' | 'paymentDate') => {
         let direction: 'ascending' | 'descending' = 'ascending';
         if (sortConfig.key === key && sortConfig.direction === 'ascending') {
             direction = 'descending';
@@ -100,7 +100,7 @@ function SalesPageContent() {
             await deleteDoc(doc(firestore, 'sales', saleToCancel.id));
             toast({
                 title: "Sucesso!",
-                description: `Venda ${saleToCancel.id.toUpperCase()} cancelada.`,
+                description: `Venda ${saleToCancel.id.toUpperCase().substring(0,6)} cancelada.`,
                 variant: "default",
             });
         } catch (error) {
@@ -191,7 +191,13 @@ function SalesPageContent() {
                                 </TableHead>
                                 <TableHead className="hidden md:table-cell">
                                     <Button variant="ghost" onClick={() => requestSort('saleDate')}>
-                                        Data
+                                        Data Venda
+                                        <ArrowUpDown className="ml-2 h-4 w-4" />
+                                    </Button>
+                                </TableHead>
+                                <TableHead className="hidden lg:table-cell">
+                                    <Button variant="ghost" onClick={() => requestSort('paymentDate')}>
+                                        Data Pag.
                                         <ArrowUpDown className="ml-2 h-4 w-4" />
                                     </Button>
                                 </TableHead>
@@ -215,7 +221,7 @@ function SalesPageContent() {
                         <TableBody>
                             {isLoading ? (
                                 <TableRow>
-                                    <TableCell colSpan={5} className="h-24 text-center">
+                                    <TableCell colSpan={6} className="h-24 text-center">
                                         <Loader2 className="h-6 w-6 animate-spin mx-auto" />
                                     </TableCell>
                                 </TableRow>
@@ -225,8 +231,17 @@ function SalesPageContent() {
                                         <TableRow key={sale.id} onDoubleClick={() => handleViewClick(sale.id)} className="cursor-pointer">
                                             <TableCell className="font-medium">{sale.customerName}</TableCell>
                                             <TableCell className="hidden md:table-cell">{new Date(sale.saleDate).toLocaleDateString('pt-BR')}</TableCell>
+                                            <TableCell className="hidden lg:table-cell">{sale.paymentDate ? new Date(sale.paymentDate).toLocaleDateString('pt-BR') : '-'}</TableCell>
                                             <TableCell className="text-center">
-                                                <Badge variant={sale.status === 'paid' ? 'default' : 'destructive'} className={sale.status === 'paid' ? 'bg-green-600 hover:bg-green-700' : ''}>
+                                                <Badge 
+                                                    variant={sale.status === 'paid' ? 'default' : 'destructive'} 
+                                                    className={
+                                                        sale.status === 'paid' 
+                                                        ? 'bg-green-600 hover:bg-green-700' 
+                                                        : 'cursor-pointer hover:bg-destructive/80'
+                                                    }
+                                                    onClick={() => sale.status === 'pending' && handlePaymentClick(sale)}
+                                                >
                                                     {sale.status === 'paid' ? 'Pago' : 'A Receber'}
                                                 </Badge>
                                             </TableCell>
@@ -259,7 +274,7 @@ function SalesPageContent() {
                                 })
                              ) : (
                                 <TableRow>
-                                    <TableCell colSpan={5} className="h-24 text-center">
+                                    <TableCell colSpan={6} className="h-24 text-center">
                                         Nenhuma venda encontrada.
                                     </TableCell>
                                 </TableRow>
@@ -274,7 +289,7 @@ function SalesPageContent() {
                     open={cancelDialogOpen}
                     onOpenChange={setCancelDialogOpen}
                     title="Tem certeza?"
-                    description={`Esta ação não pode ser desfeita. Isso cancelará permanentemente a venda ${saleToCancel.id.toUpperCase()}.`}
+                    description={`Esta ação não pode ser desfeita. Isso cancelará permanentemente a venda ${saleToCancel.id.substring(0,6).toUpperCase()}.`}
                     onConfirm={handleConfirmCancel}
                     confirmText="Sim, cancelar venda"
                 />
@@ -285,7 +300,7 @@ function SalesPageContent() {
                     open={paymentDialogOpen}
                     onOpenChange={setPaymentDialogOpen}
                     title="Confirmar Pagamento"
-                    description={`Deseja marcar a venda ${saleToPay.id.toUpperCase()} como 'Paga'? A data de hoje será registrada como data de pagamento.`}
+                    description={`Deseja marcar a venda ${saleToPay.id.substring(0,6).toUpperCase()} como 'Paga'? A data de hoje será registrada como data de pagamento.`}
                     onConfirm={handleConfirmPayment}
                     confirmText="Sim, marcar como pago"
                 />
