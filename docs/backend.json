@@ -128,6 +128,11 @@
           "description": "The date of the sale transaction.",
           "format": "date-time"
         },
+        "paymentDate": {
+          "type": "string",
+          "description": "The date the sale was paid.",
+          "format": "date-time"
+        },
         "totalAmount": {
           "type": "number",
           "description": "The total amount of the sale transaction."
@@ -441,5 +446,3 @@
     ]
   }
 }
-
-    

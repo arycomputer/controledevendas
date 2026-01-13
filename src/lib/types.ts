@@ -39,6 +39,7 @@ export const SaleSchema = z.object({
   items: z.array(SaleItemSchema),
   totalAmount: z.number(),
   saleDate: z.string(), // ISO date string
+  paymentDate: z.string().optional(), // ISO date string
   paymentMethod: z.enum(['cash', 'pix', 'credit_card', 'debit_card']),
   status: z.enum(['paid', 'pending']),
   downPayment: z.coerce.number().optional(),

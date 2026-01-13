@@ -31,7 +31,6 @@ function SaleDetailsPageContent() {
     const saleDocRef = useMemoFirebase(() => doc(firestore, 'sales', saleId), [firestore, saleId]);
     const { data: sale, isLoading: saleLoading } = useDoc<Sale>(saleDocRef);
     
-    // We fetch customer and product data here to display in the sale details
     const customerDocRef = useMemoFirebase(() => sale ? doc(firestore, 'customers', sale.customerId) : null, [firestore, sale]);
     const { data: customer, isLoading: customerLoading } = useDoc<Customer>(customerDocRef);
     
@@ -93,7 +92,8 @@ function SaleDetailsPageContent() {
                     </div>
                      <div className="space-y-1">
                         <h3 className="font-semibold">Detalhes da Venda</h3>
-                        <p className="text-muted-foreground">Data: {new Date(sale.saleDate).toLocaleDateString('pt-BR')}</p>
+                        <p className="text-muted-foreground">Data da Venda: {new Date(sale.saleDate).toLocaleDateString('pt-BR')}</p>
+                        {sale.paymentDate && <p className="text-muted-foreground">Data do Pagamento: {new Date(sale.paymentDate).toLocaleDateString('pt-BR')}</p>}
                         <p className="text-muted-foreground">Itens: <Badge variant="secondary" className="ml-1">{totalItems}</Badge></p>
                     </div>
                     <div className="space-y-1">

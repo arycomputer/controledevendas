@@ -3,7 +3,7 @@
 import React, { useState, useMemo } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { PlusCircle, MoreHorizontal, Loader2, Eye, XCircle, ArrowUpDown, Search } from 'lucide-react';
+import { PlusCircle, MoreHorizontal, Loader2, Eye, XCircle, ArrowUpDown, Search, CreditCard } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -13,7 +13,7 @@ import type { Sale, Customer } from '@/lib/types';
 import { ConfirmationDialog } from '@/components/app/confirmation-dialog';
 import { useToast } from '@/hooks/use-toast';
 import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
-import { collection, doc, deleteDoc } from 'firebase/firestore';
+import { collection, doc, deleteDoc, updateDoc } from 'firebase/firestore';
 import { AuthGuard } from '@/components/app/auth-guard';
 import { Input } from '@/components/ui/input';
 
@@ -28,8 +28,12 @@ function SalesPageContent() {
     const customersCollection = useMemoFirebase(() => collection(firestore, 'customers'), [firestore]);
     const { data: customers, isLoading: customersLoading } = useCollection<Customer>(customersCollection);
 
-    const [dialogOpen, setDialogOpen] = useState(false);
+    const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
     const [saleToCancel, setSaleToCancel] = useState<Sale | null>(null);
+    
+    const [paymentDialogOpen, setPaymentDialogOpen] = useState(false);
+    const [saleToPay, setSaleToPay] = useState<Sale | null>(null);
+
     const [searchTerm, setSearchTerm] = useState('');
     const [sortConfig, setSortConfig] = useState<{ key: keyof Sale | 'customerName'; direction: 'ascending' | 'descending' }>({ key: 'saleDate', direction: 'descending' });
 
@@ -86,7 +90,7 @@ function SalesPageContent() {
 
     const handleCancelClick = (sale: Sale) => {
         setSaleToCancel(sale);
-        setDialogOpen(true);
+        setCancelDialogOpen(true);
     };
 
     const handleConfirmCancel = async () => {
@@ -109,9 +113,41 @@ function SalesPageContent() {
         }
 
         setSaleToCancel(null);
-        setDialogOpen(false);
+        setCancelDialogOpen(false);
     };
     
+     const handlePaymentClick = (sale: Sale) => {
+        setSaleToPay(sale);
+        setPaymentDialogOpen(true);
+    };
+
+    const handleConfirmPayment = async () => {
+        if (!saleToPay || !firestore) return;
+
+        try {
+            const saleRef = doc(firestore, 'sales', saleToPay.id);
+            await updateDoc(saleRef, {
+                status: 'paid',
+                paymentDate: new Date().toISOString(),
+                amountReceivable: 0,
+            });
+            toast({
+                title: "Sucesso!",
+                description: "Pagamento registrado com sucesso!",
+            });
+        } catch (error) {
+            console.error("Error updating sale status:", error);
+            toast({
+                title: "Erro!",
+                description: "Não foi possível registrar o pagamento.",
+                variant: "destructive"
+            });
+        }
+
+        setSaleToPay(null);
+        setPaymentDialogOpen(false);
+    };
+
     const handleViewClick = (saleId: string) => {
         router.push(`/sales/${saleId}`);
     };
@@ -208,6 +244,11 @@ function SalesPageContent() {
                                                     <DropdownMenuContent align="end">
                                                         <DropdownMenuLabel>Ações</DropdownMenuLabel>
                                                         <DropdownMenuItem onClick={() => handleViewClick(sale.id)}><Eye className="mr-2 h-4 w-4" /> Ver Detalhes</DropdownMenuItem>
+                                                        {sale.status === 'pending' && (
+                                                            <DropdownMenuItem onClick={() => handlePaymentClick(sale)}>
+                                                                <CreditCard className="mr-2 h-4 w-4" /> Marcar como Pago
+                                                            </DropdownMenuItem>
+                                                        )}
                                                         <DropdownMenuSeparator />
                                                         <DropdownMenuItem onClick={() => handleCancelClick(sale)} className="text-destructive focus:text-destructive focus:bg-destructive/10"><XCircle className="mr-2 h-4 w-4" /> Cancelar Venda</DropdownMenuItem>
                                                     </DropdownMenuContent>
@@ -227,14 +268,26 @@ function SalesPageContent() {
                     </Table>
                 </CardContent>
             </Card>
+            
             {saleToCancel && (
                 <ConfirmationDialog
-                    open={dialogOpen}
-                    onOpenChange={setDialogOpen}
+                    open={cancelDialogOpen}
+                    onOpenChange={setCancelDialogOpen}
                     title="Tem certeza?"
                     description={`Esta ação não pode ser desfeita. Isso cancelará permanentemente a venda ${saleToCancel.id.toUpperCase()}.`}
                     onConfirm={handleConfirmCancel}
                     confirmText="Sim, cancelar venda"
+                />
+            )}
+            
+            {saleToPay && (
+                <ConfirmationDialog
+                    open={paymentDialogOpen}
+                    onOpenChange={setPaymentDialogOpen}
+                    title="Confirmar Pagamento"
+                    description={`Deseja marcar a venda ${saleToPay.id.toUpperCase()} como 'Paga'? A data de hoje será registrada como data de pagamento.`}
+                    onConfirm={handleConfirmPayment}
+                    confirmText="Sim, marcar como pago"
                 />
             )}
         </>

@@ -118,6 +118,7 @@ function NewSalePageContent() {
         amountReceivable: amountReceivable,
         downPayment: data.downPayment || 0,
         saleDate: new Date().toISOString(),
+        paymentDate: data.status === 'paid' ? new Date().toISOString() : undefined,
       };
       await setDoc(doc(firestore, "sales", saleId), saleData);
 
