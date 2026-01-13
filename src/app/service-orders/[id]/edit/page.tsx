@@ -250,7 +250,7 @@ function EditServiceOrderPageContent() {
                                 )}
                                 >
                                 {field.value ? (
-                                    format(field.value, "PPP")
+                                    format(field.value, "dd/MM/yyyy")
                                 ) : (
                                     <span>Selecione uma data</span>
                                 )}
@@ -421,7 +421,7 @@ function EditServiceOrderPageContent() {
                                     )}
                                     >
                                     {field.value ? (
-                                        format(field.value, "PPP")
+                                        format(field.value, "dd/MM/yyyy")
                                     ) : (
                                         <span>Selecione uma data</span>
                                     )}
