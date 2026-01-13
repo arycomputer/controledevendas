@@ -236,10 +236,11 @@ function BudgetDetailsPageContent() {
                          <>
                             <Separator className="my-4"/>
                              <div className="grid md:grid-cols-2 gap-6 text-sm mb-6">
-                                {budget.itemDescription && (
+                                {(budget.itemDescription || budget.model) && (
                                     <div className="info-item">
                                         <h4 className="font-semibold">Equipamento</h4>
-                                        <p>{budget.itemDescription}</p>
+                                        {budget.itemDescription && <p>{budget.itemDescription}</p>}
+                                        {budget.model && <p className="font-medium">{budget.model}</p>}
                                         {budget.serialNumber && <p className="text-xs text-muted-foreground">S/N: {budget.serialNumber}</p>}
                                     </div>
                                 )}

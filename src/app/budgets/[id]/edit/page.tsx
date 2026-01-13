@@ -31,6 +31,7 @@ const budgetFormSchema = z.object({
   customerId: z.string({ required_error: "É necessário selecionar um cliente." }).min(1, "É necessário selecionar um cliente."),
   validUntil: z.date({ required_error: "A data de validade é obrigatória."}),
   itemDescription: z.string().optional(),
+  model: z.string().optional(),
   problemDescription: z.string().optional(),
   serialNumber: z.string().optional(),
   items: z.array(z.object({
@@ -67,6 +68,7 @@ function EditBudgetPageContent() {
         customerId: budget?.customerId || "",
         validUntil: budget ? new Date(budget.validUntil) : new Date(),
         itemDescription: budget?.itemDescription || "",
+        model: budget?.model || "",
         problemDescription: budget?.problemDescription || "",
         serialNumber: budget?.serialNumber || "",
         items: budget?.items || [],
@@ -277,25 +279,40 @@ function EditBudgetPageContent() {
                         <FormItem>
                           <FormLabel>Descrição do Equipamento</FormLabel>
                           <FormControl>
-                            <Input placeholder="Ex: Notebook Dell Vostro" {...field} />
+                            <Input placeholder="Ex: Notebook, Smartphone, etc." {...field} />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
                       )}
                     />
-                     <FormField
-                      control={form.control}
-                      name="serialNumber"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Número de Série</FormLabel>
-                          <FormControl>
-                            <Input placeholder="Ex: BR-123XYZ" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <FormField
+                        control={form.control}
+                        name="model"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Marca/Modelo</FormLabel>
+                            <FormControl>
+                              <Input placeholder="Ex: Dell Vostro 3400" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                       <FormField
+                        control={form.control}
+                        name="serialNumber"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Número de Série</FormLabel>
+                            <FormControl>
+                              <Input placeholder="Ex: BR-123XYZ" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
                      <FormField
                       control={form.control}
                       name="problemDescription"

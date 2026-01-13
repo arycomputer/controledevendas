@@ -358,6 +358,10 @@
           "type": "string",
           "description": "Description of the item for service (e.g., model, brand)."
         },
+        "model": {
+          "type": "string",
+          "description": "The model of the equipment for service."
+        },
         "problemDescription": {
           "type": "string",
           "description": "Description of the problem reported by the customer."
