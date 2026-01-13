@@ -366,6 +366,10 @@
           "type": "string",
           "description": "Description of the problem reported by the customer."
         },
+        "solutionDescription": {
+          "type": "string",
+          "description": "Description of the solution for the reported problem."
+        },
         "serialNumber": {
           "type": "string",
           "description": "The serial number of the item for service."
@@ -468,5 +472,3 @@
     ]
   }
 }
-
-    

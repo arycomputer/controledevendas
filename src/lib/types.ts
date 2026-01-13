@@ -80,11 +80,9 @@ export const BudgetSchema = z.object({
   status: z.enum(['pending', 'approved', 'rejected']),
   itemDescription: z.string().optional(),
   problemDescription: z.string().optional(),
+  solutionDescription: z.string().optional(),
   serialNumber: z.string().optional(),
   imageUrls: z.array(z.string()).optional(),
   model: z.string().optional(),
 });
 export type Budget = z.infer<typeof BudgetSchema>;
-
-    
-    

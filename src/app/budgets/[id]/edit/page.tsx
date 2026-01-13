@@ -33,6 +33,7 @@ const budgetFormSchema = z.object({
   itemDescription: z.string().optional(),
   model: z.string().optional(),
   problemDescription: z.string().optional(),
+  solutionDescription: z.string().optional(),
   serialNumber: z.string().optional(),
   items: z.array(z.object({
     productId: z.string().min(1, "Selecione um produto ou serviço."),
@@ -70,6 +71,7 @@ function EditBudgetPageContent() {
         itemDescription: budget?.itemDescription || "",
         model: budget?.model || "",
         problemDescription: budget?.problemDescription || "",
+        solutionDescription: budget?.solutionDescription || "",
         serialNumber: budget?.serialNumber || "",
         items: budget?.items || [],
         imageUrls: budget?.imageUrls || [],
@@ -326,6 +328,19 @@ function EditBudgetPageContent() {
                         </FormItem>
                       )}
                     />
+                    <FormField
+                      control={form.control}
+                      name="solutionDescription"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Solução do Defeito</FormLabel>
+                          <FormControl>
+                            <Textarea placeholder="Ex: Troca da fonte de alimentação e limpeza interna." className="resize-none" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
                 </div>
             </div>
 
@@ -478,5 +493,3 @@ export default function EditBudgetPage() {
         </AuthGuard>
     )
 }
-
-    
