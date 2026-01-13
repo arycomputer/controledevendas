@@ -240,11 +240,15 @@
         },
         "itemDescription": {
           "type": "string",
-          "description": "Description of the item (e.g., model, brand, serial number)."
+          "description": "Description of the item (e.g., model, brand)."
         },
         "problemDescription": {
           "type": "string",
           "description": "Description of the problem reported by the customer."
+        },
+        "serialNumber": {
+          "type": "string",
+          "description": "The serial number of the item."
         },
         "items": {
           "type": "array",
@@ -288,10 +292,7 @@
         "customerId",
         "entryDate",
         "itemDescription",
-        "problemDescription",
-        "items",
-        "totalAmount",
-        "status"
+        "problemDescription"
       ]
     },
     "Budget": {
@@ -352,6 +353,18 @@
             "rejected"
           ],
           "description": "The status of the budget."
+        },
+        "itemDescription": {
+          "type": "string",
+          "description": "Description of the item for service (e.g., model, brand)."
+        },
+        "problemDescription": {
+          "type": "string",
+          "description": "Description of the problem reported by the customer."
+        },
+        "serialNumber": {
+          "type": "string",
+          "description": "The serial number of the item for service."
         }
       },
       "required": [

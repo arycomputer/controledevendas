@@ -231,6 +231,28 @@ function BudgetDetailsPageContent() {
                         </div>
                     </div>
 
+                    {(budget.itemDescription || budget.problemDescription) && (
+                         <>
+                            <Separator className="my-4"/>
+                             <div className="grid md:grid-cols-2 gap-6 text-sm mb-6">
+                                {budget.itemDescription && (
+                                    <div className="info-item">
+                                        <h4 className="font-semibold">Equipamento</h4>
+                                        <p>{budget.itemDescription}</p>
+                                        {budget.serialNumber && <p className="text-xs text-muted-foreground">S/N: {budget.serialNumber}</p>}
+                                    </div>
+                                )}
+                                {budget.problemDescription && (
+                                     <div className="info-item">
+                                        <h4 className="font-semibold">Problema/Defeito Relatado</h4>
+                                        <p>{budget.problemDescription}</p>
+                                    </div>
+                                )}
+                            </div>
+                        </>
+                    )}
+
+
                     <Separator />
                     
                     <div>

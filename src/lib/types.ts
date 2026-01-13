@@ -63,6 +63,7 @@ export const ServiceOrderSchema = z.object({
   exitDate: z.string().optional(), // ISO date string
   itemDescription: z.string(),
   problemDescription: z.string(),
+  serialNumber: z.string().optional(),
   items: z.array(SaleItemSchema),
   totalAmount: z.number(),
   status: z.enum(['pending', 'in_progress', 'completed', 'delivered']),
@@ -77,5 +78,8 @@ export const BudgetSchema = z.object({
   budgetDate: z.string(), // ISO date string
   validUntil: z.string(), // ISO date string
   status: z.enum(['pending', 'approved', 'rejected']),
+  itemDescription: z.string().optional(),
+  problemDescription: z.string().optional(),
+  serialNumber: z.string().optional(),
 });
 export type Budget = z.infer<typeof BudgetSchema>;

@@ -23,11 +23,15 @@ import { Calendar } from "@/components/ui/calendar"
 import { cn } from "@/lib/utils"
 import { format, addDays } from "date-fns"
 import { Input } from "@/components/ui/input"
+import { Textarea } from "@/components/ui/textarea"
 
 
 const budgetFormSchema = z.object({
   customerId: z.string({ required_error: "É necessário selecionar um cliente." }).min(1, "É necessário selecionar um cliente."),
   validUntil: z.date({ required_error: "A data de validade é obrigatória."}),
+  itemDescription: z.string().optional(),
+  problemDescription: z.string().optional(),
+  serialNumber: z.string().optional(),
   items: z.array(z.object({
     productId: z.string().min(1, "Selecione um produto ou serviço."),
     quantity: z.coerce.number().int().min(1, "Mínimo 1."),
@@ -53,6 +57,9 @@ function NewBudgetPageContent() {
     defaultValues: {
       customerId: "",
       validUntil: addDays(new Date(), 7),
+      itemDescription: "",
+      problemDescription: "",
+      serialNumber: "",
       items: [],
     },
   })
@@ -190,6 +197,55 @@ function NewBudgetPageContent() {
                  )}
                 />
             </div>
+
+            <Separator />
+
+            <div>
+                <h3 className="text-lg font-medium mb-4">Dados do Equipamento (Opcional)</h3>
+                 <div className="space-y-6">
+                     <FormField
+                      control={form.control}
+                      name="itemDescription"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Descrição do Equipamento</FormLabel>
+                          <FormControl>
+                            <Input placeholder="Ex: Notebook Dell Vostro, N/S ABC-1234" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                     <FormField
+                      control={form.control}
+                      name="serialNumber"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Número de Série</FormLabel>
+                          <FormControl>
+                            <Input placeholder="Ex: BR-123XYZ" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                     <FormField
+                      control={form.control}
+                      name="problemDescription"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Problema/Defeito Relatado</FormLabel>
+                          <FormControl>
+                            <Textarea placeholder="Ex: Tela não liga, faz barulho ao iniciar." className="resize-none" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                </div>
+            </div>
+
+            <Separator />
             
             <div>
               <FormLabel>Itens do Orçamento</FormLabel>
