@@ -94,7 +94,7 @@ function SaleDetailsPageContent() {
                         <h3 className="font-semibold">Detalhes da Venda</h3>
                         <p className="text-muted-foreground">Data da Venda: {new Date(sale.saleDate).toLocaleDateString('pt-BR')}</p>
                         {sale.paymentDate && <p className="text-muted-foreground">Data do Pagamento: {new Date(sale.paymentDate).toLocaleDateString('pt-BR')}</p>}
-                        <p className="text-muted-foreground">Itens: <Badge variant="secondary" className="ml-1">{totalItems}</Badge></p>
+                        <div className="text-muted-foreground">Itens: <Badge variant="secondary" className="ml-1">&lt;div&gt;{totalItems}&lt;/div&gt;</Badge></div>
                     </div>
                     <div className="space-y-1">
                         <h3 className="font-semibold">Pagamento</h3>
