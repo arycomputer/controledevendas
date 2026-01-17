@@ -65,17 +65,17 @@ function EditBudgetPageContent() {
 
   const form = useForm<BudgetFormValues>({
     resolver: zodResolver(budgetFormSchema),
-    defaultValues: useMemo(() => ({
-        customerId: budget?.customerId || "",
-        validUntil: budget ? new Date(budget.validUntil) : new Date(),
-        itemDescription: budget?.itemDescription || "",
-        model: budget?.model || "",
-        problemDescription: budget?.problemDescription || "",
-        solutionDescription: budget?.solutionDescription || "",
-        serialNumber: budget?.serialNumber || "",
-        items: budget?.items || [],
-        imageUrls: budget?.imageUrls || [],
-    }), [budget]),
+    defaultValues: {
+      customerId: "",
+      validUntil: new Date(),
+      itemDescription: "",
+      model: "",
+      problemDescription: "",
+      solutionDescription: "",
+      serialNumber: "",
+      items: [],
+      imageUrls: [],
+    },
   })
 
   useEffect(() => {
