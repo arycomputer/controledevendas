@@ -80,12 +80,20 @@ function EditBudgetPageContent() {
 
   useEffect(() => {
     if (budget) {
+        // Explicitly set values to avoid issues with spreading extra properties from `budget`
         form.reset({
-            ...budget,
+            customerId: budget.customerId,
             validUntil: new Date(budget.validUntil),
+            itemDescription: budget.itemDescription || "",
+            model: budget.model || "",
+            problemDescription: budget.problemDescription || "",
+            solutionDescription: budget.solutionDescription || "",
+            serialNumber: budget.serialNumber || "",
+            items: budget.items,
+            imageUrls: budget.imageUrls || [],
         });
     }
-  }, [budget, form]);
+  }, [budget, form.reset]); // Depend on budget and the stable reset function
   
   const { fields, append, remove, update } = useFieldArray({
     control: form.control,
