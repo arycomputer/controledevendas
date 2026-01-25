@@ -375,9 +375,11 @@
           "description": "The serial number of the item for service."
         },
         "imageUrls": {
-            "type": "array",
-            "items": { "type": "string" },
-            "description": "A list of URLs for images of the equipment's condition."
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "A list of URLs for images of the equipment's condition."
         }
       },
       "required": [
@@ -388,6 +390,47 @@
         "validUntil",
         "totalAmount",
         "status"
+      ]
+    },
+    "Discard": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Discard",
+      "type": "object",
+      "description": "Represents a discarded product with its details and images.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Discard entity."
+        },
+        "description": {
+          "type": "string",
+          "description": "Description of the discarded item."
+        },
+        "model": {
+          "type": "string",
+          "description": "The model of the discarded item."
+        },
+        "serialNumber": {
+          "type": "string",
+          "description": "The serial number of the discarded item."
+        },
+        "imageUrls": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "A list of URLs for images of the discarded item."
+        },
+        "discardDate": {
+          "type": "string",
+          "description": "The date the item was discarded.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "description",
+        "discardDate"
       ]
     }
   },
@@ -467,6 +510,16 @@
             "$ref": "#/backend/entities/Settings"
           },
           "description": "Stores global application settings. Authenticated users can read/write."
+        }
+      },
+      {
+        "path": "discards/{discardId}",
+        "definition": {
+          "entityName": "Discard",
+          "schema": {
+            "$ref": "#/backend/entities/Discard"
+          },
+          "description": "Stores discarded items. Any authenticated user can manage discards."
         }
       }
     ]

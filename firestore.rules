@@ -132,6 +132,16 @@ service cloud.firestore {
     }
 
     /**
+     * @description Manages discarded items. All authenticated users can manage discards.
+     * @path /discards/{discardId}
+     * @allow (read, write) An authenticated user can manage discarded items.
+     * @principle Grants full CRUD access to any authenticated user.
+     */
+    match /discards/{discardId} {
+      allow read, write: if isSignedIn();
+    }
+
+    /**
      * @description Manages user roles and data.
      * @path /users/{userId}
      * @allow (read) Any authenticated user can read the list of users.
@@ -154,5 +164,3 @@ service cloud.firestore {
     }
   }
 }
-
-    

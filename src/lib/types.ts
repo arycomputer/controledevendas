@@ -86,3 +86,13 @@ export const BudgetSchema = z.object({
   model: z.string().optional(),
 });
 export type Budget = z.infer<typeof BudgetSchema>;
+
+export const DiscardSchema = z.object({
+  id: z.string(),
+  description: z.string(),
+  model: z.string().optional(),
+  serialNumber: z.string().optional(),
+  imageUrls: z.array(z.string()).optional(),
+  discardDate: z.string(), // ISO date string
+});
+export type Discard = z.infer<typeof DiscardSchema>;

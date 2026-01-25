@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, Users, ShoppingCart, Package, Settings, LogOut, FileText, ClipboardList } from 'lucide-react';
+import { LayoutDashboard, Users, ShoppingCart, Package, Settings, LogOut, FileText, ClipboardList, Trash2 } from 'lucide-react';
 import Image from 'next/image';
 import {
   Sidebar,
@@ -26,6 +26,7 @@ const navItems = [
   { href: '/budgets', label: 'Orçamentos', icon: ClipboardList },
   { href: '/sales', label: 'Vendas', icon: ShoppingCart },
   { href: '/service-orders', label: 'Ordens de Serviço', icon: FileText },
+  { href: '/discards', label: 'Descartes', icon: Trash2 },
   { href: '/settings', label: 'Configurações', icon: Settings },
 ];
 
@@ -54,7 +55,7 @@ export function AppSidebar() {
             <SidebarTrigger />
         </div>
         {state === 'expanded' && companyData.logo && (
-          <div className="relative w-full h-20 rounded-md overflow-hidden">
+           <div className="relative w-full h-24 rounded-md overflow-hidden">
              <Image 
                 src={companyData.logo} 
                 alt="Logo da empresa" 
