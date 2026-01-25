@@ -2,9 +2,8 @@
 
 import React, { useState, useMemo } from 'react';
 import Link from 'next/link';
-import Image from 'next/image';
 import { useRouter } from 'next/navigation';
-import { PlusCircle, MoreHorizontal, Loader2, Edit, Trash2, Search, ArrowUpDown, ImageIcon } from 'lucide-react';
+import { PlusCircle, MoreHorizontal, Loader2, Edit, Trash2, Search, ArrowUpDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -138,7 +137,6 @@ function DiscardsPageContent() {
                     <Table>
                         <TableHeader>
                             <TableRow>
-                                <TableHead className="hidden sm:table-cell w-16">Imagem</TableHead>
                                 <TableHead>
                                      <Button variant="ghost" onClick={() => requestSort('description')}>
                                         Descrição
@@ -146,20 +144,14 @@ function DiscardsPageContent() {
                                     </Button>
                                 </TableHead>
                                 <TableHead className="hidden md:table-cell">
-                                    <Button variant="ghost" onClick={() => requestSort('problemDescription')}>
-                                        Defeito
-                                        <ArrowUpDown className="ml-2 h-4 w-4" />
-                                    </Button>
-                                </TableHead>
-                                <TableHead className="hidden lg:table-cell">
                                     <Button variant="ghost" onClick={() => requestSort('model')}>
                                         Modelo
                                         <ArrowUpDown className="ml-2 h-4 w-4" />
                                     </Button>
                                 </TableHead>
-                                 <TableHead className="text-right">
-                                     <Button variant="ghost" onClick={() => requestSort('discardDate')}>
-                                        Data
+                                <TableHead className="hidden md:table-cell">
+                                    <Button variant="ghost" onClick={() => requestSort('problemDescription')}>
+                                        Defeito
                                         <ArrowUpDown className="ml-2 h-4 w-4" />
                                     </Button>
                                 </TableHead>
@@ -171,28 +163,16 @@ function DiscardsPageContent() {
                         <TableBody>
                             {isLoading ? (
                                 <TableRow>
-                                    <TableCell colSpan={6} className="h-24 text-center">
+                                    <TableCell colSpan={4} className="h-24 text-center">
                                         <Loader2 className="h-6 w-6 animate-spin mx-auto" />
                                     </TableCell>
                                 </TableRow>
                             ) : sortedAndFilteredDiscards && sortedAndFilteredDiscards.length > 0 ? (
                                 sortedAndFilteredDiscards.map((item: Discard) => (
                                     <TableRow key={item.id} onDoubleClick={() => handleEditClick(item.id)} className="cursor-pointer">
-                                        <TableCell className="hidden sm:table-cell">
-                                            <div className="relative h-12 w-12 rounded-md overflow-hidden border bg-muted flex items-center justify-center">
-                                                {item.imageUrls && item.imageUrls.length > 0 ? (
-                                                    <Image src={item.imageUrls[0]} alt={item.description} fill className="object-cover" />
-                                                ) : (
-                                                    <ImageIcon className="h-6 w-6 text-muted-foreground" />
-                                                )}
-                                            </div>
-                                        </TableCell>
                                         <TableCell className="font-medium">{item.description}</TableCell>
+                                        <TableCell className="hidden md:table-cell">{item.model || 'N/A'}</TableCell>
                                         <TableCell className="hidden md:table-cell">{item.problemDescription || 'N/A'}</TableCell>
-                                        <TableCell className="hidden lg:table-cell">{item.model || 'N/A'}</TableCell>
-                                        <TableCell className="text-right">
-                                            {new Date(item.discardDate).toLocaleDateString('pt-BR')}
-                                        </TableCell>
                                         <TableCell className="text-right">
                                             <DropdownMenu>
                                                 <DropdownMenuTrigger asChild>
@@ -213,7 +193,7 @@ function DiscardsPageContent() {
                                 ))
                             ) : (
                                 <TableRow>
-                                     <TableCell colSpan={6} className="h-24 text-center">
+                                     <TableCell colSpan={4} className="h-24 text-center">
                                         Nenhum item encontrado.
                                     </TableCell>
                                 </TableRow>
