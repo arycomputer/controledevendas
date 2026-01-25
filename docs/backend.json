@@ -414,6 +414,10 @@
           "type": "string",
           "description": "The serial number of the discarded item."
         },
+        "problemDescription": {
+            "type": "string",
+            "description": "Description of the defect of the discarded item."
+        },
         "imageUrls": {
           "type": "array",
           "items": {

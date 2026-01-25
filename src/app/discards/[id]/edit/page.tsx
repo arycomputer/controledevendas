@@ -26,6 +26,7 @@ const discardFormSchema = z.object({
   description: z.string().min(1, "A descrição é obrigatória."),
   model: z.string().optional(),
   serialNumber: z.string().optional(),
+  problemDescription: z.string().optional(),
   imageUrls: z.array(z.string()).optional(),
 })
 
@@ -49,6 +50,7 @@ function EditDiscardPageContent() {
       description: "",
       model: "",
       serialNumber: "",
+      problemDescription: "",
       imageUrls: [],
     },
   })
@@ -59,6 +61,7 @@ function EditDiscardPageContent() {
             description: discard.description,
             model: discard.model || "",
             serialNumber: discard.serialNumber || "",
+            problemDescription: discard.problemDescription || "",
             imageUrls: discard.imageUrls || [],
         });
     }
@@ -200,6 +203,19 @@ function EditDiscardPageContent() {
                     )}
                   />
                 </div>
+                 <FormField
+                  control={form.control}
+                  name="problemDescription"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Defeito Apresentado</FormLabel>
+                      <FormControl>
+                        <Textarea placeholder="Ex: Não liga, imagem distorcida, etc." className="resize-none" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
             </div>
 
             <Separator />

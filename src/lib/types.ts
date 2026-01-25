@@ -92,6 +92,7 @@ export const DiscardSchema = z.object({
   description: z.string(),
   model: z.string().optional(),
   serialNumber: z.string().optional(),
+  problemDescription: z.string().optional(),
   imageUrls: z.array(z.string()).optional(),
   discardDate: z.string(), // ISO date string
 });

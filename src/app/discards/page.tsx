@@ -39,7 +39,8 @@ function DiscardsPageContent() {
             filteredDiscards = discards.filter(item =>
                 item.description.toLowerCase().includes(lowercasedTerm) ||
                 (item.model && item.model.toLowerCase().includes(lowercasedTerm)) ||
-                (item.serialNumber && item.serialNumber.toLowerCase().includes(lowercasedTerm))
+                (item.serialNumber && item.serialNumber.toLowerCase().includes(lowercasedTerm)) ||
+                (item.problemDescription && item.problemDescription.toLowerCase().includes(lowercasedTerm))
             );
         }
 
@@ -52,6 +53,9 @@ function DiscardsPageContent() {
                     ? new Date(a.discardDate).getTime() - new Date(b.discardDate).getTime()
                     : new Date(b.discardDate).getTime() - new Date(a.discardDate).getTime();
             }
+
+            if (!aValue) return 1;
+            if (!bValue) return -1;
 
             if (aValue < bValue) {
                 return sortConfig.direction === 'ascending' ? -1 : 1;
@@ -123,7 +127,7 @@ function DiscardsPageContent() {
                      <div className="relative mt-4">
                         <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                         <Input 
-                            placeholder="Buscar por descrição, modelo ou série..." 
+                            placeholder="Buscar por descrição, modelo, série ou defeito..." 
                             className="w-full pl-8" 
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
@@ -142,14 +146,14 @@ function DiscardsPageContent() {
                                     </Button>
                                 </TableHead>
                                 <TableHead className="hidden md:table-cell">
-                                    <Button variant="ghost" onClick={() => requestSort('model')}>
-                                        Modelo
+                                    <Button variant="ghost" onClick={() => requestSort('problemDescription')}>
+                                        Defeito
                                         <ArrowUpDown className="ml-2 h-4 w-4" />
                                     </Button>
                                 </TableHead>
                                 <TableHead className="hidden lg:table-cell">
-                                    <Button variant="ghost" onClick={() => requestSort('serialNumber')}>
-                                        Nº de Série
+                                    <Button variant="ghost" onClick={() => requestSort('model')}>
+                                        Modelo
                                         <ArrowUpDown className="ml-2 h-4 w-4" />
                                     </Button>
                                 </TableHead>
@@ -184,8 +188,8 @@ function DiscardsPageContent() {
                                             </div>
                                         </TableCell>
                                         <TableCell className="font-medium">{item.description}</TableCell>
-                                        <TableCell className="hidden md:table-cell">{item.model || 'N/A'}</TableCell>
-                                        <TableCell className="hidden lg:table-cell">{item.serialNumber || 'N/A'}</TableCell>
+                                        <TableCell className="hidden md:table-cell">{item.problemDescription || 'N/A'}</TableCell>
+                                        <TableCell className="hidden lg:table-cell">{item.model || 'N/A'}</TableCell>
                                         <TableCell className="text-right">
                                             {new Date(item.discardDate).toLocaleDateString('pt-BR')}
                                         </TableCell>
