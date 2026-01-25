@@ -429,6 +429,25 @@
           "type": "string",
           "description": "The date the item was discarded.",
           "format": "date-time"
+        },
+        "items": {
+          "type": "array",
+          "description": "A list of parts included in this discard.",
+          "items": {
+            "type": "object",
+            "properties": {
+              "productId": {
+                "type": "string"
+              },
+              "quantity": {
+                "type": "number"
+              }
+            },
+            "required": [
+              "productId",
+              "quantity"
+            ]
+          }
         }
       },
       "required": [

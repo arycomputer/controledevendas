@@ -155,6 +155,7 @@ function DiscardsPageContent() {
                                         <ArrowUpDown className="ml-2 h-4 w-4" />
                                     </Button>
                                 </TableHead>
+                                <TableHead className="text-center">Nº de Peças</TableHead>
                                 <TableHead>
                                     <span className="sr-only">Ações</span>
                                 </TableHead>
@@ -163,7 +164,7 @@ function DiscardsPageContent() {
                         <TableBody>
                             {isLoading ? (
                                 <TableRow>
-                                    <TableCell colSpan={4} className="h-24 text-center">
+                                    <TableCell colSpan={5} className="h-24 text-center">
                                         <Loader2 className="h-6 w-6 animate-spin mx-auto" />
                                     </TableCell>
                                 </TableRow>
@@ -173,6 +174,7 @@ function DiscardsPageContent() {
                                         <TableCell className="font-medium">{item.description}</TableCell>
                                         <TableCell className="hidden md:table-cell">{item.model || 'N/A'}</TableCell>
                                         <TableCell className="hidden md:table-cell">{item.problemDescription || 'N/A'}</TableCell>
+                                        <TableCell className="text-center">{item.items?.length || 0}</TableCell>
                                         <TableCell className="text-right">
                                             <DropdownMenu>
                                                 <DropdownMenuTrigger asChild>
@@ -193,7 +195,7 @@ function DiscardsPageContent() {
                                 ))
                             ) : (
                                 <TableRow>
-                                     <TableCell colSpan={4} className="h-24 text-center">
+                                     <TableCell colSpan={5} className="h-24 text-center">
                                         Nenhum item encontrado.
                                     </TableCell>
                                 </TableRow>

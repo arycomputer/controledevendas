@@ -1,10 +1,10 @@
 'use client'
 
 import { zodResolver } from "@hookform/resolvers/zod"
-import { useForm } from "react-hook-form"
+import { useForm, useFieldArray } from "react-hook-form"
 import * as z from "zod"
 import { useRouter } from "next/navigation"
-import { Loader2, UploadCloud, X } from "lucide-react"
+import { Loader2, UploadCloud, X, PlusCircle, Trash2 } from "lucide-react"
 import { v4 as uuidv4 } from 'uuid';
 import Image from "next/image";
 import React from "react";
@@ -12,16 +12,17 @@ import React from "react";
 import { Button } from "@/components/ui/button"
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Separator } from "@/components/ui/separator"
 import { useToast } from "@/hooks/use-toast"
 import { useState, useRef } from "react"
-import { useFirestore } from "@/firebase"
-import { doc, setDoc } from "firebase/firestore"
+import { useCollection, useFirestore, useMemoFirebase } from "@/firebase"
+import { collection, doc, setDoc } from "firebase/firestore"
+import type { Product } from "@/lib/types"
 import { AuthGuard } from "@/components/app/auth-guard"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { uploadImage } from "@/services/image-upload-service"
-
 
 const discardFormSchema = z.object({
   description: z.string().min(1, "A descrição é obrigatória."),
@@ -29,6 +30,11 @@ const discardFormSchema = z.object({
   serialNumber: z.string().optional(),
   problemDescription: z.string().optional(),
   imageUrls: z.array(z.string()).optional(),
+  items: z.array(z.object({
+    productId: z.string().min(1, "Selecione um produto ou serviço."),
+    quantity: z.coerce.number().int().min(1, "Mínimo 1."),
+    unitPrice: z.coerce.number(),
+  })).optional(),
 })
 
 type DiscardFormValues = z.infer<typeof discardFormSchema>
@@ -38,8 +44,10 @@ function NewDiscardPageContent() {
   const { toast } = useToast()
   const firestore = useFirestore()
   const fileInputRef = useRef<HTMLInputElement>(null);
-
   const [isUploading, setIsUploading] = useState(false);
+
+  const productsCollection = useMemoFirebase(() => collection(firestore, 'parts'), [firestore]);
+  const { data: products, isLoading: productsLoading } = useCollection<Product>(productsCollection);
 
   const form = useForm<DiscardFormValues>({
     resolver: zodResolver(discardFormSchema),
@@ -49,10 +57,17 @@ function NewDiscardPageContent() {
       serialNumber: "",
       problemDescription: "",
       imageUrls: [],
+      items: [],
     },
   })
 
+  const { fields, append, remove, update } = useFieldArray({
+    control: form.control,
+    name: "items",
+  })
+
   const watchedImageUrls = form.watch("imageUrls");
+  const watchedItems = form.watch("items");
 
   const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files;
@@ -118,6 +133,26 @@ function NewDiscardPageContent() {
       })
     }
   }
+
+  const handleProductChange = (value: string, index: number) => {
+    const product = products?.find(p => p.id === value);
+    if (product) {
+        update(index, {
+            ...watchedItems[index],
+            productId: value,
+            unitPrice: 0,
+            quantity: 1
+        });
+    }
+  }
+
+  if (productsLoading) {
+    return (
+        <div className="flex justify-center items-center h-64">
+            <Loader2 className="h-8 w-8 animate-spin" />
+        </div>
+    )
+  }
   
   return (
     <Card className="max-w-2xl mx-auto">
@@ -134,9 +169,9 @@ function NewDiscardPageContent() {
                   name="description"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Descrição do Equipamento</FormLabel>
+                      <FormLabel>Descrição do Descarte</FormLabel>
                       <FormControl>
-                        <Textarea placeholder="Ex: Monitor, Placa-mãe, Fonte de Alimentação" className="resize-none" {...field} />
+                        <Textarea placeholder="Ex: Lote de peças de computador, Sucata de monitor" className="resize-none" {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -148,7 +183,7 @@ function NewDiscardPageContent() {
                     name="model"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Marca/Modelo</FormLabel>
+                        <FormLabel>Marca/Modelo (opcional)</FormLabel>
                         <FormControl>
                           <Input placeholder="Ex: Samsung T35F" {...field} />
                         </FormControl>
@@ -161,7 +196,7 @@ function NewDiscardPageContent() {
                     name="serialNumber"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Número de Série</FormLabel>
+                        <FormLabel>Número de Série (opcional)</FormLabel>
                         <FormControl>
                           <Input placeholder="Ex: BR-123XYZ" {...field} />
                         </FormControl>
@@ -175,7 +210,7 @@ function NewDiscardPageContent() {
                   name="problemDescription"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Defeito Apresentado</FormLabel>
+                      <FormLabel>Defeito Geral Apresentado (opcional)</FormLabel>
                       <FormControl>
                         <Textarea placeholder="Ex: Não liga, imagem distorcida, etc." className="resize-none" {...field} />
                       </FormControl>
@@ -184,11 +219,78 @@ function NewDiscardPageContent() {
                   )}
                 />
             </div>
+            
+            <Separator />
+
+            <div>
+              <FormLabel>Peças Descartadas</FormLabel>
+              <div className="mt-2 space-y-4">
+                {fields.map((field, index) => {
+                   return (
+                     <div key={field.id} className="grid grid-cols-1 md:grid-cols-[1fr_100px_auto] items-end gap-4 p-4 border rounded-lg bg-muted/20">
+                        <FormField
+                          control={form.control}
+                          name={`items.${index}.productId`}
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel className="text-xs md:hidden">Peça</FormLabel>
+                              <Select onValueChange={(value) => handleProductChange(value, index)} defaultValue={field.value}>
+                                <FormControl>
+                                  <SelectTrigger>
+                                    <SelectValue placeholder="Selecione uma peça" />
+                                  </SelectTrigger>
+                                </FormControl>
+                                <SelectContent>
+                                  {products?.map(product => {
+                                      const isAlreadySelected = watchedItems.some((item, itemIndex) => item.productId === product.id && itemIndex !== index);
+                                    return (
+                                    <SelectItem key={product.id} value={product.id} disabled={isAlreadySelected}>
+                                      {product.name}
+                                    </SelectItem>
+                                  )})
+                                }
+                                </SelectContent>
+                              </Select>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                         <FormField
+                          control={form.control}
+                          name={`items.${index}.quantity`}
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel className="text-xs md:hidden">Qtd.</FormLabel>
+                              <FormControl>
+                                <Input type="number" min="1" {...field} />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        <Button type="button" variant="destructive" size="icon" onClick={() => remove(index)}>
+                          <Trash2 className="h-4 w-4" />
+                          <span className="sr-only">Remover item</span>
+                        </Button>
+                      </div>
+                   )
+                })}
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => append({ productId: "", quantity: 1, unitPrice: 0 })}
+                >
+                  <PlusCircle className="mr-2 h-4 w-4" /> Adicionar Peça
+                </Button>
+                 {form.formState.errors.items && <p className="text-sm font-medium text-destructive">{typeof form.formState.errors.items === 'object' && 'message' in form.formState.errors.items ? form.formState.errors.items.message : "Erro nos itens"}</p>}
+              </div>
+            </div>
 
             <Separator />
 
              <div>
-                <h3 className="text-lg font-medium mb-4">Fotos do Equipamento</h3>
+                <h3 className="text-lg font-medium mb-4">Fotos do Lote/Equipamento</h3>
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 mb-4">
                     {watchedImageUrls?.map((url, index) => (
                         <div key={index} className="relative aspect-square group">

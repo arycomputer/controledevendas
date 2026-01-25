@@ -95,5 +95,6 @@ export const DiscardSchema = z.object({
   problemDescription: z.string().optional(),
   imageUrls: z.array(z.string()).optional(),
   discardDate: z.string(), // ISO date string
+  items: z.array(SaleItemSchema).optional(),
 });
 export type Discard = z.infer<typeof DiscardSchema>;
