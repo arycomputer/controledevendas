@@ -8,6 +8,7 @@ import { RegistrationManager } from "@/components/app/settings/registration-mana
 import { ThemeSelector } from "@/components/app/settings/theme-selector";
 import { AuthGuard } from "@/components/app/auth-guard";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
+import { DatabaseManager } from "@/components/app/settings/database-manager";
 
 function SettingsPageContent() {
     return (
@@ -15,11 +16,12 @@ function SettingsPageContent() {
             <h1 className="text-3xl font-bold tracking-tight">Configurações</h1>
             <Tabs defaultValue="company" className="w-full">
                 <ScrollArea className="w-full">
-                    <TabsList className="grid w-full grid-cols-4 min-w-[400px]">
+                    <TabsList className="grid w-full grid-cols-5 min-w-[500px]">
                         <TabsTrigger value="company">Empresa</TabsTrigger>
                         <TabsTrigger value="users">Usuários</TabsTrigger>
                         <TabsTrigger value="registration">Cadastros</TabsTrigger>
                         <TabsTrigger value="themes">Temas</TabsTrigger>
+                        <TabsTrigger value="database">Banco de Dados</TabsTrigger>
                     </TabsList>
                     <ScrollBar orientation="horizontal" />
                 </ScrollArea>
@@ -64,6 +66,17 @@ function SettingsPageContent() {
                         </CardHeader>
                         <CardContent>
                             <ThemeSelector />
+                        </CardContent>
+                    </Card>
+                </TabsContent>
+                <TabsContent value="database">
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Banco de Dados</CardTitle>
+                            <CardDescription>Exporte um backup completo dos seus dados ou importe um backup para restaurar o sistema.</CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            <DatabaseManager />
                         </CardContent>
                     </Card>
                 </TabsContent>
