@@ -37,7 +37,13 @@ export function AppSidebar() {
 
   const handleSignOut = () => {
     if (auth) {
-        signOut(auth);
+        signOut(auth).then(() => {
+            // Limpa o armazenamento local para garantir que nenhum dado de sessão persista.
+            localStorage.clear();
+            sessionStorage.clear();
+            // Redireciona para a página inicial para forçar a recarga e a verificação de autenticação.
+            window.location.href = '/';
+        });
     }
   }
 

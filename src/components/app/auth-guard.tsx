@@ -12,6 +12,7 @@ import { signInWithEmailAndPassword } from 'firebase/auth';
 import { AppSidebar } from './app-sidebar';
 import { SidebarInset } from '../ui/sidebar';
 import { useCompany } from '@/context/company-context';
+import { useInactivityLogout } from '@/hooks/use-inactivity-logout';
 
 
 function LoginPage() {
@@ -86,6 +87,20 @@ function LoginPage() {
     )
 }
 
+function AuthenticatedLayout({ children }: { children: React.ReactNode }) {
+    useInactivityLogout();
+
+    return (
+       <>
+            <AppSidebar />
+            <SidebarInset>
+                <main className="p-4 sm:p-6 lg:p-8">
+                    {children}
+                </main>
+            </SidebarInset>
+       </>
+    );
+}
 
 export function AuthGuard({ children }: { children: React.ReactNode }) {
     const { user, isUserLoading } = useUser();
@@ -106,13 +121,8 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
     }
 
     return (
-       <>
-            <AppSidebar />
-            <SidebarInset>
-                <main className="p-4 sm:p-6 lg:p-8">
-                    {children}
-                </main>
-            </SidebarInset>
-       </>
+        <AuthenticatedLayout>
+            {children}
+        </AuthenticatedLayout>
     );
 }
