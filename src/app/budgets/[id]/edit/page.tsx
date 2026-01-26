@@ -80,20 +80,17 @@ function EditBudgetPageContent() {
 
   useEffect(() => {
     if (budget) {
-        // Explicitly set values to avoid issues with spreading extra properties from `budget`
-        form.reset({
-            customerId: budget.customerId,
-            validUntil: new Date(budget.validUntil),
-            itemDescription: budget.itemDescription || "",
-            model: budget.model || "",
-            problemDescription: budget.problemDescription || "",
-            solutionDescription: budget.solutionDescription || "",
-            serialNumber: budget.serialNumber || "",
-            items: budget.items,
-            imageUrls: budget.imageUrls || [],
-        });
+      form.setValue("customerId", budget.customerId);
+      form.setValue("validUntil", new Date(budget.validUntil));
+      form.setValue("itemDescription", budget.itemDescription || "");
+      form.setValue("model", budget.model || "");
+      form.setValue("problemDescription", budget.problemDescription || "");
+      form.setValue("solutionDescription", budget.solutionDescription || "");
+      form.setValue("serialNumber", budget.serialNumber || "");
+      form.setValue("items", budget.items);
+      form.setValue("imageUrls", budget.imageUrls || []);
     }
-  }, [budget, form.reset]); // Depend on budget and the stable reset function
+  }, [budget, form.setValue]);
   
   const { fields, append, remove, update } = useFieldArray({
     control: form.control,
