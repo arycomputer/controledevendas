@@ -65,6 +65,17 @@ function EditBudgetPageContent() {
 
   const form = useForm<BudgetFormValues>({
     resolver: zodResolver(budgetFormSchema),
+    values: budget ? {
+        customerId: budget.customerId,
+        validUntil: new Date(budget.validUntil),
+        itemDescription: budget.itemDescription || "",
+        model: budget.model || "",
+        problemDescription: budget.problemDescription || "",
+        solutionDescription: budget.solutionDescription || "",
+        serialNumber: budget.serialNumber || "",
+        items: budget.items || [],
+        imageUrls: budget.imageUrls || [],
+    } : undefined,
     defaultValues: {
       customerId: "",
       validUntil: new Date(),
@@ -77,20 +88,6 @@ function EditBudgetPageContent() {
       imageUrls: [],
     },
   })
-
-  useEffect(() => {
-    if (budget) {
-      form.setValue("customerId", budget.customerId);
-      form.setValue("validUntil", new Date(budget.validUntil));
-      form.setValue("itemDescription", budget.itemDescription || "");
-      form.setValue("model", budget.model || "");
-      form.setValue("problemDescription", budget.problemDescription || "");
-      form.setValue("solutionDescription", budget.solutionDescription || "");
-      form.setValue("serialNumber", budget.serialNumber || "");
-      form.setValue("items", budget.items);
-      form.setValue("imageUrls", budget.imageUrls || []);
-    }
-  }, [budget, form.setValue]);
   
   const { fields, append, remove, update } = useFieldArray({
     control: form.control,
