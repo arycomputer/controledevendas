@@ -162,7 +162,7 @@ function EditDiscardPageContent() {
   }
   
   const handleProductCreated = (newProduct: Product) => {
-    // The useCollection hook for products will automatically update the list.
+    append({ productId: newProduct.id, quantity: 1 });
   }
 
   const isLoading = discardLoading || productsLoading;
