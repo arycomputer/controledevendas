@@ -13,6 +13,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Input } from "@/components/ui/input"
 import { useCompany } from "@/context/company-context"
 import { uploadImage } from "@/services/image-upload-service"
+import { maskDocument, maskPhone } from "@/lib/utils"
 
 const companyFormSchema = z.object({
   name: z.string().min(2, "O nome da empresa é obrigatório."),
@@ -157,7 +158,11 @@ export function CompanyForm() {
             <FormItem>
               <FormLabel>CNPJ</FormLabel>
               <FormControl>
-                <Input placeholder="00.000.000/0000-00" {...field} />
+                <Input 
+                    placeholder="00.000.000/0000-00" 
+                    {...field}
+                    onChange={(e) => field.onChange(maskDocument(e.target.value))}
+                />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -171,7 +176,11 @@ export function CompanyForm() {
                 <FormItem>
                 <FormLabel>Telefone</FormLabel>
                 <FormControl>
-                    <Input placeholder="(00) 00000-0000" {...field} />
+                    <Input 
+                        placeholder="(00) 00000-0000" 
+                        {...field}
+                        onChange={(e) => field.onChange(maskPhone(e.target.value))}
+                    />
                 </FormControl>
                 <FormMessage />
                 </FormItem>

@@ -22,6 +22,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { useToast } from "@/hooks/use-toast"
 import { Loader2 } from "lucide-react"
 import { Separator } from "@/components/ui/separator"
+import { maskCEP, maskDocument, maskPhone } from "@/lib/utils"
 
 const createCustomerFormSchema = (settings: any) => z.object({
     name: z.string().min(2, "O nome deve ter pelo menos 2 caracteres."),
@@ -232,7 +233,11 @@ export default function EditCustomerPage() {
                     <FormItem>
                       <FormLabel>Telefone</FormLabel>
                       <FormControl>
-                        <Input placeholder="Ex: (11) 98765-4321" {...field} />
+                        <Input 
+                          placeholder="Ex: (11) 98765-4321" 
+                          {...field}
+                          onChange={(e) => field.onChange(maskPhone(e.target.value))}
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -248,7 +253,11 @@ export default function EditCustomerPage() {
                   <FormItem>
                     <FormLabel>CPF/CNPJ</FormLabel>
                     <FormControl>
-                        <Input placeholder="Ex: 123.456.789-00" {...field} />
+                        <Input 
+                            placeholder="Ex: 123.456.789-00" 
+                            {...field} 
+                            onChange={(e) => field.onChange(maskDocument(e.target.value))}
+                        />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -270,6 +279,7 @@ export default function EditCustomerPage() {
                             <Input 
                                 placeholder="Ex: 12345-678" 
                                 {...field}
+                                onChange={(e) => field.onChange(maskCEP(e.target.value))}
                                 onBlur={e => handleZipCodeBlur(e.target.value.replace(/\D/g, ''))}
                                 maxLength={9}
                             />
