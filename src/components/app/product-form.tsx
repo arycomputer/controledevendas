@@ -22,7 +22,7 @@ import { doc, setDoc } from "firebase/firestore"
 import type { Product } from "@/lib/types"
 
 const productFormSchema = z.object({
-  name: z.string().min(2, "O nome da peça deve ter pelo menos 2 caracteres."),
+  name: z.string().min(2, "O nome do componente deve ter pelo menos 2 caracteres."),
   description: z.string().optional(),
 })
 
@@ -64,12 +64,12 @@ export function ProductForm({ onSuccess, onClose }: ProductFormProps) {
         await setDoc(doc(firestore, "parts", productId), newProduct);
         
         onSuccess(newProduct);
-        toast({ title: "Sucesso!", description: "Nova peça criada." });
+        toast({ title: "Sucesso!", description: "Novo componente criado." });
         onClose();
 
     } catch (error) {
         console.error("Error creating product: ", error);
-        toast({ title: "Erro!", description: "Não foi possível criar a nova peça.", variant: "destructive" });
+        toast({ title: "Erro!", description: "Não foi possível criar o novo componente.", variant: "destructive" });
     }
   }
 
@@ -81,7 +81,7 @@ export function ProductForm({ onSuccess, onClose }: ProductFormProps) {
           name="name"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Nome da Peça</FormLabel>
+              <FormLabel>Nome do Componente</FormLabel>
               <FormControl>
                 <Input placeholder="Ex: Placa-mãe, Parafuso M4" {...field} />
               </FormControl>
@@ -96,7 +96,7 @@ export function ProductForm({ onSuccess, onClose }: ProductFormProps) {
             <FormItem>
               <FormLabel>Descrição (opcional)</FormLabel>
               <FormControl>
-                <Textarea placeholder="Detalhes sobre a peça" className="resize-none" {...field} />
+                <Textarea placeholder="Detalhes sobre o componente" className="resize-none" {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -106,7 +106,7 @@ export function ProductForm({ onSuccess, onClose }: ProductFormProps) {
             <Button type="button" variant="outline" onClick={onClose}>
                 Cancelar
             </Button>
-            <Button type="submit">Salvar Peça</Button>
+            <Button type="submit">Salvar Componente</Button>
         </div>
       </form>
     </Form>

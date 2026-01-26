@@ -155,7 +155,7 @@ function DiscardsPageContent() {
                                         <ArrowUpDown className="ml-2 h-4 w-4" />
                                     </Button>
                                 </TableHead>
-                                <TableHead className="text-center">Nº de Peças</TableHead>
+                                <TableHead className="text-center">Nº de Componentes</TableHead>
                                 <TableHead>
                                     <span className="sr-only">Ações</span>
                                 </TableHead>

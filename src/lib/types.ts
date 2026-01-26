@@ -38,6 +38,11 @@ export const SaleItemSchema = z.object({
 });
 export type SaleItem = z.infer<typeof SaleItemSchema>;
 
+export const DiscardItemSchema = z.object({
+  productId: z.string(),
+  quantity: z.number(),
+});
+export type DiscardItem = z.infer<typeof DiscardItemSchema>;
 
 export const SaleSchema = z.object({
   id: z.string(),
@@ -101,6 +106,6 @@ export const DiscardSchema = z.object({
   problemDescription: z.string().optional(),
   imageUrls: z.array(z.string()).optional(),
   discardDate: z.string(), // ISO date string
-  items: z.array(SaleItemSchema).optional(),
+  items: z.array(DiscardItemSchema).optional(),
 });
 export type Discard = z.infer<typeof DiscardSchema>;

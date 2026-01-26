@@ -33,9 +33,8 @@ const discardFormSchema = z.object({
   problemDescription: z.string().optional(),
   imageUrls: z.array(z.string()).optional(),
   items: z.array(z.object({
-    productId: z.string().min(1, "Selecione um produto ou serviço."),
+    productId: z.string().min(1, "Selecione um componente."),
     quantity: z.coerce.number().int().min(1, "Mínimo 1."),
-    unitPrice: z.coerce.number(),
   })).optional(),
 })
 
@@ -143,7 +142,6 @@ function NewDiscardPageContent() {
         update(index, {
             ...watchedItems[index],
             productId: value,
-            unitPrice: 0,
             quantity: 1
         });
     }
@@ -231,7 +229,7 @@ function NewDiscardPageContent() {
               <Separator />
 
               <div>
-                <FormLabel>Peças Descartadas</FormLabel>
+                <FormLabel>Componentes Aproveitáveis</FormLabel>
                 <div className="mt-2 space-y-4">
                   {fields.map((field, index) => {
                      return (
@@ -241,11 +239,11 @@ function NewDiscardPageContent() {
                             name={`items.${index}.productId`}
                             render={({ field }) => (
                               <FormItem>
-                                <FormLabel className="text-xs md:hidden">Peça</FormLabel>
+                                <FormLabel className="text-xs md:hidden">Componente</FormLabel>
                                 <Select onValueChange={(value) => handleProductChange(value, index)} defaultValue={field.value}>
                                   <FormControl>
                                     <SelectTrigger>
-                                      <SelectValue placeholder="Selecione uma peça" />
+                                      <SelectValue placeholder="Selecione um componente" />
                                     </SelectTrigger>
                                   </FormControl>
                                   <SelectContent>
@@ -288,9 +286,9 @@ function NewDiscardPageContent() {
                       type="button"
                       variant="outline"
                       size="sm"
-                      onClick={() => append({ productId: "", quantity: 1, unitPrice: 0 })}
+                      onClick={() => append({ productId: "", quantity: 1 })}
                     >
-                      <PlusCircle className="mr-2 h-4 w-4" /> Adicionar Peça
+                      <PlusCircle className="mr-2 h-4 w-4" /> Adicionar Componente
                     </Button>
                     <Button
                       type="button"
@@ -298,7 +296,7 @@ function NewDiscardPageContent() {
                       size="sm"
                       onClick={() => setIsNewProductDialogOpen(true)}
                     >
-                      <PlusCircle className="mr-2 h-4 w-4" /> Criar Nova Peça
+                      <PlusCircle className="mr-2 h-4 w-4" /> Criar Novo Componente
                     </Button>
                   </div>
                    {form.formState.errors.items && <p className="text-sm font-medium text-destructive">{typeof form.formState.errors.items === 'object' && 'message' in form.formState.errors.items ? form.formState.errors.items.message : "Erro nos itens"}</p>}
@@ -362,9 +360,9 @@ function NewDiscardPageContent() {
       <Dialog open={isNewProductDialogOpen} onOpenChange={setIsNewProductDialogOpen}>
         <DialogContent>
             <DialogHeader>
-                <DialogTitle>Criar Nova Peça</DialogTitle>
+                <DialogTitle>Criar Novo Componente</DialogTitle>
                 <DialogDescription>
-                    Adicione uma nova peça ao seu inventário. Ela estará disponível para seleção imediatamente.
+                    Adicione um novo componente ao seu inventário. Ele estará disponível para seleção imediatamente.
                 </DialogDescription>
             </DialogHeader>
             <ProductForm 
