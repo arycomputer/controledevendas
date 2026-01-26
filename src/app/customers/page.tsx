@@ -150,7 +150,7 @@ function CustomersPageContent() {
                                     </Button>
                                 </TableHead>
                                 <TableHead className="hidden lg:table-cell">
-                                     <Button variant="ghost" onClick={() => requestSort('address')}>
+                                     <Button variant="ghost" onClick={() => requestSort('street')}>
                                         Endereço
                                         <ArrowUpDown className="ml-2 h-4 w-4" />
                                     </Button>
@@ -176,7 +176,10 @@ function CustomersPageContent() {
                                             <div className="text-xs text-muted-foreground">{customer.phone}</div>
                                         </TableCell>
                                         <TableCell className="hidden lg:table-cell">{customer.document}</TableCell>
-                                        <TableCell className="hidden lg:table-cell">{customer.address}</TableCell>
+                                        <TableCell className="hidden lg:table-cell">
+                                            <div className="text-sm">{customer.street}{customer.number ? `, ${customer.number}` : ''}</div>
+                                            <div className="text-xs text-muted-foreground">{customer.neighborhood}, {customer.city} - {customer.state}</div>
+                                        </TableCell>
                                         <TableCell className="text-right">
                                             <DropdownMenu>
                                                 <DropdownMenuTrigger asChild>

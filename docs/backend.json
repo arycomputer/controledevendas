@@ -18,10 +18,6 @@
           "type": "string",
           "description": "The contact details of the customer, such as phone number or email address."
         },
-        "address": {
-          "type": "string",
-          "description": "The physical address of the customer."
-        },
         "document": {
           "type": "string",
           "description": "The document of the customer."
@@ -29,15 +25,47 @@
         "phone": {
           "type": "string",
           "description": "The phone number of the customer."
+        },
+        "zipCode": {
+          "type": "string",
+          "description": "The ZIP code of the customer's address."
+        },
+        "street": {
+          "type": "string",
+          "description": "The street of the customer's address."
+        },
+        "number": {
+          "type": "string",
+          "description": "The number of the customer's address."
+        },
+        "complement": {
+          "type": "string",
+          "description": "The complement of the customer's address."
+        },
+        "neighborhood": {
+          "type": "string",
+          "description": "The neighborhood of the customer's address."
+        },
+        "city": {
+          "type": "string",
+          "description": "The city of the customer's address."
+        },
+        "state": {
+          "type": "string",
+          "description": "The state of the customer's address."
         }
       },
       "required": [
         "id",
         "name",
         "email",
-        "address",
+        "phone",
         "document",
-        "phone"
+        "zipCode",
+        "street",
+        "neighborhood",
+        "city",
+        "state"
       ]
     },
     "Product": {

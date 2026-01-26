@@ -21,13 +21,20 @@ import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { useToast } from "@/hooks/use-toast"
 import { Loader2 } from "lucide-react"
+import { Separator } from "@/components/ui/separator"
 
 const createCustomerFormSchema = (settings: any) => z.object({
     name: z.string().min(2, "O nome deve ter pelo menos 2 caracteres."),
     email: z.string().optional(),
     phone: z.string().optional(),
     document: z.string().optional(),
-    address: z.string().optional(),
+    zipCode: z.string().optional(),
+    street: z.string().optional(),
+    number: z.string().optional(),
+    complement: z.string().optional(),
+    neighborhood: z.string().optional(),
+    city: z.string().optional(),
+    state: z.string().optional(),
 }).refine(data => !settings?.customer?.email || (data.email && z.string().email().safeParse(data.email).success), {
     message: "Por favor, insira um e-mail válido.",
     path: ["email"],
@@ -37,10 +44,23 @@ const createCustomerFormSchema = (settings: any) => z.object({
 }).refine(data => !settings?.customer?.document || (data.document && data.document.length >= 11), {
     message: "O documento (CPF/CNPJ) é obrigatório.",
     path: ["document"],
-}).refine(data => !settings?.customer?.address || (data.address && data.address.length >= 5), {
-    message: "O endereço deve ter pelo menos 5 caracteres.",
-    path: ["address"],
+}).refine(data => !settings?.customer?.address || (data.zipCode && data.zipCode.replace(/\D/g, '').length === 8), {
+    message: "O CEP deve ter 8 dígitos.",
+    path: ["zipCode"],
+}).refine(data => !settings?.customer?.address || (data.street && data.street.length > 0), {
+    message: "A rua é obrigatória.",
+    path: ["street"],
+}).refine(data => !settings?.customer?.address || (data.neighborhood && data.neighborhood.length > 0), {
+    message: "O bairro é obrigatório.",
+    path: ["neighborhood"],
+}).refine(data => !settings?.customer?.address || (data.city && data.city.length > 0), {
+    message: "A cidade é obrigatória.",
+    path: ["city"],
+}).refine(data => !settings?.customer?.address || (data.state && data.state.length > 0), {
+    message: "O estado é obrigatório.",
+    path: ["state"],
 });
+
 
 type CustomerFormValues = z.infer<ReturnType<typeof createCustomerFormSchema>>;
 
@@ -67,7 +87,13 @@ export default function EditCustomerPage() {
       email: "",
       phone: "",
       document: "",
-      address: "",
+      zipCode: "",
+      street: "",
+      number: "",
+      complement: "",
+      neighborhood: "",
+      city: "",
+      state: "",
     },
   })
 
@@ -78,10 +104,45 @@ export default function EditCustomerPage() {
         email: customer.email,
         phone: customer.phone,
         document: customer.document,
-        address: customer.address
+        zipCode: customer.zipCode,
+        street: customer.street,
+        number: customer.number,
+        complement: customer.complement,
+        neighborhood: customer.neighborhood,
+        city: customer.city,
+        state: customer.state,
       });
     }
   }, [customer, form]);
+
+  const handleZipCodeBlur = async (zipCode: string) => {
+    if (zipCode.length !== 8) {
+      return;
+    }
+    try {
+      const response = await fetch(`https://viacep.com.br/ws/${zipCode}/json/`);
+      const data = await response.json();
+      if (!data.erro) {
+        form.setValue("street", data.logradouro, { shouldValidate: true });
+        form.setValue("neighborhood", data.bairro, { shouldValidate: true });
+        form.setValue("city", data.localidade, { shouldValidate: true });
+        form.setValue("state", data.uf, { shouldValidate: true });
+      } else {
+        toast({
+            title: "CEP não encontrado",
+            description: "Não foi possível encontrar o CEP informado.",
+            variant: "destructive",
+        })
+      }
+    } catch (error) {
+      console.error("Error fetching address from ZIP code:", error);
+      toast({
+        title: "Erro ao buscar CEP",
+        description: "Não foi possível buscar o endereço a partir do CEP.",
+        variant: "destructive",
+      });
+    }
+  };
 
   async function onSubmit(data: CustomerFormValues) {
     try {
@@ -194,21 +255,114 @@ export default function EditCustomerPage() {
                 )}
               />
             )}
+            
             {customerSettings.address && (
-              <FormField
-                control={form.control}
-                name="address"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Endereço</FormLabel>
-                    <FormControl>
-                        <Input placeholder="Ex: Rua das Flores, 123, São Paulo - SP" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+              <>
+                <Separator className="my-6" />
+                <h3 className="text-lg font-medium -mb-2">Endereço</h3>
+                <FormField
+                    control={form.control}
+                    name="zipCode"
+                    render={({ field }) => (
+                    <FormItem>
+                        <FormLabel>CEP</FormLabel>
+                        <FormControl>
+                            <Input 
+                                placeholder="Ex: 12345-678" 
+                                {...field}
+                                onBlur={e => handleZipCodeBlur(e.target.value.replace(/\D/g, ''))}
+                                maxLength={9}
+                            />
+                        </FormControl>
+                        <FormMessage />
+                    </FormItem>
+                    )}
+                />
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <FormField
+                        control={form.control}
+                        name="street"
+                        render={({ field }) => (
+                        <FormItem className="md:col-span-2">
+                            <FormLabel>Rua</FormLabel>
+                            <FormControl>
+                                <Input placeholder="Ex: Rua das Flores" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                        </FormItem>
+                        )}
+                    />
+                    <FormField
+                        control={form.control}
+                        name="number"
+                        render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>Número</FormLabel>
+                            <FormControl>
+                                <Input placeholder="Ex: 123" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                        </FormItem>
+                        )}
+                    />
+                </div>
+                <FormField
+                    control={form.control}
+                    name="complement"
+                    render={({ field }) => (
+                    <FormItem>
+                        <FormLabel>Complemento</FormLabel>
+                        <FormControl>
+                            <Input placeholder="Ex: Apto 101, Bloco B" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                    </FormItem>
+                    )}
+                />
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <FormField
+                        control={form.control}
+                        name="neighborhood"
+                        render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>Bairro</FormLabel>
+                            <FormControl>
+                                <Input placeholder="Ex: Centro" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                        </FormItem>
+                        )}
+                    />
+                    <FormField
+                        control={form.control}
+                        name="city"
+                        render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>Cidade</FormLabel>
+                            <FormControl>
+                                <Input placeholder="Ex: São Paulo" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                        </FormItem>
+                        )}
+                    />
+                    <FormField
+                        control={form.control}
+                        name="state"
+                        render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>Estado</FormLabel>
+                            <FormControl>
+                                <Input placeholder="Ex: SP" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                        </FormItem>
+                        )}
+                    />
+                </div>
+              </>
             )}
+
             <div className="flex justify-end gap-2 pt-4">
                 <Button type="button" variant="outline" onClick={() => router.push('/customers')}>
                     Cancelar

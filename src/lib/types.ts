@@ -8,7 +8,13 @@ export const CustomerSchema = z.object({
   email: z.string().email(),
   phone: z.string(),
   document: z.string(),
-  address: z.string(),
+  zipCode: z.string().optional(),
+  street: z.string().optional(),
+  number: z.string().optional(),
+  complement: z.string().optional(),
+  neighborhood: z.string().optional(),
+  city: z.string().optional(),
+  state: z.string().optional(),
 });
 export type Customer = z.infer<typeof CustomerSchema>;
 
