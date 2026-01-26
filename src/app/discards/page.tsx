@@ -8,13 +8,14 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
-import type { Discard } from '@/lib/types';
+import type { Discard, Product } from '@/lib/types';
 import { ConfirmationDialog } from '@/components/app/confirmation-dialog';
 import { useToast } from '@/hooks/use-toast';
 import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
 import { collection, doc, deleteDoc } from 'firebase/firestore';
 import { AuthGuard } from '@/components/app/auth-guard';
 import { Input } from '@/components/ui/input';
+import { Badge } from '@/components/ui/badge';
 
 function DiscardsPageContent() {
     const router = useRouter();
@@ -22,7 +23,10 @@ function DiscardsPageContent() {
     const firestore = useFirestore();
     
     const discardsCollection = useMemoFirebase(() => collection(firestore, 'discards'), [firestore]);
-    const { data: discards, isLoading } = useCollection<Discard>(discardsCollection);
+    const { data: discards, isLoading: discardsLoading } = useCollection<Discard>(discardsCollection);
+
+    const productsCollection = useMemoFirebase(() => collection(firestore, 'parts'), [firestore]);
+    const { data: products, isLoading: productsLoading } = useCollection<Product>(productsCollection);
 
     const [dialogOpen, setDialogOpen] = useState(false);
     const [itemToDelete, setItemToDelete] = useState<Discard | null>(null);
@@ -30,7 +34,7 @@ function DiscardsPageContent() {
     const [sortConfig, setSortConfig] = useState<{ key: keyof Discard; direction: 'ascending' | 'descending' }>({ key: 'discardDate', direction: 'descending' });
 
     const sortedAndFilteredDiscards = useMemo(() => {
-        if (!discards) return [];
+        if (!discards || !products) return [];
         let filteredDiscards = [...discards];
         
         if (searchTerm) {
@@ -38,8 +42,7 @@ function DiscardsPageContent() {
             filteredDiscards = discards.filter(item =>
                 item.description.toLowerCase().includes(lowercasedTerm) ||
                 (item.model && item.model.toLowerCase().includes(lowercasedTerm)) ||
-                (item.serialNumber && item.serialNumber.toLowerCase().includes(lowercasedTerm)) ||
-                (item.problemDescription && item.problemDescription.toLowerCase().includes(lowercasedTerm))
+                (item.serialNumber && item.serialNumber.toLowerCase().includes(lowercasedTerm))
             );
         }
 
@@ -67,7 +70,7 @@ function DiscardsPageContent() {
         
         return filteredDiscards;
 
-    }, [discards, searchTerm, sortConfig]);
+    }, [discards, products, searchTerm, sortConfig]);
 
      const requestSort = (key: keyof Discard) => {
         let direction: 'ascending' | 'descending' = 'ascending';
@@ -108,6 +111,8 @@ function DiscardsPageContent() {
         router.push(`/discards/${itemId}/edit`);
     };
 
+    const isLoading = discardsLoading || productsLoading;
+
     return (
         <>
             <Card>
@@ -126,7 +131,7 @@ function DiscardsPageContent() {
                      <div className="relative mt-4">
                         <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                         <Input 
-                            placeholder="Buscar por descrição, modelo, série ou defeito..." 
+                            placeholder="Buscar por descrição, modelo ou série..." 
                             className="w-full pl-8" 
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
@@ -149,13 +154,7 @@ function DiscardsPageContent() {
                                         <ArrowUpDown className="ml-2 h-4 w-4" />
                                     </Button>
                                 </TableHead>
-                                <TableHead className="hidden md:table-cell">
-                                    <Button variant="ghost" onClick={() => requestSort('problemDescription')}>
-                                        Defeito
-                                        <ArrowUpDown className="ml-2 h-4 w-4" />
-                                    </Button>
-                                </TableHead>
-                                <TableHead className="text-center">Nº de Componentes</TableHead>
+                                <TableHead>Componentes</TableHead>
                                 <TableHead>
                                     <span className="sr-only">Ações</span>
                                 </TableHead>
@@ -164,7 +163,7 @@ function DiscardsPageContent() {
                         <TableBody>
                             {isLoading ? (
                                 <TableRow>
-                                    <TableCell colSpan={5} className="h-24 text-center">
+                                    <TableCell colSpan={4} className="h-24 text-center">
                                         <Loader2 className="h-6 w-6 animate-spin mx-auto" />
                                     </TableCell>
                                 </TableRow>
@@ -173,8 +172,22 @@ function DiscardsPageContent() {
                                     <TableRow key={item.id} onDoubleClick={() => handleEditClick(item.id)} className="cursor-pointer">
                                         <TableCell className="font-medium">{item.description}</TableCell>
                                         <TableCell className="hidden md:table-cell">{item.model || 'N/A'}</TableCell>
-                                        <TableCell className="hidden md:table-cell">{item.problemDescription || 'N/A'}</TableCell>
-                                        <TableCell className="text-center">{item.items?.length || 0}</TableCell>
+                                        <TableCell>
+                                            {item.items && item.items.length > 0 ? (
+                                                <div className="flex flex-wrap gap-1">
+                                                    {item.items.map(component => {
+                                                        const product = products?.find(p => p.id === component.productId);
+                                                        return (
+                                                            <Badge key={component.productId} variant="secondary">
+                                                                {product?.name || '...'} ({component.quantity})
+                                                            </Badge>
+                                                        )
+                                                    })}
+                                                </div>
+                                            ) : (
+                                                <span className="text-muted-foreground text-center block w-full">N/A</span>
+                                            )}
+                                        </TableCell>
                                         <TableCell className="text-right">
                                             <DropdownMenu>
                                                 <DropdownMenuTrigger asChild>
@@ -195,7 +208,7 @@ function DiscardsPageContent() {
                                 ))
                             ) : (
                                 <TableRow>
-                                     <TableCell colSpan={5} className="h-24 text-center">
+                                     <TableCell colSpan={4} className="h-24 text-center">
                                         Nenhum item encontrado.
                                     </TableCell>
                                 </TableRow>
