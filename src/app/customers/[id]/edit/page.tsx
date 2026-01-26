@@ -101,17 +101,17 @@ export default function EditCustomerPage() {
   useEffect(() => {
     if (customer) {
       form.reset({
-        name: customer.name,
-        email: customer.email,
-        phone: customer.phone,
-        document: customer.document,
-        zipCode: customer.zipCode,
-        street: customer.street,
-        number: customer.number,
-        complement: customer.complement,
-        neighborhood: customer.neighborhood,
-        city: customer.city,
-        state: customer.state,
+        name: customer.name || "",
+        email: customer.email || "",
+        phone: customer.phone || "",
+        document: customer.document || "",
+        zipCode: customer.zipCode || "",
+        street: customer.street || "",
+        number: customer.number || "",
+        complement: customer.complement || "",
+        neighborhood: customer.neighborhood || "",
+        city: customer.city || "",
+        state: customer.state || "",
       });
     }
   }, [customer, form]);
@@ -147,7 +147,21 @@ export default function EditCustomerPage() {
 
   async function onSubmit(data: CustomerFormValues) {
     try {
-      await updateDoc(customerDocRef, data);
+      const customerData = {
+        name: data.name || "",
+        email: data.email || "",
+        phone: data.phone || "",
+        document: data.document || "",
+        zipCode: data.zipCode || "",
+        street: data.street || "",
+        number: data.number || "",
+        complement: data.complement || "",
+        neighborhood: data.neighborhood || "",
+        city: data.city || "",
+        state: data.state || "",
+      };
+
+      await updateDoc(customerDocRef, customerData);
       toast({
         title: "Sucesso!",
         description: `Dados do cliente "${data.name}" atualizados.`,

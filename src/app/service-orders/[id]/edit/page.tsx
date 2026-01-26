@@ -149,7 +149,7 @@ function EditServiceOrderPageContent() {
         id: orderId,
         totalAmount,
         entryDate: data.entryDate.toISOString(),
-        exitDate: data.exitDate ? data.exitDate.toISOString() : undefined,
+        exitDate: data.exitDate ? data.exitDate.toISOString() : null,
       };
       await updateDoc(orderDocRef, orderData as { [x: string]: any });
 
