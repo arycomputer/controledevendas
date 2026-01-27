@@ -34,7 +34,7 @@ const serviceOrderFormSchema = z.object({
   items: z.array(z.object({
     productId: z.string().min(1, "Selecione um produto ou serviço."),
     quantity: z.coerce.number().int().min(1, "Mínimo 1."),
-    unitPrice: z.coerce.number(),
+    unitPrice: z.coerce.number().min(0, "O preço unitário não pode ser negativo."),
   })).min(1, "Adicione pelo menos um item."),
 })
 
@@ -253,7 +253,7 @@ function NewServiceOrderPageContent() {
                    const isService = selectedProduct?.type === 'service';
 
                    return (
-                     <div key={field.id} className="grid grid-cols-1 md:grid-cols-[1fr_100px_100px_auto] items-end gap-4 p-4 border rounded-lg bg-muted/20">
+                     <div key={field.id} className="grid grid-cols-1 md:grid-cols-[1fr_80px_120px_120px_auto] items-end gap-4 p-4 border rounded-lg bg-muted/20">
                         <FormField
                           control={form.control}
                           name={`items.${index}.productId`}
@@ -291,6 +291,19 @@ function NewServiceOrderPageContent() {
                               <FormLabel className="text-xs md:hidden">Qtd.</FormLabel>
                               <FormControl>
                                 <Input type="number" min="1" disabled={isService} {...field} />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        <FormField
+                          control={form.control}
+                          name={`items.${index}.unitPrice`}
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel className="text-xs md:hidden">Preço Unit. (R$)</FormLabel>
+                              <FormControl>
+                                <Input type="number" step="0.01" placeholder="0,00" {...field} />
                               </FormControl>
                               <FormMessage />
                             </FormItem>
