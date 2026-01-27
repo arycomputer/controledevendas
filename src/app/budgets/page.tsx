@@ -202,6 +202,7 @@ function BudgetsPageContent() {
                     status: 'pending', // Default
                     downPayment: 0,
                     amountReceivable: budget.totalAmount,
+                    budgetId: budget.id,
                 };
                 await setDoc(doc(firestore, "sales", saleId), saleData);
 

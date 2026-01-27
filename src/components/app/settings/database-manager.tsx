@@ -2,11 +2,13 @@
 
 import { useState, useRef } from "react"
 import { useFirestore } from "@/firebase"
-import { collection, getDocs, writeBatch, doc } from "firebase/firestore"
+import { collection, getDocs, writeBatch, doc, query, where } from "firebase/firestore"
 import { useToast } from "@/hooks/use-toast"
 import { Button } from "@/components/ui/button"
-import { Loader2, Upload, Download } from "lucide-react"
+import { Loader2, Upload, Download, RefreshCw } from "lucide-react"
 import { ConfirmationDialog } from "@/components/app/confirmation-dialog"
+import type { Budget, Sale, Product } from "@/lib/types"
+import { v4 as uuidv4 } from 'uuid';
 
 const COLLECTIONS_TO_BACKUP = [
     'customers', 
@@ -24,6 +26,7 @@ export function DatabaseManager() {
     const { toast } = useToast();
     const [isExporting, setIsExporting] = useState(false);
     const [isImporting, setIsImporting] = useState(false);
+    const [isSyncing, setIsSyncing] = useState(false);
     const [isConfirmDialogOpen, setIsConfirmDialogOpen] = useState(false);
     const [fileToImport, setFileToImport] = useState<File | null>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
@@ -139,6 +142,110 @@ export function DatabaseManager() {
         }
     };
 
+    const handleSyncBudgets = async () => {
+        if (!firestore) return;
+        setIsSyncing(true);
+        toast({ title: "Iniciando sincronização...", description: "Verificando orçamentos aprovados para converter em vendas." });
+
+        try {
+            const budgetsRef = collection(firestore, 'budgets');
+            const salesRef = collection(firestore, 'sales');
+            const productsRef = collection(firestore, 'parts');
+
+            const approvedBudgetsQuery = query(budgetsRef, where("status", "==", "approved"));
+            const approvedBudgetsSnapshot = await getDocs(approvedBudgetsQuery);
+            const approvedBudgets = approvedBudgetsSnapshot.docs.map(doc => ({ ...doc.data(), id: doc.id } as Budget));
+
+            const salesSnapshot = await getDocs(salesRef);
+            const existingSaleBudgetIds = new Set<string>();
+            salesSnapshot.forEach(doc => {
+                const sale = doc.data() as Sale;
+                if (sale.budgetId) {
+                    existingSaleBudgetIds.add(sale.budgetId);
+                }
+            });
+
+            const budgetsToConvert = approvedBudgets.filter(budget => !existingSaleBudgetIds.has(budget.id));
+
+            if (budgetsToConvert.length === 0) {
+                toast({ title: "Sincronização Concluída", description: "Nenhum novo orçamento para converter." });
+                setIsSyncing(false);
+                return;
+            }
+
+            let salesCreatedCount = 0;
+            let stockErrors = 0;
+
+            const productsSnapshot = await getDocs(productsRef);
+            const products = productsSnapshot.docs.map(doc => ({ ...doc.data(), id: doc.id } as Product));
+
+            for (const budget of budgetsToConvert) {
+                let hasStockError = false;
+                for (const item of budget.items) {
+                    const product = products.find(p => p.id === item.productId);
+                    if (product && product.type === 'piece' && (product.quantity === undefined || product.quantity < item.quantity)) {
+                        hasStockError = true;
+                        break;
+                    }
+                }
+
+                if (hasStockError) {
+                    stockErrors++;
+                    console.warn(`Skipping budget ${budget.id} due to insufficient stock.`);
+                    continue;
+                }
+
+                const batch = writeBatch(firestore);
+
+                for (const item of budget.items) {
+                    const product = products.find(p => p.id === item.productId);
+                    if (product && product.type === 'piece') {
+                        const productRef = doc(firestore, 'parts', product.id);
+                        const newQuantity = (product.quantity || 0) - item.quantity;
+                        batch.update(productRef, { quantity: newQuantity });
+                        
+                        const productIndex = products.findIndex(p => p.id === product.id);
+                        if(productIndex > -1) {
+                            products[productIndex].quantity = newQuantity;
+                        }
+                    }
+                }
+                
+                const saleId = uuidv4();
+                const saleData: Sale = {
+                    id: saleId,
+                    budgetId: budget.id,
+                    customerId: budget.customerId,
+                    items: budget.items,
+                    totalAmount: budget.totalAmount,
+                    saleDate: new Date().toISOString(),
+                    paymentMethod: 'cash',
+                    status: 'pending',
+                    downPayment: 0,
+                    amountReceivable: budget.totalAmount,
+                };
+                const saleRef = doc(firestore, "sales", saleId);
+                batch.set(saleRef, saleData);
+
+                await batch.commit();
+                salesCreatedCount++;
+            }
+            
+            let description = `${salesCreatedCount} nova(s) venda(s) criada(s).`;
+            if (stockErrors > 0) {
+                description += ` ${stockErrors} orçamento(s) não foram convertidos por falta de estoque.`
+            }
+
+            toast({ title: "Sincronização Concluída!", description });
+
+        } catch (error) {
+            console.error("Error syncing budgets:", error);
+            toast({ title: "Erro na Sincronização", description: "Não foi possível converter os orçamentos.", variant: "destructive" });
+        } finally {
+            setIsSyncing(false);
+        }
+    }
+
 
     return (
         <div className="space-y-6 max-w-lg">
@@ -147,7 +254,7 @@ export function DatabaseManager() {
                 <p className="text-sm text-muted-foreground">
                     Crie um arquivo de backup completo de todos os seus dados. É recomendado fazer backups regularmente.
                 </p>
-                <Button onClick={handleExport} disabled={isExporting || isImporting}>
+                <Button onClick={handleExport} disabled={isExporting || isImporting || isSyncing}>
                     {isExporting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Download className="mr-2 h-4 w-4" />}
                     {isExporting ? "Exportando..." : "Exportar Dados"}
                 </Button>
@@ -164,9 +271,20 @@ export function DatabaseManager() {
                     accept="application/json"
                     onChange={handleFileSelect}
                 />
-                <Button variant="outline" onClick={() => fileInputRef.current?.click()} disabled={isImporting || isExporting}>
+                <Button variant="outline" onClick={() => fileInputRef.current?.click()} disabled={isImporting || isExporting || isSyncing}>
                     {isImporting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Upload className="mr-2 h-4 w-4" />}
                      {isImporting ? "Importando..." : "Importar Dados"}
+                </Button>
+            </div>
+
+            <div className="space-y-2">
+                <h4 className="font-medium">Sincronizar Dados</h4>
+                <p className="text-sm text-muted-foreground">
+                   Converte orçamentos aprovados que ainda não viraram vendas. Isso pode ser útil para corrigir dados antigos.
+                </p>
+                <Button variant="outline" onClick={handleSyncBudgets} disabled={isSyncing || isExporting || isImporting}>
+                    {isSyncing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <RefreshCw className="mr-2 h-4 w-4" />}
+                    {isSyncing ? "Sincronizando..." : "Sincronizar Orçamentos"}
                 </Button>
             </div>
 

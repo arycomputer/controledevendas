@@ -125,6 +125,10 @@
           "type": "string",
           "description": "Unique identifier for the Sale entity."
         },
+        "budgetId": {
+          "type": "string",
+          "description": "Optional reference to the Budget this sale was created from."
+        },
         "customerId": {
           "type": "string",
           "description": "Reference to Customer."

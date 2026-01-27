@@ -46,6 +46,7 @@ export type DiscardItem = z.infer<typeof DiscardItemSchema>;
 
 export const SaleSchema = z.object({
   id: z.string(),
+  budgetId: z.string().optional(),
   customerId: z.string(),
   items: z.array(SaleItemSchema),
   totalAmount: z.number(),
