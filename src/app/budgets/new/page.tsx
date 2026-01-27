@@ -85,7 +85,7 @@ function NewBudgetPageContent() {
   const watchedImageUrls = form.watch("imageUrls");
 
   const totalAmount = useMemo(() => watchedItems.reduce((acc, current) => {
-    return acc + ((current.unitPrice || 0) * (current.quantity || 0));
+    return acc + ((Number(current.unitPrice) || 0) * (Number(current.quantity) || 0));
   }, 0), [watchedItems]);
 
   const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -436,7 +436,7 @@ function NewBudgetPageContent() {
                             <span className="text-sm text-muted-foreground whitespace-nowrap">Subtotal:</span>
                             <span className="font-semibold text-sm">
                                 {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(
-                                    (watchedItems[index]?.unitPrice || 0) * (watchedItems[index]?.quantity || 0)
+                                    (Number(watchedItems[index]?.unitPrice) || 0) * (Number(watchedItems[index]?.quantity) || 0)
                                 )}
                             </span>
                         </div>
