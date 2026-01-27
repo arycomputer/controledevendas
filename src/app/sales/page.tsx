@@ -17,6 +17,13 @@ import { collection, doc, deleteDoc, updateDoc } from 'firebase/firestore';
 import { AuthGuard } from '@/components/app/auth-guard';
 import { Input } from '@/components/ui/input';
 
+const paymentMethodLabels: { [key: string]: string } = {
+    cash: 'Dinheiro',
+    pix: 'Pix',
+    credit_card: 'Cartão de Crédito',
+    debit_card: 'Cartão de Débito',
+};
+
 function SalesPageContent() {
     const router = useRouter();
     const { toast } = useToast();
@@ -53,7 +60,8 @@ function SalesPageContent() {
             filteredSales = filteredSales.filter(sale =>
                 sale.customerName.toLowerCase().includes(lowercasedTerm) ||
                 sale.status.toLowerCase().includes(lowercasedTerm) ||
-                sale.id.toLowerCase().includes(lowercasedTerm)
+                sale.id.toLowerCase().includes(lowercasedTerm) ||
+                paymentMethodLabels[sale.paymentMethod].toLowerCase().includes(lowercasedTerm)
             );
         }
 
@@ -201,6 +209,12 @@ function SalesPageContent() {
                                         <ArrowUpDown className="ml-2 h-4 w-4" />
                                     </Button>
                                 </TableHead>
+                                <TableHead className="hidden lg:table-cell">
+                                    <Button variant="ghost" onClick={() => requestSort('paymentMethod' as any)}>
+                                        Forma Pag.
+                                        <ArrowUpDown className="ml-2 h-4 w-4" />
+                                    </Button>
+                                </TableHead>
                                 <TableHead className="text-center">
                                     <Button variant="ghost" onClick={() => requestSort('status')}>
                                         Status
@@ -221,7 +235,7 @@ function SalesPageContent() {
                         <TableBody>
                             {isLoading ? (
                                 <TableRow>
-                                    <TableCell colSpan={6} className="h-24 text-center">
+                                    <TableCell colSpan={7} className="h-24 text-center">
                                         <Loader2 className="h-6 w-6 animate-spin mx-auto" />
                                     </TableCell>
                                 </TableRow>
@@ -232,6 +246,7 @@ function SalesPageContent() {
                                             <TableCell className="font-medium">{sale.customerName}</TableCell>
                                             <TableCell className="hidden md:table-cell">{new Date(sale.saleDate).toLocaleDateString('pt-BR')}</TableCell>
                                             <TableCell className="hidden lg:table-cell">{sale.paymentDate ? new Date(sale.paymentDate).toLocaleDateString('pt-BR') : '-'}</TableCell>
+                                            <TableCell className="hidden lg:table-cell">{paymentMethodLabels[sale.paymentMethod]}</TableCell>
                                             <TableCell className="text-center">
                                                 <Badge 
                                                     variant={sale.status === 'paid' ? 'default' : 'destructive'} 
@@ -274,7 +289,7 @@ function SalesPageContent() {
                                 })
                              ) : (
                                 <TableRow>
-                                    <TableCell colSpan={6} className="h-24 text-center">
+                                    <TableCell colSpan={7} className="h-24 text-center">
                                         Nenhuma venda encontrada.
                                     </TableCell>
                                 </TableRow>
