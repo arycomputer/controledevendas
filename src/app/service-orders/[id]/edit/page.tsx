@@ -14,7 +14,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Separator } from "@/components/ui/separator"
 import { useToast } from "@/hooks/use-toast"
-import { useEffect, useMemo } from "react"
+import { useEffect } from "react"
 import { useCollection, useDoc, useFirestore, useMemoFirebase } from "@/firebase"
 import { collection, doc, updateDoc } from "firebase/firestore"
 import type { Customer, Product, ServiceOrder } from "@/lib/types"
@@ -60,26 +60,25 @@ function EditServiceOrderPageContent() {
 
   const form = useForm<ServiceOrderFormValues>({
     resolver: zodResolver(serviceOrderFormSchema),
-    defaultValues: useMemo(() => ({
-        customerId: order?.customerId || "",
-        entryDate: order ? new Date(order.entryDate) : new Date(),
-        exitDate: order?.exitDate ? new Date(order.exitDate) : undefined,
-        itemDescription: order?.itemDescription || "",
-        problemDescription: order?.problemDescription || "",
-        items: order?.items || [],
-        status: order?.status || 'pending',
-    }), [order]),
+    values: order ? {
+        customerId: order.customerId,
+        entryDate: new Date(order.entryDate),
+        exitDate: order.exitDate ? new Date(order.exitDate) : undefined,
+        itemDescription: order.itemDescription,
+        problemDescription: order.problemDescription,
+        items: order.items,
+        status: order.status,
+    } : undefined,
+    defaultValues: {
+      customerId: "",
+      entryDate: new Date(),
+      exitDate: undefined,
+      itemDescription: "",
+      problemDescription: "",
+      items: [],
+      status: 'pending',
+    },
   })
-
-  useEffect(() => {
-    if (order) {
-        form.reset({
-            ...order,
-            entryDate: new Date(order.entryDate),
-            exitDate: order.exitDate ? new Date(order.exitDate) : undefined,
-        });
-    }
-  }, [order, form]);
   
   const { fields, append, remove, update } = useFieldArray({
     control: form.control,
@@ -89,9 +88,9 @@ function EditServiceOrderPageContent() {
   const watchedItems = form.watch("items");
   const watchedStatus = form.watch("status");
 
-  const totalAmount = useMemo(() => watchedItems.reduce((acc, current) => {
+  const totalAmount = watchedItems.reduce((acc, current) => {
     return acc + ((Number(current.unitPrice) || 0) * (Number(current.quantity) || 0));
-  }, 0), [watchedItems]);
+  }, 0);
 
   useEffect(() => {
     if (watchedStatus === 'completed' && !form.getValues('exitDate')) {

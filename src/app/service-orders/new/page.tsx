@@ -15,7 +15,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Separator } from "@/components/ui/separator"
 import { useToast } from "@/hooks/use-toast"
-import { useEffect, useMemo } from "react"
 import { useCollection, useFirestore, useMemoFirebase } from "@/firebase"
 import { collection, doc, setDoc, updateDoc } from "firebase/firestore"
 import type { Customer, Product } from "@/lib/types"
@@ -69,9 +68,9 @@ function NewServiceOrderPageContent() {
   
   const watchedItems = form.watch("items");
 
-  const totalAmount = useMemo(() => watchedItems.reduce((acc, current) => {
+  const totalAmount = watchedItems.reduce((acc, current) => {
     return acc + ((Number(current.unitPrice) || 0) * (Number(current.quantity) || 0));
-  }, 0), [watchedItems]);
+  }, 0);
 
   async function onSubmit(data: ServiceOrderFormValues) {
     if (!firestore || !products) return;

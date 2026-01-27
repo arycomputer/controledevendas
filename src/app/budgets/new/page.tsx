@@ -15,7 +15,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Separator } from "@/components/ui/separator"
 import { useToast } from "@/hooks/use-toast"
-import { useMemo, useState, useRef } from "react"
+import { useState, useRef } from "react"
 import { useCollection, useFirestore, useMemoFirebase } from "@/firebase"
 import { collection, doc, setDoc } from "firebase/firestore"
 import type { Customer, Product } from "@/lib/types"
@@ -84,9 +84,9 @@ function NewBudgetPageContent() {
   const watchedItems = form.watch("items");
   const watchedImageUrls = form.watch("imageUrls");
 
-  const totalAmount = useMemo(() => watchedItems.reduce((acc, current) => {
+  const totalAmount = watchedItems.reduce((acc, current) => {
     return acc + ((Number(current.unitPrice) || 0) * (Number(current.quantity) || 0));
-  }, 0), [watchedItems]);
+  }, 0);
 
   const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files;
