@@ -24,6 +24,7 @@ export const ProductSchema = z.object({
   name: z.string(),
   description: z.string(),
   price: z.number(),
+  cost: z.number().optional(),
   quantity: z.number().optional(),
   type: z.enum(['piece', 'service']),
   link: z.string().optional(),

@@ -35,6 +35,7 @@ const createProductFormSchema = (settings: any) => z.object({
     name: z.string().min(2, "O nome deve ter pelo menos 2 caracteres."),
     description: z.string().optional(),
     price: z.coerce.number().min(0.01, "O preço deve ser maior que zero."),
+    cost: z.coerce.number().optional(),
     type: z.enum(['piece', 'service'], { required_error: "É necessário selecionar um tipo." }),
     quantity: z.any().optional(),
     link: z.string().url("Por favor, insira um URL válido.").optional().or(z.literal('')),
@@ -76,6 +77,7 @@ function NewProductPageContent() {
       name: "",
       description: "",
       price: 0.01,
+      cost: 0,
       type: "piece",
       quantity: 0,
       link: "",
@@ -144,7 +146,8 @@ function NewProductPageContent() {
         const productData = {
             ...data,
             id: productId,
-            quantity: data.type === 'piece' ? (data.quantity ? Number(data.quantity) : 0) : 1000
+            quantity: data.type === 'piece' ? (data.quantity ? Number(data.quantity) : 0) : 1000,
+            cost: data.type === 'piece' ? (data.cost ? Number(data.cost) : 0) : 0,
         };
         const productDocRef = doc(firestore, "parts", productId);
         await setDoc(productDocRef, productData);
@@ -313,7 +316,7 @@ function NewProductPageContent() {
                 name="price"
                 render={({ field }) => (
                     <FormItem>
-                    <FormLabel>Preço (R$)</FormLabel>
+                    <FormLabel>Preço de Venda (R$)</FormLabel>
                     <FormControl>
                         <Input type="number" step="0.01" placeholder="Ex: 25.50" {...field} />
                     </FormControl>
@@ -321,28 +324,43 @@ function NewProductPageContent() {
                     </FormItem>
                 )}
                 />
-                {productType === 'piece' && productSettings.quantity && (
+                {productType === 'piece' ? (
                   <FormField
                     control={form.control}
-                    name="quantity"
+                    name="cost"
                     render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Quantidade em Estoque</FormLabel>
+                        <FormItem>
+                        <FormLabel>Preço de Custo (R$)</FormLabel>
                         <FormControl>
-                          <Input
-                            type="number"
-                            placeholder="Ex: 100"
-                            {...field}
-                            onChange={e => field.onChange(e.target.value === '' ? '' : parseInt(e.target.value, 10))}
-                            value={field.value ?? ''}
-                          />
+                            <Input type="number" step="0.01" placeholder="Ex: 12.00" {...field} />
                         </FormControl>
                         <FormMessage />
-                      </FormItem>
+                        </FormItem>
                     )}
-                  />
-                )}
+                    />
+                ): null}
             </div>
+            {productType === 'piece' && productSettings.quantity && (
+                <FormField
+                control={form.control}
+                name="quantity"
+                render={({ field }) => (
+                    <FormItem>
+                    <FormLabel>Quantidade em Estoque</FormLabel>
+                    <FormControl>
+                        <Input
+                        type="number"
+                        placeholder="Ex: 100"
+                        {...field}
+                        onChange={e => field.onChange(e.target.value === '' ? '' : parseInt(e.target.value, 10))}
+                        value={field.value ?? ''}
+                        />
+                    </FormControl>
+                    <FormMessage />
+                    </FormItem>
+                )}
+            />
+            )}
             <div className="flex justify-end gap-2 pt-4">
                 <Button type="button" variant="outline" onClick={() => router.back()}>
                     Cancelar

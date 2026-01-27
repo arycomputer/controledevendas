@@ -90,6 +90,10 @@
           "type": "number",
           "description": "The price of the item."
         },
+        "cost": {
+          "type": "number",
+          "description": "The cost price of the product."
+        },
         "quantity": {
           "type": "number",
           "description": "The quantity of the product in inventory (for 'piece' type)."

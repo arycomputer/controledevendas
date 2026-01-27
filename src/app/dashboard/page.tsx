@@ -1,6 +1,6 @@
 'use client'
 
-import { CircleDollarSign, Users, Package, ShoppingCart, Loader2 } from "lucide-react";
+import { CircleDollarSign, Users, Package, ShoppingCart, Loader2, Wrench, Handshake } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { StatCard } from "@/components/app/stat-card";
@@ -38,15 +38,42 @@ function DashboardPageContent() {
   const recentSales = sales
     ?.sort((a, b) => new Date(b.saleDate).getTime() - new Date(a.saleDate).getTime())
     .slice(0, 5) || [];
+    
+  const productsMap = new Map(products?.map(p => [p.id, p]));
+  let totalPartsCost = 0;
+  let totalServicesRevenue = 0;
+
+  sales?.forEach(sale => {
+    sale.items.forEach(item => {
+      const product = productsMap.get(item.productId);
+      if (product) {
+        if (product.type === 'piece') {
+          totalPartsCost += (product.cost || 0) * item.quantity;
+        } else if (product.type === 'service') {
+          totalServicesRevenue += item.unitPrice * item.quantity;
+        }
+      }
+    });
+  });
 
   return (
     <div className="flex flex-col gap-8">
       <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         <StatCard 
           title="Receita Total" 
           value={new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(totalSalesValue)} 
           icon={CircleDollarSign} 
+        />
+         <StatCard 
+          title="Custo de Peças" 
+          value={new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(totalPartsCost)} 
+          icon={Wrench} 
+        />
+        <StatCard 
+          title="Receita de Serviços" 
+          value={new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(totalServicesRevenue)} 
+          icon={Handshake} 
         />
         <StatCard 
           title="Vendas" 
