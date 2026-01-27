@@ -8,14 +8,15 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
-import type { Budget, Customer } from '@/lib/types';
+import type { Budget, Customer, Product, Sale } from '@/lib/types';
 import { ConfirmationDialog } from '@/components/app/confirmation-dialog';
 import { useToast } from '@/hooks/use-toast';
 import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
-import { collection, doc, deleteDoc, updateDoc } from 'firebase/firestore';
+import { collection, doc, deleteDoc, updateDoc, setDoc } from 'firebase/firestore';
 import { AuthGuard } from '@/components/app/auth-guard';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
+import { v4 as uuidv4 } from 'uuid';
 
 const statusLabels: { [key: string]: string } = {
     pending: 'Pendente',
@@ -40,6 +41,9 @@ function BudgetsPageContent() {
 
     const customersCollection = useMemoFirebase(() => collection(firestore, 'customers'), [firestore]);
     const { data: customers, isLoading: customersLoading } = useCollection<Customer>(customersCollection);
+
+    const productsCollection = useMemoFirebase(() => collection(firestore, 'parts'), [firestore]);
+    const { data: products, isLoading: productsLoading } = useCollection<Product>(productsCollection);
 
     const [dialogOpen, setDialogOpen] = useState(false);
     const [budgetToDelete, setBudgetToDelete] = useState<Budget | null>(null);
@@ -134,24 +138,93 @@ function BudgetsPageContent() {
     }
 
     const handleStatusChange = async (budgetId: string, newStatus: 'approved' | 'rejected') => {
-        try {
-            const budgetRef = doc(firestore, 'budgets', budgetId);
-            await updateDoc(budgetRef, { status: newStatus });
-            toast({
-                title: "Sucesso!",
-                description: `Status do orçamento atualizado para ${statusLabels[newStatus]}.`
-            });
-        } catch (error) {
-            console.error("Error updating budget status: ", error);
-            toast({
-                title: "Erro!",
-                description: "Não foi possível atualizar o status do orçamento.",
-                variant: "destructive"
-            });
+        if (!firestore || !budgets || !products) return;
+
+        const budget = budgets.find(b => b.id === budgetId);
+        if (!budget) {
+            toast({ title: "Erro!", description: "Orçamento não encontrado.", variant: "destructive" });
+            return;
+        }
+
+        const budgetRef = doc(firestore, 'budgets', budgetId);
+
+        if (newStatus === 'rejected') {
+            try {
+                await updateDoc(budgetRef, { status: newStatus });
+                toast({
+                    title: "Status Atualizado!",
+                    description: `Orçamento foi marcado como ${statusLabels[newStatus]}.`
+                });
+            } catch (error) {
+                console.error("Error updating budget status: ", error);
+                toast({
+                    title: "Erro!",
+                    description: "Não foi possível atualizar o status do orçamento.",
+                    variant: "destructive"
+                });
+            }
+            return;
+        }
+
+        if (newStatus === 'approved') {
+            try {
+                // Stock validation
+                for (const item of budget.items) {
+                    const product = products.find(p => p.id === item.productId);
+                    if (product && product.type === 'piece' && (product.quantity === undefined || product.quantity < item.quantity)) {
+                        toast({
+                            title: "Erro de Estoque",
+                            description: `Estoque insuficiente para o produto "${product.name}". Disponível: ${product.quantity || 0}.`,
+                            variant: "destructive",
+                        });
+                        return;
+                    }
+                }
+
+                // Update stock
+                for (const item of budget.items) {
+                    const product = products.find(p => p.id === item.productId);
+                    if (product && product.type === 'piece') {
+                        const productRef = doc(firestore, 'parts', product.id);
+                        const newQuantity = (product.quantity || 0) - item.quantity;
+                        await updateDoc(productRef, { quantity: newQuantity });
+                    }
+                }
+                
+                const saleId = uuidv4();
+                const saleData: Sale = {
+                    id: saleId,
+                    customerId: budget.customerId,
+                    items: budget.items,
+                    totalAmount: budget.totalAmount,
+                    saleDate: new Date().toISOString(),
+                    paymentMethod: 'cash', // Default
+                    status: 'pending', // Default
+                    downPayment: 0,
+                    amountReceivable: budget.totalAmount,
+                };
+                await setDoc(doc(firestore, "sales", saleId), saleData);
+
+                await updateDoc(budgetRef, { status: "approved" });
+
+                toast({
+                    title: "Sucesso!",
+                    description: "Orçamento aprovado e convertido em venda.",
+                })
+                router.push(`/sales/${saleId}`);
+
+            } catch (error) {
+                console.error("Error converting budget to sale: ", error)
+                toast({
+                    title: "Erro!",
+                    description: "Não foi possível converter o orçamento em venda.",
+                    variant: 'destructive',
+                })
+            }
         }
     }
     
-    const isLoading = budgetsLoading || customersLoading;
+    const isLoading = budgetsLoading || customersLoading || productsLoading;
 
     return (
         <>
