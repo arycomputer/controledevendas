@@ -26,9 +26,13 @@ To run this project on your local machine, follow these steps:
     ```
 
 3.  **Run the Development Server**:
-    Once the dependencies are installed and the environment variable is set, you can start the development server:
+    Once the dependencies are installed and the environment variable is set, you can start the development server using one of the following commands:
     ```bash
     npm run dev
+    ```
+    or
+    ```bash
+    npm run serve
     ```
 
 4.  **Open the Application**:
