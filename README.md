@@ -37,3 +37,7 @@ To run this project on your local machine, follow these steps:
 
 4.  **Open the Application**:
     Open your web browser and navigate to [http://localhost:9002](http://localhost:9002) to see your application running.
+
+## Atalho para Windows
+
+Para usuários de Windows, foi criado um arquivo `start-server.bat`. Você pode simplesmente dar um duplo clique neste arquivo para instalar as dependências e iniciar o servidor de desenvolvimento automaticamente.
