@@ -12,7 +12,6 @@ import React from "react";
 import { Button } from "@/components/ui/button"
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Separator } from "@/components/ui/separator"
 import { useToast } from "@/hooks/use-toast"
 import { useState, useRef } from "react"
@@ -25,6 +24,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { uploadImage } from "@/services/image-upload-service"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
 import { ProductForm } from "@/components/app/product-form"
+import { SearchableSelect } from "@/components/app/searchable-select"
 
 const discardFormSchema = z.object({
   description: z.string().min(1, "A descrição é obrigatória."),
@@ -158,6 +158,11 @@ function NewDiscardPageContent() {
         </div>
     )
   }
+
+  const productOptions = products?.map(p => ({ 
+    value: p.id, 
+    label: p.name
+  })) || [];
   
   return (
     <>
@@ -240,23 +245,18 @@ function NewDiscardPageContent() {
                             render={({ field }) => (
                               <FormItem>
                                 <FormLabel className="text-xs md:hidden">Componente</FormLabel>
-                                <Select onValueChange={(value) => handleProductChange(value, index)} defaultValue={field.value}>
-                                  <FormControl>
-                                    <SelectTrigger>
-                                      <SelectValue placeholder="Selecione um componente" />
-                                    </SelectTrigger>
-                                  </FormControl>
-                                  <SelectContent>
-                                    {products?.map(product => {
-                                        const isAlreadySelected = watchedItems.some((item, itemIndex) => item.productId === product.id && itemIndex !== index);
-                                      return (
-                                      <SelectItem key={product.id} value={product.id} disabled={isAlreadySelected}>
-                                        {product.name}
-                                      </SelectItem>
-                                    )})
-                                  }
-                                  </SelectContent>
-                                </Select>
+                                <FormControl>
+                                    <SearchableSelect 
+                                        options={productOptions.map(opt => ({
+                                            ...opt,
+                                            disabled: watchedItems.some((item, itemIndex) => item.productId === opt.value && itemIndex !== index)
+                                        }))}
+                                        value={field.value}
+                                        onValueChange={(val) => handleProductChange(val, index)}
+                                        placeholder="Selecione um componente"
+                                        searchPlaceholder="Pesquisar componente..."
+                                    />
+                                </FormControl>
                                 <FormMessage />
                               </FormItem>
                             )}
@@ -299,7 +299,7 @@ function NewDiscardPageContent() {
                       <PlusCircle className="mr-2 h-4 w-4" /> Criar Novo Componente
                     </Button>
                   </div>
-                   {form.formState.errors.items && <p className="text-sm font-medium text-destructive">{typeof form.formState.errors.items === 'object' && 'message' in form.formState.errors.items ? form.formState.errors.items.message : "Erro nos itens"}</p>}
+                   {form.formState.errors.items && <p className="text-sm font-medium text-destructive">Erro nos itens</p>}
                 </div>
               </div>
 

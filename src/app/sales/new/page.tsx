@@ -11,7 +11,6 @@ import { Button } from "@/components/ui/button"
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Separator } from "@/components/ui/separator"
 import { useToast } from "@/hooks/use-toast"
 import { useEffect } from "react"
@@ -20,6 +19,7 @@ import { collection, doc, setDoc, updateDoc } from "firebase/firestore"
 import type { Customer, Product } from "@/lib/types"
 import { AuthGuard } from "@/components/app/auth-guard"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
+import { SearchableSelect } from "@/components/app/searchable-select"
 
 const saleFormSchema = z.object({
   customerId: z.string({ required_error: "É necessário selecionar um cliente." }).min(1, "É necessário selecionar um cliente."),
@@ -159,6 +159,12 @@ function NewSalePageContent() {
     )
   }
 
+  const customerOptions = customers?.map(c => ({ value: c.id, label: c.name })) || [];
+  const productOptions = products?.map(p => ({ 
+    value: p.id, 
+    label: `${p.name} (${p.type === 'piece' ? `${p.quantity || 0} em estoque` : 'Serviço'}) - ${new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(p.price)}` 
+  })) || [];
+
   return (
     <Card className="max-w-4xl mx-auto">
       <CardHeader>
@@ -174,18 +180,15 @@ function NewSalePageContent() {
               render={({ field }) => (
                 <FormItem className="max-w-sm">
                   <FormLabel>Cliente</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value}>
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Selecione um cliente" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      {customers?.map(customer => (
-                        <SelectItem key={customer.id} value={customer.id}>{customer.name}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <FormControl>
+                    <SearchableSelect 
+                        options={customerOptions}
+                        value={field.value}
+                        onValueChange={field.onChange}
+                        placeholder="Selecione um cliente"
+                        searchPlaceholder="Pesquisar cliente..."
+                    />
+                  </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
@@ -206,25 +209,23 @@ function NewSalePageContent() {
                           render={({ field }) => (
                             <FormItem>
                               <FormLabel className="text-xs md:hidden">Produto/Serviço</FormLabel>
-                              <Select onValueChange={(value) => handleProductChange(value, index)} defaultValue={field.value}>
-                                <FormControl>
-                                  <SelectTrigger>
-                                    <SelectValue placeholder="Selecione um item" />
-                                  </SelectTrigger>
-                                </FormControl>
-                                <SelectContent>
-                                  {products?.map(product => {
-                                      const isOutOfStock = product.type === 'piece' && (!product.quantity || product.quantity <= 0);
-                                      const isAlreadySelected = watchedItems.some((item, itemIndex) => item.productId === product.id && itemIndex !== index);
-                                      const isDisabled = isOutOfStock || isAlreadySelected;
-                                    return (
-                                    <SelectItem key={product.id} value={product.id} disabled={isDisabled}>
-                                      {product.name} ({product.type === 'piece' ? `${product.quantity || 0} em estoque` : 'Serviço'}) - {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(product.price)}
-                                    </SelectItem>
-                                  )})
-                                }
-                                </SelectContent>
-                              </Select>
+                              <FormControl>
+                                <SearchableSelect 
+                                    options={productOptions.map(opt => {
+                                        const p = products?.find(prod => prod.id === opt.value);
+                                        const isOutOfStock = p?.type === 'piece' && (!p.quantity || p.quantity <= 0);
+                                        const isAlreadySelected = watchedItems.some((item, itemIndex) => item.productId === opt.value && itemIndex !== index);
+                                        return {
+                                            ...opt,
+                                            disabled: isOutOfStock || isAlreadySelected
+                                        };
+                                    })}
+                                    value={field.value}
+                                    onValueChange={(val) => handleProductChange(val, index)}
+                                    placeholder="Selecione um item"
+                                    searchPlaceholder="Pesquisar produto..."
+                                />
+                              </FormControl>
                               <FormMessage />
                             </FormItem>
                           )}

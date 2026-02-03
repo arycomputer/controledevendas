@@ -6,12 +6,11 @@ import * as z from "zod"
 import { useRouter, useParams } from "next/navigation"
 import { PlusCircle, Trash2, Loader2, Calendar as CalendarIcon, UploadCloud, X } from "lucide-react"
 import Image from "next/image"
-import React, { useState, useRef, useMemo } from "react"
+import React, { useState, useRef, useMemo, useEffect } from "react"
 
 import { Button } from "@/components/ui/button"
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Separator } from "@/components/ui/separator"
 import { useToast } from "@/hooks/use-toast"
 import { useCollection, useDoc, useFirestore, useMemoFirebase } from "@/firebase"
@@ -25,6 +24,7 @@ import { format } from "date-fns"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { uploadImage } from "@/services/image-upload-service"
+import { SearchableSelect } from "@/components/app/searchable-select"
 
 const budgetFormSchema = z.object({
   customerId: z.string({ required_error: "É necessário selecionar um cliente." }).min(1, "É necessário selecionar um cliente."),
@@ -62,23 +62,8 @@ function EditBudgetPageContent() {
   const productsCollection = useMemoFirebase(() => collection(firestore, 'parts'), [firestore]);
   const { data: products, isLoading: productsLoading } = useCollection<Product>(productsCollection);
 
-  // Sincronização robusta usando a propriedade 'values' do useForm
   const form = useForm<BudgetFormValues>({
     resolver: zodResolver(budgetFormSchema),
-    values: useMemo(() => {
-        if (!budget) return undefined;
-        return {
-            customerId: budget.customerId || "",
-            validUntil: budget.validUntil ? new Date(budget.validUntil) : new Date(),
-            itemDescription: budget.itemDescription || "",
-            model: budget.model || "",
-            problemDescription: budget.problemDescription || "",
-            solutionDescription: budget.solutionDescription || "",
-            serialNumber: budget.serialNumber || "",
-            items: budget.items || [],
-            imageUrls: budget.imageUrls || [],
-        };
-    }, [budget]),
     defaultValues: {
       customerId: "",
       validUntil: new Date(),
@@ -91,6 +76,23 @@ function EditBudgetPageContent() {
       imageUrls: [],
     },
   })
+
+  // Sincronização explícita e robusta dos dados carregados
+  useEffect(() => {
+    if (budget) {
+      form.reset({
+        customerId: budget.customerId || "",
+        validUntil: budget.validUntil ? new Date(budget.validUntil) : new Date(),
+        itemDescription: budget.itemDescription || "",
+        model: budget.model || "",
+        problemDescription: budget.problemDescription || "",
+        solutionDescription: budget.solutionDescription || "",
+        serialNumber: budget.serialNumber || "",
+        items: budget.items || [],
+        imageUrls: budget.imageUrls || [],
+      });
+    }
+  }, [budget, form]);
   
   const { fields, append, remove, update } = useFieldArray({
     control: form.control,
@@ -100,7 +102,6 @@ function EditBudgetPageContent() {
   const watchedItems = form.watch("items") || [];
   const watchedImageUrls = form.watch("imageUrls") || [];
 
-  // Cálculo do total em tempo real estável
   const totalAmount = useMemo(() => {
     return watchedItems.reduce((acc, current) => {
         return acc + ((Number(current.unitPrice) || 0) * (Number(current.quantity) || 0));
@@ -205,6 +206,12 @@ function EditBudgetPageContent() {
     )
   }
 
+  const customerOptions = customers?.map(c => ({ value: c.id, label: c.name })) || [];
+  const productOptions = products?.map(p => ({ 
+    value: p.id, 
+    label: `${p.name} (${p.type === 'piece' ? `${p.quantity || 0} em estoque` : 'Serviço'}) - ${new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(p.price)}` 
+  })) || [];
+
   return (
     <Card className="max-w-4xl mx-auto">
       <CardHeader>
@@ -221,18 +228,15 @@ function EditBudgetPageContent() {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Cliente</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value}>
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Selecione um cliente" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {customers?.map(customer => (
-                            <SelectItem key={customer.id} value={customer.id}>{customer.name}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                      <FormControl>
+                        <SearchableSelect 
+                            options={customerOptions}
+                            value={field.value}
+                            onValueChange={field.onChange}
+                            placeholder="Selecione um cliente"
+                            searchPlaceholder="Pesquisar cliente..."
+                        />
+                      </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -410,23 +414,18 @@ function EditBudgetPageContent() {
                           render={({ field }) => (
                             <FormItem>
                               <FormLabel className="text-xs md:hidden">Produto/Serviço</FormLabel>
-                              <Select onValueChange={(value) => handleProductChange(value, index)} value={field.value}>
-                                <FormControl>
-                                  <SelectTrigger>
-                                    <SelectValue placeholder="Selecione um item" />
-                                  </SelectTrigger>
-                                </FormControl>
-                                <SelectContent>
-                                  {products?.map(product => {
-                                      const isAlreadySelected = watchedItems.some((item, itemIndex) => item.productId === product.id && itemIndex !== index);
-                                    return (
-                                    <SelectItem key={product.id} value={product.id} disabled={isAlreadySelected}>
-                                      {product.name} ({product.type === 'piece' ? `${product.quantity || 0} em estoque` : 'Serviço'}) - {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(product.price)}
-                                    </SelectItem>
-                                  )})
-                                }
-                                </SelectContent>
-                              </Select>
+                              <FormControl>
+                                <SearchableSelect 
+                                    options={productOptions.map(opt => ({
+                                        ...opt,
+                                        disabled: watchedItems.some((item, itemIndex) => item.productId === opt.value && itemIndex !== index)
+                                    }))}
+                                    value={field.value}
+                                    onValueChange={(val) => handleProductChange(val, index)}
+                                    placeholder="Selecione um item"
+                                    searchPlaceholder="Pesquisar produto..."
+                                />
+                              </FormControl>
                               <FormMessage />
                             </FormItem>
                           )}
