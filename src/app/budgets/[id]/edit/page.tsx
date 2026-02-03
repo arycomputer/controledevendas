@@ -6,7 +6,7 @@ import * as z from "zod"
 import { useRouter, useParams } from "next/navigation"
 import { PlusCircle, Trash2, Loader2, Calendar as CalendarIcon, UploadCloud, X } from "lucide-react"
 import Image from "next/image"
-import React from "react"
+import React, { useEffect, useState, useRef } from "react"
 
 import { Button } from "@/components/ui/button"
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
@@ -14,7 +14,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Separator } from "@/components/ui/separator"
 import { useToast } from "@/hooks/use-toast"
-import { useEffect, useState, useRef } from "react"
 import { useCollection, useDoc, useFirestore, useMemoFirebase } from "@/firebase"
 import { collection, doc, updateDoc } from "firebase/firestore"
 import type { Customer, Product, Budget } from "@/lib/types"
@@ -65,17 +64,6 @@ function EditBudgetPageContent() {
 
   const form = useForm<BudgetFormValues>({
     resolver: zodResolver(budgetFormSchema),
-    values: budget ? {
-        customerId: budget.customerId,
-        validUntil: new Date(budget.validUntil),
-        itemDescription: budget.itemDescription || "",
-        model: budget.model || "",
-        problemDescription: budget.problemDescription || "",
-        solutionDescription: budget.solutionDescription || "",
-        serialNumber: budget.serialNumber || "",
-        items: budget.items || [],
-        imageUrls: budget.imageUrls || [],
-    } : undefined,
     defaultValues: {
       customerId: "",
       validUntil: new Date(),
@@ -88,6 +76,23 @@ function EditBudgetPageContent() {
       imageUrls: [],
     },
   })
+
+  // Sincroniza os dados do orçamento com o formulário assim que carregados
+  useEffect(() => {
+    if (budget) {
+      form.reset({
+        customerId: budget.customerId,
+        validUntil: new Date(budget.validUntil),
+        itemDescription: budget.itemDescription || "",
+        model: budget.model || "",
+        problemDescription: budget.problemDescription || "",
+        solutionDescription: budget.solutionDescription || "",
+        serialNumber: budget.serialNumber || "",
+        items: budget.items || [],
+        imageUrls: budget.imageUrls || [],
+      });
+    }
+  }, [budget, form]);
   
   const { fields, append, remove, update } = useFieldArray({
     control: form.control,
@@ -97,7 +102,8 @@ function EditBudgetPageContent() {
   const watchedItems = form.watch("items");
   const watchedImageUrls = form.watch("imageUrls");
 
-  const totalAmount = watchedItems.reduce((acc, current) => {
+  // Cálculo do total em tempo real
+  const totalAmount = (watchedItems || []).reduce((acc, current) => {
     return acc + ((Number(current.unitPrice) || 0) * (Number(current.quantity) || 0));
   }, 0);
 
@@ -215,7 +221,7 @@ function EditBudgetPageContent() {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Cliente</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value}>
+                      <Select onValueChange={field.onChange} value={field.value || ""}>
                         <FormControl>
                           <SelectTrigger>
                             <SelectValue placeholder="Selecione um cliente" />
@@ -404,7 +410,7 @@ function EditBudgetPageContent() {
                           render={({ field }) => (
                             <FormItem>
                               <FormLabel className="text-xs md:hidden">Produto/Serviço</FormLabel>
-                              <Select onValueChange={(value) => handleProductChange(value, index)} value={field.value}>
+                              <Select onValueChange={(value) => handleProductChange(value, index)} value={field.value || ""}>
                                 <FormControl>
                                   <SelectTrigger>
                                     <SelectValue placeholder="Selecione um item" />

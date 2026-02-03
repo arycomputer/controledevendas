@@ -48,7 +48,6 @@ function EditServiceOrderPageContent() {
   const firestore = useFirestore()
   const orderId = params.id as string
 
-  // Data fetching
   const orderDocRef = useMemoFirebase(() => doc(firestore, 'serviceOrders', orderId), [firestore, orderId]);
   const { data: order, isLoading: orderLoading } = useDoc<ServiceOrder>(orderDocRef);
 
@@ -60,15 +59,6 @@ function EditServiceOrderPageContent() {
 
   const form = useForm<ServiceOrderFormValues>({
     resolver: zodResolver(serviceOrderFormSchema),
-    values: order ? {
-        customerId: order.customerId,
-        entryDate: new Date(order.entryDate),
-        exitDate: order.exitDate ? new Date(order.exitDate) : undefined,
-        itemDescription: order.itemDescription,
-        problemDescription: order.problemDescription,
-        items: order.items,
-        status: order.status,
-    } : undefined,
     defaultValues: {
       customerId: "",
       entryDate: new Date(),
@@ -79,6 +69,21 @@ function EditServiceOrderPageContent() {
       status: 'pending',
     },
   })
+
+  // Sincroniza os dados da OS com o formulário assim que carregados
+  useEffect(() => {
+    if (order) {
+      form.reset({
+        customerId: order.customerId,
+        entryDate: new Date(order.entryDate),
+        exitDate: order.exitDate ? new Date(order.exitDate) : undefined,
+        itemDescription: order.itemDescription,
+        problemDescription: order.problemDescription,
+        items: order.items,
+        status: order.status,
+      });
+    }
+  }, [order, form]);
   
   const { fields, append, remove, update } = useFieldArray({
     control: form.control,
@@ -88,7 +93,7 @@ function EditServiceOrderPageContent() {
   const watchedItems = form.watch("items");
   const watchedStatus = form.watch("status");
 
-  const totalAmount = watchedItems.reduce((acc, current) => {
+  const totalAmount = (watchedItems || []).reduce((acc, current) => {
     return acc + ((Number(current.unitPrice) || 0) * (Number(current.quantity) || 0));
   }, 0);
 
@@ -105,10 +110,8 @@ function EditServiceOrderPageContent() {
         const originalItems = order.items;
         const currentItems = data.items;
         
-        // Calculate stock changes
         const stockChanges: {[productId: string]: number} = {};
 
-        // Add back old quantities
         originalItems.forEach(item => {
             const product = products.find(p => p.id === item.productId && p.type === 'piece');
             if (product) {
@@ -116,7 +119,6 @@ function EditServiceOrderPageContent() {
             }
         });
 
-        // Subtract new quantities
         for (const item of currentItems) {
             const product = products.find(p => p.id === item.productId && p.type === 'piece');
             if (product) {
@@ -133,7 +135,6 @@ function EditServiceOrderPageContent() {
             }
         }
 
-        // Apply stock updates
         for(const productId in stockChanges) {
             if (stockChanges[productId] !== 0) {
                 const productRef = doc(firestore, 'parts', productId);
@@ -216,7 +217,7 @@ function EditServiceOrderPageContent() {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Cliente</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value}>
+                      <Select onValueChange={field.onChange} value={field.value || ""}>
                         <FormControl>
                           <SelectTrigger>
                             <SelectValue placeholder="Selecione um cliente" />
@@ -276,7 +277,7 @@ function EditServiceOrderPageContent() {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Status</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value}>
+                    <Select onValueChange={field.onChange} value={field.value || ""}>
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue placeholder="Selecione um status" />
@@ -337,7 +338,7 @@ function EditServiceOrderPageContent() {
                           render={({ field }) => (
                             <FormItem>
                               <FormLabel className="text-xs md:hidden">Produto/Serviço</FormLabel>
-                              <Select onValueChange={(value) => handleProductChange(value, index)} value={field.value}>
+                              <Select onValueChange={(value) => handleProductChange(value, index)} value={field.value || ""}>
                                 <FormControl>
                                   <SelectTrigger>
                                     <SelectValue placeholder="Selecione um item" />

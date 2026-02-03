@@ -1,11 +1,10 @@
-
 'use client'
 
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
 import * as z from "zod"
 import { useRouter, useParams } from "next/navigation"
-import React, { useEffect, useMemo, useRef, useState } from "react"
+import React, { useEffect, useRef, useState } from "react"
 import Image from "next/image"
 
 import { Button } from "@/components/ui/button"
@@ -52,7 +51,7 @@ const createProductFormSchema = (settings: any) => z.object({
     path: ["quantity"],
 });
 
-type ProductFormValues = z.infer<Return<typeof createProductFormSchema>>;
+type ProductFormValues = z.infer<ReturnType<typeof createProductFormSchema>>;
 
 
 function EditProductPageContent() {
@@ -78,23 +77,23 @@ function EditProductPageContent() {
 
   const form = useForm<ProductFormValues>({
     resolver: zodResolver(productFormSchema),
-    defaultValues: useMemo(() => ({
-      name: product?.name || "",
-      description: product?.description || "",
-      price: product?.price || 0,
-      cost: product?.cost || 0,
-      type: product?.type || "piece",
-      quantity: product?.quantity ?? 0,
-      link: product?.link || "",
-      imageUrl: product?.imageUrl || "",
-    }), [product]),
+    defaultValues: {
+      name: "",
+      description: "",
+      price: 0,
+      cost: 0,
+      type: "piece",
+      quantity: 0,
+      link: "",
+      imageUrl: "",
+    },
   })
   
   useEffect(() => {
     if (product) {
       form.reset({
         name: product.name,
-        description: product.description,
+        description: product.description || "",
         price: product.price,
         cost: product.cost || 0,
         type: product.type,
@@ -140,7 +139,7 @@ function EditProductPageContent() {
           description: errorMessage,
           variant: "destructive",
         });
-        setImagePreview(product?.imageUrl || null); // Revert on error
+        setImagePreview(product?.imageUrl || null);
       } finally {
         setIsUploading(false);
       }
@@ -163,7 +162,7 @@ function EditProductPageContent() {
         const errorMessage = error instanceof Error ? error.message : "Ocorreu um erro desconhecido.";
         console.error("Upload from URL failed:", error);
         toast({ title: "Falha no Upload", description: errorMessage, variant: "destructive" });
-        setImagePreview(product?.imageUrl || null); // Revert on error
+        setImagePreview(product?.imageUrl || null);
     } finally {
         setIsUploading(false);
     }
@@ -237,7 +236,7 @@ function EditProductPageContent() {
                       render={({ field }) => (
                         <FormItem>
                           <FormLabel>Tipo</FormLabel>
-                          <Select onValueChange={field.onChange} defaultValue={field.value}>
+                          <Select onValueChange={field.onChange} value={field.value || ""}>
                             <FormControl>
                               <SelectTrigger>
                                 <SelectValue placeholder="Selecione o tipo" />
