@@ -4,7 +4,7 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
 import * as z from "zod"
 import { useRouter, useParams } from "next/navigation"
-import React, { useEffect, useRef, useState } from "react"
+import React, { useMemo, useRef, useState } from "react"
 import Image from "next/image"
 
 import { Button } from "@/components/ui/button"
@@ -63,7 +63,6 @@ function EditProductPageContent() {
 
   const productId = params.id as string;
   
-  const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [imageUrlInput, setImageUrlInput] = useState('');
 
@@ -73,10 +72,23 @@ function EditProductPageContent() {
   const productDocRef = useMemoFirebase(() => doc(firestore, 'parts', productId), [firestore, productId]);
   const { data: product, isLoading: productLoading } = useDoc<Product>(productDocRef);
   
-  const productFormSchema = createProductFormSchema(registrationSettings);
+  const productFormSchema = useMemo(() => createProductFormSchema(registrationSettings), [registrationSettings]);
 
   const form = useForm<ProductFormValues>({
     resolver: zodResolver(productFormSchema),
+    values: useMemo(() => {
+        if (!product) return undefined;
+        return {
+            name: product.name || "",
+            description: product.description || "",
+            price: product.price || 0,
+            cost: product.cost || 0,
+            type: product.type || "piece",
+            quantity: product.quantity ?? 0,
+            link: product.link || "",
+            imageUrl: product.imageUrl || "",
+        };
+    }, [product]),
     defaultValues: {
       name: "",
       description: "",
@@ -89,57 +101,27 @@ function EditProductPageContent() {
     },
   })
   
-  useEffect(() => {
-    if (product) {
-      form.reset({
-        name: product.name,
-        description: product.description || "",
-        price: product.price,
-        cost: product.cost || 0,
-        type: product.type,
-        quantity: product.quantity ?? '',
-        link: product.link || "",
-        imageUrl: product.imageUrl || "",
-      });
-       if (product.imageUrl) {
-        setImagePreview(product.imageUrl);
-      }
-    }
-  }, [product, form]);
-
+  const imagePreview = form.watch("imageUrl");
   const productType = form.watch("type");
-
-  useEffect(() => {
-    if (productType === 'service') {
-        form.setValue('quantity', 1000);
-        form.setValue('cost', 0);
-    }
-  }, [productType, form]);
 
   const handleImageChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
       setIsUploading(true);
-      const localPreviewUrl = URL.createObjectURL(file);
-      setImagePreview(localPreviewUrl);
-
       try {
         const uploadedImageUrl = await uploadImage(file);
         form.setValue("imageUrl", uploadedImageUrl, { shouldDirty: true });
-        setImagePreview(uploadedImageUrl);
         toast({
           title: "Upload Concluído",
           description: "A imagem do produto foi atualizada.",
         });
       } catch (error) {
         const errorMessage = error instanceof Error ? error.message : "Ocorreu um erro desconhecido.";
-        console.error("Upload failed:", error);
         toast({
           title: "Falha no Upload",
           description: errorMessage,
           variant: "destructive",
         });
-        setImagePreview(product?.imageUrl || null);
       } finally {
         setIsUploading(false);
       }
@@ -152,35 +134,30 @@ function EditProductPageContent() {
         return;
     }
     setIsUploading(true);
-    setImagePreview(imageUrlInput);
     try {
         const uploadedUrl = await uploadImageFromUrl(imageUrlInput);
         form.setValue("imageUrl", uploadedUrl, { shouldDirty: true });
-        setImagePreview(uploadedUrl);
         toast({ title: "Upload Concluído", description: "A imagem foi carregada a partir do link." });
     } catch (error) {
         const errorMessage = error instanceof Error ? error.message : "Ocorreu um erro desconhecido.";
-        console.error("Upload from URL failed:", error);
         toast({ title: "Falha no Upload", description: errorMessage, variant: "destructive" });
-        setImagePreview(product?.imageUrl || null);
     } finally {
         setIsUploading(false);
     }
 };
 
   async function onSubmit(data: ProductFormValues) {
+    if (!productDocRef) return;
     try {
-        const finalData: Partial<ProductFormValues> & { quantity?: number } = {
-            ...data,
-        };
-
+        const finalData: any = { ...data };
         if (data.type === 'service') {
             finalData.quantity = 1000;
+            finalData.cost = 0;
         } else {
-            finalData.quantity = data.quantity ? Number(data.quantity) : 0;
+            finalData.quantity = Number(data.quantity) || 0;
         }
 
-        await updateDoc(productDocRef, finalData as { [x: string]: any });
+        await updateDoc(productDocRef, finalData);
         toast({
           title: "Sucesso!",
           description: `Produto "${data.name}" atualizado.`,
@@ -201,7 +178,7 @@ function EditProductPageContent() {
   if (isLoading) {
     return (
         <div className="flex justify-center items-center h-64">
-            <Loader2 className="h-8 w-8 animate-spin" />
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
         </div>
     )
   }
@@ -236,7 +213,7 @@ function EditProductPageContent() {
                       render={({ field }) => (
                         <FormItem>
                           <FormLabel>Tipo</FormLabel>
-                          <Select onValueChange={field.onChange} value={field.value || ""}>
+                          <Select onValueChange={field.onChange} value={field.value}>
                             <FormControl>
                               <SelectTrigger>
                                 <SelectValue placeholder="Selecione o tipo" />
@@ -258,7 +235,7 @@ function EditProductPageContent() {
                         <FormItem>
                           <FormLabel>Nome</FormLabel>
                           <FormControl>
-                            <Input placeholder="Ex: Filtro de Ar / Troca de Óleo" {...field} />
+                            <Input placeholder="Ex: Filtro de Ar" {...field} />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -331,7 +308,7 @@ function EditProductPageContent() {
                     <FormItem>
                       <FormLabel>Descrição</FormLabel>
                       <FormControl>
-                        <Textarea placeholder="Ex: Para motor 1.0 8v / Serviço de troca de óleo do motor" className="resize-none" {...field} />
+                        <Textarea placeholder="Ex: Para motor 1.0 8v" className="resize-none" {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>

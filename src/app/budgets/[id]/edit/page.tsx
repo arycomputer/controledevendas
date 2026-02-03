@@ -6,7 +6,7 @@ import * as z from "zod"
 import { useRouter, useParams } from "next/navigation"
 import { PlusCircle, Trash2, Loader2, Calendar as CalendarIcon, UploadCloud, X } from "lucide-react"
 import Image from "next/image"
-import React, { useEffect, useState, useRef } from "react"
+import React, { useState, useRef, useMemo } from "react"
 
 import { Button } from "@/components/ui/button"
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
@@ -62,8 +62,23 @@ function EditBudgetPageContent() {
   const productsCollection = useMemoFirebase(() => collection(firestore, 'parts'), [firestore]);
   const { data: products, isLoading: productsLoading } = useCollection<Product>(productsCollection);
 
+  // Sincronização robusta usando a propriedade 'values' do useForm
   const form = useForm<BudgetFormValues>({
     resolver: zodResolver(budgetFormSchema),
+    values: useMemo(() => {
+        if (!budget) return undefined;
+        return {
+            customerId: budget.customerId || "",
+            validUntil: budget.validUntil ? new Date(budget.validUntil) : new Date(),
+            itemDescription: budget.itemDescription || "",
+            model: budget.model || "",
+            problemDescription: budget.problemDescription || "",
+            solutionDescription: budget.solutionDescription || "",
+            serialNumber: budget.serialNumber || "",
+            items: budget.items || [],
+            imageUrls: budget.imageUrls || [],
+        };
+    }, [budget]),
     defaultValues: {
       customerId: "",
       validUntil: new Date(),
@@ -76,36 +91,21 @@ function EditBudgetPageContent() {
       imageUrls: [],
     },
   })
-
-  // Sincroniza os dados do orçamento com o formulário assim que carregados
-  useEffect(() => {
-    if (budget) {
-      form.reset({
-        customerId: budget.customerId,
-        validUntil: new Date(budget.validUntil),
-        itemDescription: budget.itemDescription || "",
-        model: budget.model || "",
-        problemDescription: budget.problemDescription || "",
-        solutionDescription: budget.solutionDescription || "",
-        serialNumber: budget.serialNumber || "",
-        items: budget.items || [],
-        imageUrls: budget.imageUrls || [],
-      });
-    }
-  }, [budget, form]);
   
   const { fields, append, remove, update } = useFieldArray({
     control: form.control,
     name: "items",
   })
   
-  const watchedItems = form.watch("items");
-  const watchedImageUrls = form.watch("imageUrls");
+  const watchedItems = form.watch("items") || [];
+  const watchedImageUrls = form.watch("imageUrls") || [];
 
-  // Cálculo do total em tempo real
-  const totalAmount = (watchedItems || []).reduce((acc, current) => {
-    return acc + ((Number(current.unitPrice) || 0) * (Number(current.quantity) || 0));
-  }, 0);
+  // Cálculo do total em tempo real estável
+  const totalAmount = useMemo(() => {
+    return watchedItems.reduce((acc, current) => {
+        return acc + ((Number(current.unitPrice) || 0) * (Number(current.quantity) || 0));
+    }, 0);
+  }, [watchedItems]);
 
   const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files;
@@ -147,7 +147,7 @@ function EditBudgetPageContent() {
   }
 
   async function onSubmit(data: BudgetFormValues) {
-    if (!firestore || !products) return;
+    if (!firestore || !products || !budgetDocRef) return;
     try {
       const budgetData = {
         ...data,
@@ -159,7 +159,7 @@ function EditBudgetPageContent() {
 
       toast({
         title: "Sucesso!",
-        description: "Orçamento atualizado.",
+        description: "Orçamento atualizado com sucesso.",
       })
       router.push('/budgets')
     } catch (error) {
@@ -189,7 +189,7 @@ function EditBudgetPageContent() {
   if (isLoading) {
     return (
         <div className="flex justify-center items-center h-64">
-            <Loader2 className="h-8 w-8 animate-spin" />
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
         </div>
     )
   }
@@ -199,7 +199,7 @@ function EditBudgetPageContent() {
        <Card className="max-w-2xl mx-auto">
          <CardHeader>
            <CardTitle>Orçamento não encontrado</CardTitle>
-           <CardDescription>O item que você está tentando editar não existe.</CardDescription>
+           <CardDescription>O orçamento que você está tentando editar não existe.</CardDescription>
          </CardHeader>
        </Card>
     )
@@ -209,7 +209,7 @@ function EditBudgetPageContent() {
     <Card className="max-w-4xl mx-auto">
       <CardHeader>
         <CardTitle>Editar Orçamento</CardTitle>
-        <CardDescription>Atualize os dados do Orçamento #{budget.id.substring(0,6).toUpperCase()}</CardDescription>
+        <CardDescription>Atualize os dados do Orçamento #{budgetId.substring(0,6).toUpperCase()}</CardDescription>
       </CardHeader>
       <CardContent>
         <Form {...form}>
@@ -221,7 +221,7 @@ function EditBudgetPageContent() {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Cliente</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value || ""}>
+                      <Select onValueChange={field.onChange} value={field.value}>
                         <FormControl>
                           <SelectTrigger>
                             <SelectValue placeholder="Selecione um cliente" />
@@ -357,7 +357,7 @@ function EditBudgetPageContent() {
             <div>
                 <h3 className="text-lg font-medium mb-4">Fotos do Equipamento</h3>
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 mb-4">
-                    {watchedImageUrls?.map((url, index) => (
+                    {watchedImageUrls.map((url, index) => (
                         <div key={index} className="relative aspect-square group">
                             <Image src={url} alt={`Imagem do equipamento ${index + 1}`} fill className="object-cover rounded-md border" />
                             <Button
@@ -410,7 +410,7 @@ function EditBudgetPageContent() {
                           render={({ field }) => (
                             <FormItem>
                               <FormLabel className="text-xs md:hidden">Produto/Serviço</FormLabel>
-                              <Select onValueChange={(value) => handleProductChange(value, index)} value={field.value || ""}>
+                              <Select onValueChange={(value) => handleProductChange(value, index)} value={field.value}>
                                 <FormControl>
                                   <SelectTrigger>
                                     <SelectValue placeholder="Selecione um item" />

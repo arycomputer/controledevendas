@@ -6,7 +6,7 @@ import * as z from "zod"
 import { useRouter, useParams } from "next/navigation"
 import { doc, updateDoc } from 'firebase/firestore'
 import { useDoc, useFirestore, useMemoFirebase } from "@/firebase"
-import { useEffect } from "react"
+import React, { useMemo } from "react"
 
 import { Button } from "@/components/ui/button"
 import {
@@ -23,6 +23,7 @@ import { useToast } from "@/hooks/use-toast"
 import { Loader2 } from "lucide-react"
 import { Separator } from "@/components/ui/separator"
 import { maskCEP, maskDocument, maskPhone } from "@/lib/utils"
+import { AuthGuard } from "@/components/app/auth-guard"
 
 const createCustomerFormSchema = (settings: any) => z.object({
     name: z.string().min(2, "O nome deve ter pelo menos 2 caracteres."),
@@ -65,7 +66,7 @@ const createCustomerFormSchema = (settings: any) => z.object({
 
 type CustomerFormValues = z.infer<ReturnType<typeof createCustomerFormSchema>>;
 
-export default function EditCustomerPage() {
+function EditCustomerPageContent() {
   const router = useRouter()
   const params = useParams()
   const { toast } = useToast()
@@ -79,10 +80,26 @@ export default function EditCustomerPage() {
   const customerDocRef = useMemoFirebase(() => doc(firestore, 'customers', customerId), [firestore, customerId]);
   const { data: customer, isLoading: customerLoading } = useDoc(customerDocRef);
 
-  const customerFormSchema = createCustomerFormSchema(registrationSettings);
+  const customerFormSchema = useMemo(() => createCustomerFormSchema(registrationSettings), [registrationSettings]);
 
   const form = useForm<CustomerFormValues>({
     resolver: zodResolver(customerFormSchema),
+    values: useMemo(() => {
+        if (!customer) return undefined;
+        return {
+            name: customer.name || "",
+            email: customer.email || "",
+            phone: customer.phone || "",
+            document: customer.document || "",
+            zipCode: customer.zipCode || "",
+            street: customer.street || "",
+            number: customer.number || "",
+            complement: customer.complement || "",
+            neighborhood: customer.neighborhood || "",
+            city: customer.city || "",
+            state: customer.state || "",
+        };
+    }, [customer]),
     defaultValues: {
       name: "",
       email: "",
@@ -98,28 +115,8 @@ export default function EditCustomerPage() {
     },
   })
 
-  useEffect(() => {
-    if (customer) {
-      form.reset({
-        name: customer.name || "",
-        email: customer.email || "",
-        phone: customer.phone || "",
-        document: customer.document || "",
-        zipCode: customer.zipCode || "",
-        street: customer.street || "",
-        number: customer.number || "",
-        complement: customer.complement || "",
-        neighborhood: customer.neighborhood || "",
-        city: customer.city || "",
-        state: customer.state || "",
-      });
-    }
-  }, [customer, form]);
-
   const handleZipCodeBlur = async (zipCode: string) => {
-    if (zipCode.length !== 8) {
-      return;
-    }
+    if (zipCode.length !== 8) return;
     try {
       const response = await fetch(`https://viacep.com.br/ws/${zipCode}/json/`);
       const data = await response.json();
@@ -129,52 +126,23 @@ export default function EditCustomerPage() {
         form.setValue("city", data.localidade, { shouldValidate: true });
         form.setValue("state", data.uf, { shouldValidate: true });
       } else {
-        toast({
-            title: "CEP não encontrado",
-            description: "Não foi possível encontrar o CEP informado.",
-            variant: "destructive",
-        })
+        toast({ title: "CEP não encontrado", description: "Não foi possível encontrar o CEP informado.", variant: "destructive" })
       }
     } catch (error) {
       console.error("Error fetching address from ZIP code:", error);
-      toast({
-        title: "Erro ao buscar CEP",
-        description: "Não foi possível buscar o endereço a partir do CEP.",
-        variant: "destructive",
-      });
+      toast({ title: "Erro ao buscar CEP", description: "Não foi possível buscar o endereço.", variant: "destructive" });
     }
   };
 
   async function onSubmit(data: CustomerFormValues) {
+    if (!customerDocRef) return;
     try {
-      const customerData = {
-        name: data.name || "",
-        email: data.email || "",
-        phone: data.phone || "",
-        document: data.document || "",
-        zipCode: data.zipCode || "",
-        street: data.street || "",
-        number: data.number || "",
-        complement: data.complement || "",
-        neighborhood: data.neighborhood || "",
-        city: data.city || "",
-        state: data.state || "",
-      };
-
-      await updateDoc(customerDocRef, customerData);
-      toast({
-        title: "Sucesso!",
-        description: `Dados do cliente "${data.name}" atualizados.`,
-        variant: "default",
-      })
+      await updateDoc(customerDocRef, data);
+      toast({ title: "Sucesso!", description: `Dados do cliente "${data.name}" atualizados.` });
       router.push('/customers')
     } catch (error) {
        console.error("Error updating customer: ", error);
-       toast({
-        title: "Erro!",
-        description: "Não foi possível atualizar o cliente.",
-        variant: "destructive"
-      })
+       toast({ title: "Erro!", description: "Não foi possível atualizar o cliente.", variant: "destructive" })
     }
   }
   
@@ -183,7 +151,7 @@ export default function EditCustomerPage() {
   if (isLoading) {
     return (
         <div className="flex justify-center items-center h-64">
-            <Loader2 className="h-8 w-8 animate-spin" />
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
         </div>
     )
   }
@@ -205,7 +173,7 @@ export default function EditCustomerPage() {
     <Card className="max-w-2xl mx-auto">
       <CardHeader>
         <CardTitle>Editar Cliente</CardTitle>
-        <CardDescription>Atualize os dados do cliente.</CardDescription>
+        <CardDescription>Atualize os dados de {customer.name}.</CardDescription>
       </CardHeader>
       <CardContent>
         <Form {...form}>
@@ -232,7 +200,7 @@ export default function EditCustomerPage() {
                     <FormItem>
                       <FormLabel>E-mail</FormLabel>
                       <FormControl>
-                        <Input placeholder="Ex: joao.silva@example.com" {...field} />
+                        <Input placeholder="Ex: joao@exemplo.com" {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -337,7 +305,7 @@ export default function EditCustomerPage() {
                     <FormItem>
                         <FormLabel>Complemento</FormLabel>
                         <FormControl>
-                            <Input placeholder="Ex: Apto 101, Bloco B" {...field} />
+                            <Input placeholder="Ex: Apto 101" {...field} />
                         </FormControl>
                         <FormMessage />
                     </FormItem>
@@ -398,4 +366,12 @@ export default function EditCustomerPage() {
       </CardContent>
     </Card>
   )
+}
+
+export default function EditCustomerPage() {
+    return (
+        <AuthGuard>
+            <EditCustomerPageContent />
+        </AuthGuard>
+    )
 }

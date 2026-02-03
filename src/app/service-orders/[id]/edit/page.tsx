@@ -5,6 +5,7 @@ import { useForm, useFieldArray } from "react-hook-form"
 import * as z from "zod"
 import { useRouter, useParams } from "next/navigation"
 import { PlusCircle, Trash2, Loader2, Calendar as CalendarIcon } from "lucide-react"
+import React, { useMemo, useRef } from "react"
 
 import { Button } from "@/components/ui/button"
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
@@ -14,7 +15,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Separator } from "@/components/ui/separator"
 import { useToast } from "@/hooks/use-toast"
-import { useEffect } from "react"
 import { useCollection, useDoc, useFirestore, useMemoFirebase } from "@/firebase"
 import { collection, doc, updateDoc } from "firebase/firestore"
 import type { Customer, Product, ServiceOrder } from "@/lib/types"
@@ -57,8 +57,21 @@ function EditServiceOrderPageContent() {
   const productsCollection = useMemoFirebase(() => collection(firestore, 'parts'), [firestore]);
   const { data: products, isLoading: productsLoading } = useCollection<Product>(productsCollection);
 
+  // Sincronização robusta usando a propriedade 'values' do useForm
   const form = useForm<ServiceOrderFormValues>({
     resolver: zodResolver(serviceOrderFormSchema),
+    values: useMemo(() => {
+        if (!order) return undefined;
+        return {
+            customerId: order.customerId || "",
+            entryDate: order.entryDate ? new Date(order.entryDate) : new Date(),
+            exitDate: order.exitDate ? new Date(order.exitDate) : undefined,
+            itemDescription: order.itemDescription || "",
+            problemDescription: order.problemDescription || "",
+            items: order.items || [],
+            status: order.status || 'pending',
+        };
+    }, [order]),
     defaultValues: {
       customerId: "",
       entryDate: new Date(),
@@ -70,44 +83,24 @@ function EditServiceOrderPageContent() {
     },
   })
 
-  // Sincroniza os dados da OS com o formulário assim que carregados
-  useEffect(() => {
-    if (order) {
-      form.reset({
-        customerId: order.customerId,
-        entryDate: new Date(order.entryDate),
-        exitDate: order.exitDate ? new Date(order.exitDate) : undefined,
-        itemDescription: order.itemDescription,
-        problemDescription: order.problemDescription,
-        items: order.items,
-        status: order.status,
-      });
-    }
-  }, [order, form]);
-  
   const { fields, append, remove, update } = useFieldArray({
     control: form.control,
     name: "items",
   })
   
-  const watchedItems = form.watch("items");
+  const watchedItems = form.watch("items") || [];
   const watchedStatus = form.watch("status");
 
-  const totalAmount = (watchedItems || []).reduce((acc, current) => {
-    return acc + ((Number(current.unitPrice) || 0) * (Number(current.quantity) || 0));
-  }, 0);
-
-  useEffect(() => {
-    if (watchedStatus === 'completed' && !form.getValues('exitDate')) {
-        form.setValue('exitDate', new Date());
-    }
-  }, [watchedStatus, form]);
-
+  const totalAmount = useMemo(() => {
+    return watchedItems.reduce((acc, current) => {
+        return acc + ((Number(current.unitPrice) || 0) * (Number(current.quantity) || 0));
+    }, 0);
+  }, [watchedItems]);
 
   async function onSubmit(data: ServiceOrderFormValues) {
     if (!firestore || !products || !order) return;
     try {
-        const originalItems = order.items;
+        const originalItems = order.items || [];
         const currentItems = data.items;
         
         const stockChanges: {[productId: string]: number} = {};
@@ -185,7 +178,7 @@ function EditServiceOrderPageContent() {
   if (isLoading) {
     return (
         <div className="flex justify-center items-center h-64">
-            <Loader2 className="h-8 w-8 animate-spin" />
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
         </div>
     )
   }
@@ -205,7 +198,7 @@ function EditServiceOrderPageContent() {
     <Card className="max-w-4xl mx-auto">
       <CardHeader>
         <CardTitle>Editar Ordem de Serviço</CardTitle>
-        <CardDescription>Atualize os dados da O.S. #{order.id.substring(0,6).toUpperCase()}</CardDescription>
+        <CardDescription>Atualize os dados da O.S. #{orderId.substring(0,6).toUpperCase()}</CardDescription>
       </CardHeader>
       <CardContent>
         <Form {...form}>
@@ -217,7 +210,7 @@ function EditServiceOrderPageContent() {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Cliente</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value || ""}>
+                      <Select onValueChange={field.onChange} value={field.value}>
                         <FormControl>
                           <SelectTrigger>
                             <SelectValue placeholder="Selecione um cliente" />
@@ -277,7 +270,7 @@ function EditServiceOrderPageContent() {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Status</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value || ""}>
+                    <Select onValueChange={field.onChange} value={field.value}>
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue placeholder="Selecione um status" />
@@ -338,7 +331,7 @@ function EditServiceOrderPageContent() {
                           render={({ field }) => (
                             <FormItem>
                               <FormLabel className="text-xs md:hidden">Produto/Serviço</FormLabel>
-                              <Select onValueChange={(value) => handleProductChange(value, index)} value={field.value || ""}>
+                              <Select onValueChange={(value) => handleProductChange(value, index)} value={field.value}>
                                 <FormControl>
                                   <SelectTrigger>
                                     <SelectValue placeholder="Selecione um item" />
