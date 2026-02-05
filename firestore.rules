@@ -1,7 +1,7 @@
 
 /**
- * Ruleset for VendasControl - Versão 1.5.0
- * Ajuste de permissões globais para evitar erros de listagem em novas coleções.
+ * Ruleset for VendasControl - Versão 1.8.0
+ * Ajuste global para permissões recursivas e acesso total a coleções de negócio.
  */
 rules_version = '2';
 service cloud.firestore {
@@ -19,16 +19,15 @@ service cloud.firestore {
     }
 
     // Permissões para Coleções de Negócio
-    // O padrão {document=**} garante que tanto a coleção raiz quanto sub-documentos
-    // sejam cobertos pelas permissões de leitura e escrita.
-    match /customers/{document=**} { allow read, write: if isSignedIn(); }
-    match /parts/{document=**} { allow read, write: if isSignedIn(); }
-    match /sales/{document=**} { allow read, write: if isSignedIn(); }
-    match /purchases/{document=**} { allow read, write: if isSignedIn(); }
-    match /serviceOrders/{document=**} { allow read, write: if isSignedIn(); }
-    match /budgets/{document=**} { allow read, write: if isSignedIn(); }
-    match /discards/{document=**} { allow read, write: if isSignedIn(); }
-    match /settings/{document=**} { allow read, write: if isSignedIn(); }
+    // O padrão {allPaths=**} garante que a permissão se estenda a todos os documentos e subcoleções
+    match /customers/{allPaths=**} { allow read, write: if isSignedIn(); }
+    match /parts/{allPaths=**} { allow read, write: if isSignedIn(); }
+    match /sales/{allPaths=**} { allow read, write: if isSignedIn(); }
+    match /purchases/{allPaths=**} { allow read, write: if isSignedIn(); }
+    match /serviceOrders/{allPaths=**} { allow read, write: if isSignedIn(); }
+    match /budgets/{allPaths=**} { allow read, write: if isSignedIn(); }
+    match /discards/{allPaths=**} { allow read, write: if isSignedIn(); }
+    match /settings/{allPaths=**} { allow read, write: if isSignedIn(); }
 
     // Perfis de Usuário
     match /users/{userId} {

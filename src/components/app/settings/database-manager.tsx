@@ -2,7 +2,7 @@
 'use client'
 
 import { useState, useRef } from "react"
-import { useFirestore } from "@/firebase"
+import { useFirestore, useAuth } from "@/firebase"
 import { collection, getDocs, writeBatch, doc, query, where, setDoc } from "firebase/firestore"
 import { useToast } from "@/hooks/use-toast"
 import { Button } from "@/components/ui/button"
@@ -25,6 +25,7 @@ const COLLECTIONS_TO_BACKUP = [
 
 export function DatabaseManager() {
     const firestore = useFirestore();
+    const auth = useAuth();
     const { toast } = useToast();
     const [isExporting, setIsExporting] = useState(false);
     const [isImporting, setIsImporting] = useState(false);
@@ -102,11 +103,6 @@ export function DatabaseManager() {
                     
                     const batch = writeBatch(firestore);
 
-                    const collectionKeys = Object.keys(data);
-                    if (collectionKeys.length === 0) {
-                        throw new Error("O arquivo de backup parece estar vazio.");
-                    }
-
                     for (const collectionName in data) {
                         const documents = data[collectionName];
                         documents.forEach(docData => {
@@ -145,45 +141,42 @@ export function DatabaseManager() {
     };
 
     const handleProvisionDatabase = async () => {
-        if (!firestore) return;
+        if (!firestore || !auth.currentUser) {
+            toast({ title: "Erro", description: "Você precisa estar logado para realizar esta operação.", variant: "destructive" });
+            return;
+        }
+
         setIsProvisioning(true);
         try {
-            // Criar um lote de operações para garantir que tudo seja tentado
-            const batch = writeBatch(firestore);
-
+            // Realizar operações individualmente para evitar falhas silenciosas de batch
+            
             // 1. Garantir configurações de cadastro
-            const regRef = doc(firestore, 'settings', 'registration');
-            batch.set(regRef, {
+            await setDoc(doc(firestore, 'settings', 'registration'), {
                 customer: { email: true, phone: true, document: true, address: true },
                 product: { description: true, quantity: true }
             }, { merge: true });
 
             // 2. FORÇAR a criação da coleção de Compras
-            // Gravamos um documento de inicialização. Isso cria a coleção no Firebase.
-            const purchaseInitRef = doc(firestore, 'purchases', '_init_system');
-            batch.set(purchaseInitRef, { 
+            await setDoc(doc(firestore, 'purchases', '_init_system'), { 
                 name: "Sistema de Compras",
                 status: "active",
-                createdAt: new Date().toISOString()
+                lastChecked: new Date().toISOString()
             }, { merge: true });
 
             // 3. Garantir documento de empresa
-            const companyRef = doc(firestore, 'settings', 'companyData');
-            batch.set(companyRef, { 
+            await setDoc(doc(firestore, 'settings', 'companyData'), { 
                 initialized: true 
             }, { merge: true });
 
-            await batch.commit();
-
             toast({ 
                 title: "Sucesso!", 
-                description: "A coleção 'purchases' foi inicializada e as permissões foram verificadas." 
+                description: "Estrutura verificada. A coleção 'Compras' está pronta para uso." 
             });
         } catch (error: any) {
             console.error("Provisioning error:", error);
             toast({ 
                 title: "Falha no Provisionamento", 
-                description: "Certifique-se de estar logado. Se o erro persistir, as regras do Firebase podem estar demorando a propagar.", 
+                description: error.message || "Erro de permissão ao acessar o banco de dados.", 
                 variant: "destructive" 
             });
         } finally {
@@ -297,13 +290,16 @@ export function DatabaseManager() {
 
     return (
         <div className="space-y-6 max-w-lg">
-            <div className="space-y-2">
-                <h4 className="font-medium">Provisionar Estrutura</h4>
+            <div className="space-y-2 p-4 border rounded-lg bg-primary/5">
+                <h4 className="font-medium flex items-center gap-2">
+                    <Database className="h-4 w-4" /> 
+                    Provisionar Estrutura
+                </h4>
                 <p className="text-sm text-muted-foreground">
-                    Este botão forçará a criação da coleção de <strong>Compras</strong> e verificará as permissões. Clique aqui se receber erro de permissão.
+                    Cria automaticamente as pastas necessárias (como a de Compras) e valida as permissões de acesso. Clique aqui se vir erros de "Acesso Negado".
                 </p>
                 <Button variant="secondary" onClick={handleProvisionDatabase} disabled={isProvisioning || isSyncing}>
-                    {isProvisioning ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Database className="mr-2 h-4 w-4" />}
+                    {isProvisioning ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
                     {isProvisioning ? "Provisionando..." : "Verificar e Criar Estrutura"}
                 </Button>
             </div>
