@@ -4,7 +4,7 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
 import * as z from "zod"
 import { useRouter, useParams } from "next/navigation"
-import React, { useMemo, useRef, useState } from "react"
+import React, { useMemo, useRef, useState, useEffect } from "react"
 import Image from "next/image"
 
 import { Button } from "@/components/ui/button"
@@ -76,19 +76,6 @@ function EditProductPageContent() {
 
   const form = useForm<ProductFormValues>({
     resolver: zodResolver(productFormSchema),
-    values: useMemo(() => {
-        if (!product) return undefined;
-        return {
-            name: product.name || "",
-            description: product.description || "",
-            price: product.price || 0,
-            cost: product.cost || 0,
-            type: product.type || "piece",
-            quantity: product.quantity ?? 0,
-            link: product.link || "",
-            imageUrl: product.imageUrl || "",
-        };
-    }, [product]),
     defaultValues: {
       name: "",
       description: "",
@@ -100,6 +87,21 @@ function EditProductPageContent() {
       imageUrl: "",
     },
   })
+
+  useEffect(() => {
+    if (product) {
+      form.reset({
+        name: product.name || "",
+        description: product.description || "",
+        price: product.price || 0,
+        cost: product.cost || 0,
+        type: product.type || "piece",
+        quantity: product.quantity ?? 0,
+        link: product.link || "",
+        imageUrl: product.imageUrl || "",
+      });
+    }
+  }, [product, form]);
   
   const imagePreview = form.watch("imageUrl");
   const productType = form.watch("type");

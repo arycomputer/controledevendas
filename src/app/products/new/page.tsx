@@ -1,4 +1,3 @@
-
 'use client'
 
 import { zodResolver } from "@hookform/resolvers/zod"
@@ -53,7 +52,7 @@ const createProductFormSchema = (settings: any) => z.object({
     path: ["quantity"],
 });
 
-type ProductFormValues = z.infer<Return<typeof createProductFormSchema>>;
+type ProductFormValues = z.infer<ReturnType<typeof createProductFormSchema>>;
 
 
 function NewProductPageContent() {

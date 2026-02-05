@@ -6,7 +6,7 @@ import * as z from "zod"
 import { useRouter, useParams } from "next/navigation"
 import { doc, updateDoc } from 'firebase/firestore'
 import { useDoc, useFirestore, useMemoFirebase } from "@/firebase"
-import React, { useMemo } from "react"
+import React, { useMemo, useEffect } from "react"
 
 import { Button } from "@/components/ui/button"
 import {
@@ -84,22 +84,6 @@ function EditCustomerPageContent() {
 
   const form = useForm<CustomerFormValues>({
     resolver: zodResolver(customerFormSchema),
-    values: useMemo(() => {
-        if (!customer) return undefined;
-        return {
-            name: customer.name || "",
-            email: customer.email || "",
-            phone: customer.phone || "",
-            document: customer.document || "",
-            zipCode: customer.zipCode || "",
-            street: customer.street || "",
-            number: customer.number || "",
-            complement: customer.complement || "",
-            neighborhood: customer.neighborhood || "",
-            city: customer.city || "",
-            state: customer.state || "",
-        };
-    }, [customer]),
     defaultValues: {
       name: "",
       email: "",
@@ -114,6 +98,24 @@ function EditCustomerPageContent() {
       state: "",
     },
   })
+
+  useEffect(() => {
+    if (customer) {
+      form.reset({
+        name: customer.name || "",
+        email: customer.email || "",
+        phone: customer.phone || "",
+        document: customer.document || "",
+        zipCode: customer.zipCode || "",
+        street: customer.street || "",
+        number: customer.number || "",
+        complement: customer.complement || "",
+        neighborhood: customer.neighborhood || "",
+        city: customer.city || "",
+        state: customer.state || "",
+      });
+    }
+  }, [customer, form]);
 
   const handleZipCodeBlur = async (zipCode: string) => {
     if (zipCode.length !== 8) return;
