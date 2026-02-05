@@ -2,7 +2,7 @@
 /**
  * This ruleset enforces a simple, yet secure, access model for the VendasControl application.
  * Updated to allow users to create their own profile documents and manage all collections.
- * Version: 1.0.4 - Force redeploy for purchases and settings permissions.
+ * Version: 1.0.5 - Explicit permissions for purchases and settings initialization.
  */
 rules_version = '2';
 service cloud.firestore {
@@ -40,9 +40,9 @@ service cloud.firestore {
       allow read, write: if isSignedIn();
     }
 
-    // Purchase and stock entry
+    // Purchase and stock entry - Explicit list/get
     match /purchases/{purchaseId} {
-      allow read, write: if isSignedIn();
+      allow get, list, write: if isSignedIn();
     }
 
     // Service Orders

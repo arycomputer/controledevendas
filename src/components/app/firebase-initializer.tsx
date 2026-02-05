@@ -26,7 +26,6 @@ export function FirebaseInitializer({ children }: { children: React.ReactNode })
         const userSnap = await getDoc(userRef);
         
         if (!userSnap.exists()) {
-          // Check if any users exist. If not, this is the first user (admin)
           const usersRef = collection(firestore, 'users');
           const usersQuery = query(usersRef, limit(1));
           const usersSnap = await getDocs(usersQuery);
@@ -40,7 +39,7 @@ export function FirebaseInitializer({ children }: { children: React.ReactNode })
           });
         }
 
-        // 2. Initialize Registration Settings if missing
+        // 2. Initialize Registration Settings if missing (Crucial for UI fields)
         const regSettingsRef = doc(firestore, 'settings', 'registration');
         const regSnap = await getDoc(regSettingsRef);
         if (!regSnap.exists()) {
@@ -50,7 +49,7 @@ export function FirebaseInitializer({ children }: { children: React.ReactNode })
           });
         }
 
-        // 3. Ensure collections exist by adding/checking companyData (already partly in context)
+        // 3. Initialize Company Data if missing
         const companyDataRef = doc(firestore, 'settings', 'companyData');
         const companySnap = await getDoc(companyDataRef);
         if (!companySnap.exists()) {
