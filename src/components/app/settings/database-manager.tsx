@@ -148,20 +148,18 @@ export function DatabaseManager() {
         if (!firestore) return;
         setIsProvisioning(true);
         try {
-            // Usando operações individuais para melhor diagnóstico se falhar
-            
             // 1. Garantir configurações de cadastro
             await setDoc(doc(firestore, 'settings', 'registration'), {
                 customer: { email: true, phone: true, document: true, address: true },
                 product: { description: true, quantity: true }
             }, { merge: true });
 
-            // 2. Inicializar coleção de Compras
-            await setDoc(doc(firestore, 'purchases', '_init'), { 
+            // 2. Inicializar coleção de Compras com um documento de sistema
+            await setDoc(doc(firestore, 'purchases', '_sys_init'), { 
                 initialized: true, 
                 date: new Date().toISOString(),
-                description: "Coleção de compras inicializada pelo sistema." 
-            });
+                description: "Coleção de compras inicializada." 
+            }, { merge: true });
 
             // 3. Garantir documento de empresa
             await setDoc(doc(firestore, 'settings', 'companyData'), { 
@@ -169,14 +167,14 @@ export function DatabaseManager() {
             }, { merge: true });
 
             toast({ 
-                title: "Estrutura Provisionada", 
-                description: "As coleções base (incluindo Compras) foram verificadas e inicializadas com sucesso." 
+                title: "Estrutura Pronta", 
+                description: "O banco de dados foi verificado e as permissões foram testadas com sucesso." 
             });
         } catch (error: any) {
             console.error("Provisioning error:", error);
-            let detail = "Verifique sua conexão ou permissões.";
+            let detail = "Ocorreu um erro ao gravar no banco.";
             if (error.code === 'permission-denied') {
-                detail = "Acesso negado pelas regras do Firebase. Tente recarregar a página.";
+                detail = "Permissão negada. Aguarde as regras serem aplicadas no servidor.";
             }
             toast({ 
                 title: "Falha no Provisionamento", 
@@ -297,18 +295,18 @@ export function DatabaseManager() {
             <div className="space-y-2">
                 <h4 className="font-medium">Provisionar Estrutura</h4>
                 <p className="text-sm text-muted-foreground">
-                    Garante que todas as coleções e documentos de sistema (como Compras e Configurações) existam no banco de dados.
+                    Garante que todas as coleções e documentos de sistema existam no banco de dados e testa as permissões de acesso.
                 </p>
                 <Button variant="secondary" onClick={handleProvisionDatabase} disabled={isProvisioning || isSyncing}>
                     {isProvisioning ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Database className="mr-2 h-4 w-4" />}
-                    {isProvisioning ? "Provisionando..." : "Verificar Estrutura"}
+                    {isProvisioning ? "Verificando..." : "Verificar Estrutura"}
                 </Button>
             </div>
 
             <div className="space-y-2">
                 <h4 className="font-medium">Exportar Dados</h4>
                 <p className="text-sm text-muted-foreground">
-                    Crie um arquivo de backup completo de todos os seus dados. É recomendado fazer backups regularmente.
+                    Crie um arquivo de backup completo de todos os seus dados.
                 </p>
                 <Button onClick={handleExport} disabled={isExporting || isImporting || isSyncing}>
                     {isExporting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Download className="mr-2 h-4 w-4" />}
@@ -318,7 +316,7 @@ export function DatabaseManager() {
             <div className="space-y-2">
                 <h4 className="font-medium">Importar Dados</h4>
                 <p className="text-sm text-muted-foreground">
-                   Importe um arquivo de backup (.json). <strong className="text-destructive">Atenção:</strong> Esta ação substituirá TODOS os dados existentes no sistema pelos dados do arquivo.
+                   Atenção: Esta ação substituirá TODOS os dados existentes no sistema.
                 </p>
                 <input
                     type="file"
@@ -336,7 +334,7 @@ export function DatabaseManager() {
             <div className="space-y-2">
                 <h4 className="font-medium">Sincronizar Dados</h4>
                 <p className="text-sm text-muted-foreground">
-                   Converte orçamentos aprovados que ainda não viraram vendas. Isso pode ser útil para corrigir dados antigos.
+                   Converte orçamentos aprovados pendentes em vendas e atualiza o estoque.
                 </p>
                 <Button variant="outline" onClick={handleSyncBudgets} disabled={isSyncing || isExporting || isImporting}>
                     {isSyncing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <RefreshCw className="mr-2 h-4 w-4" />}
@@ -348,7 +346,7 @@ export function DatabaseManager() {
                 open={isConfirmDialogOpen}
                 onOpenChange={setIsConfirmDialogOpen}
                 title="Confirmar Importação de Dados"
-                description="Você tem certeza que deseja importar este arquivo? Todos os dados atuais serão substituídos permanentemente. Esta ação não pode ser desfeita."
+                description="Você tem certeza que deseja importar este arquivo? Todos os dados atuais serão substituídos permanentemente."
                 onConfirm={handleConfirmImport}
                 confirmText="Sim, importar e substituir tudo"
             />

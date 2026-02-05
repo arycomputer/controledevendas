@@ -1,7 +1,7 @@
 
 /**
- * Ruleset for VendasControl - Versão 1.0.9
- * Aplicando wildcards recursivos para garantir permissões de listagem em todas as coleções.
+ * Ruleset for VendasControl - Versão 1.1.2
+ * Ajuste de permissões para garantir acesso a coleções novas e provisionamento.
  */
 rules_version = '2';
 service cloud.firestore {
@@ -18,42 +18,42 @@ service cloud.firestore {
        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
     }
 
-    // Regra Geral para usuários autenticados em coleções de negócio
-    // O uso de {document=**} garante que listagens e subcoleções funcionem corretamente
+    // Permissões para Coleções de Negócio
+    // O padrão {doc=**} permite operações na coleção (list) e em todos os documentos (get, write)
     
-    match /customers/{document=**} {
+    match /customers/{doc=**} {
       allow read, write: if isSignedIn();
     }
 
-    match /parts/{document=**} {
+    match /parts/{doc=**} {
       allow read, write: if isSignedIn();
     }
 
-    match /sales/{document=**} {
+    match /sales/{doc=**} {
       allow read, write: if isSignedIn();
     }
 
-    match /purchases/{document=**} {
+    match /purchases/{doc=**} {
       allow read, write: if isSignedIn();
     }
 
-    match /serviceOrders/{document=**} {
+    match /serviceOrders/{doc=**} {
       allow read, write: if isSignedIn();
     }
     
-    match /budgets/{document=**} {
+    match /budgets/{doc=**} {
         allow read, write: if isSignedIn();
     }
 
-    match /discards/{document=**} {
+    match /discards/{doc=**} {
       allow read, write: if isSignedIn();
     }
 
-    match /settings/{document=**} {
+    match /settings/{doc=**} {
         allow read, write: if isSignedIn();
     }
 
-    // Perfis de Usuário - Regra específica para proteção de roles
+    // Perfis de Usuário
     match /users/{userId} {
       allow read: if isSignedIn();
       allow write: if isSignedIn() && (request.auth.uid == userId || isAdmin());
