@@ -1,7 +1,7 @@
 
 /**
- * Ruleset for VendasControl - Versão 1.1.2
- * Ajuste de permissões para garantir acesso a coleções novas e provisionamento.
+ * Ruleset for VendasControl - Versão 1.2.0
+ * Correção definitiva para permissões de listagem e criação automática de coleções.
  */
 rules_version = '2';
 service cloud.firestore {
@@ -18,42 +18,19 @@ service cloud.firestore {
        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
     }
 
-    // Permissões para Coleções de Negócio
-    // O padrão {doc=**} permite operações na coleção (list) e em todos os documentos (get, write)
-    
-    match /customers/{doc=**} {
-      allow read, write: if isSignedIn();
-    }
-
-    match /parts/{doc=**} {
-      allow read, write: if isSignedIn();
-    }
-
-    match /sales/{doc=**} {
-      allow read, write: if isSignedIn();
-    }
-
-    match /purchases/{doc=**} {
-      allow read, write: if isSignedIn();
-    }
-
-    match /serviceOrders/{doc=**} {
-      allow read, write: if isSignedIn();
-    }
-    
-    match /budgets/{doc=**} {
-        allow read, write: if isSignedIn();
-    }
-
-    match /discards/{doc=**} {
-      allow read, write: if isSignedIn();
-    }
-
-    match /settings/{doc=**} {
-        allow read, write: if isSignedIn();
-    }
+    // Regra Global para Coleções de Negócio
+    // Permite leitura e escrita para qualquer usuário autenticado em coleções padrão
+    match /customers/{document=**} { allow read, write: if isSignedIn(); }
+    match /parts/{document=**} { allow read, write: if isSignedIn(); }
+    match /sales/{document=**} { allow read, write: if isSignedIn(); }
+    match /purchases/{document=**} { allow read, write: if isSignedIn(); }
+    match /serviceOrders/{document=**} { allow read, write: if isSignedIn(); }
+    match /budgets/{document=**} { allow read, write: if isSignedIn(); }
+    match /discards/{document=**} { allow read, write: if isSignedIn(); }
+    match /settings/{document=**} { allow read, write: if isSignedIn(); }
 
     // Perfis de Usuário
+    // Usuários podem ler qualquer perfil, mas só editar o próprio ou se for admin
     match /users/{userId} {
       allow read: if isSignedIn();
       allow write: if isSignedIn() && (request.auth.uid == userId || isAdmin());

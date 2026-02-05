@@ -155,10 +155,11 @@ export function DatabaseManager() {
             }, { merge: true });
 
             // 2. Inicializar coleção de Compras com um documento de sistema
-            await setDoc(doc(firestore, 'purchases', '_sys_init'), { 
+            // Usamos merge: true para não sobrescrever caso já exista
+            await setDoc(doc(firestore, 'purchases', '_init_check'), { 
                 initialized: true, 
-                date: new Date().toISOString(),
-                description: "Coleção de compras inicializada." 
+                lastCheck: new Date().toISOString(),
+                status: "Permissões OK" 
             }, { merge: true });
 
             // 3. Garantir documento de empresa
@@ -167,17 +168,17 @@ export function DatabaseManager() {
             }, { merge: true });
 
             toast({ 
-                title: "Estrutura Pronta", 
-                description: "O banco de dados foi verificado e as permissões foram testadas com sucesso." 
+                title: "Sucesso!", 
+                description: "As tabelas e permissões foram verificadas e estão prontas para uso." 
             });
         } catch (error: any) {
             console.error("Provisioning error:", error);
             let detail = "Ocorreu um erro ao gravar no banco.";
             if (error.code === 'permission-denied') {
-                detail = "Permissão negada. Aguarde as regras serem aplicadas no servidor.";
+                detail = "Permissão negada. As regras do Firebase podem demorar alguns segundos para propagar.";
             }
             toast({ 
-                title: "Falha no Provisionamento", 
+                title: "Falha na Verificação", 
                 description: detail, 
                 variant: "destructive" 
             });
@@ -295,7 +296,7 @@ export function DatabaseManager() {
             <div className="space-y-2">
                 <h4 className="font-medium">Provisionar Estrutura</h4>
                 <p className="text-sm text-muted-foreground">
-                    Garante que todas as coleções e documentos de sistema existam no banco de dados e testa as permissões de acesso.
+                    Cria as coleções necessárias e confirma as permissões de acesso ao banco de dados.
                 </p>
                 <Button variant="secondary" onClick={handleProvisionDatabase} disabled={isProvisioning || isSyncing}>
                     {isProvisioning ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Database className="mr-2 h-4 w-4" />}
