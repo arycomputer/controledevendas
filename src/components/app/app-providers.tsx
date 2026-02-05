@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useEffect, useState } from 'react';
@@ -5,7 +6,7 @@ import { FirebaseClientProvider } from '@/firebase';
 import { CompanyProvider, useCompany } from '@/context/company-context';
 import { SidebarProvider } from '@/components/ui/sidebar';
 import { useIsMobile } from '@/hooks/use-mobile';
-import { Loader2 } from 'lucide-react';
+import { FirebaseInitializer } from './firebase-initializer';
 
 function AppThemeController({ children }: { children: React.ReactNode }) {
   const { companyData, isLoading } = useCompany();
@@ -36,13 +37,15 @@ export function AppProviders({ children }: { children: React.ReactNode }) {
 
   return (
     <FirebaseClientProvider>
-      <CompanyProvider>
-          <AppThemeController>
-            <SidebarProvider defaultOpen={sidebarDefaultOpen}>
-              {children}
-            </SidebarProvider>
-          </AppThemeController>
-      </CompanyProvider>
+      <FirebaseInitializer>
+        <CompanyProvider>
+            <AppThemeController>
+              <SidebarProvider defaultOpen={sidebarDefaultOpen}>
+                {children}
+              </SidebarProvider>
+            </AppThemeController>
+        </CompanyProvider>
+      </FirebaseInitializer>
     </FirebaseClientProvider>
   )
 }

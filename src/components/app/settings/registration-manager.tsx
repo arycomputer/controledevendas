@@ -1,3 +1,4 @@
+
 'use client'
 
 import { useForm } from "react-hook-form"
@@ -7,7 +8,7 @@ import { Switch } from "@/components/ui/switch"
 import { Separator } from "@/components/ui/separator"
 import { useFirestore, useDoc, useMemoFirebase } from "@/firebase"
 import { doc, setDoc } from "firebase/firestore"
-import { useEffect, useState } from "react"
+import { useEffect } from "react"
 import { Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 
@@ -32,40 +33,15 @@ export function RegistrationManager() {
     const settingsDocRef = useMemoFirebase(() => doc(firestore, 'settings', 'registration'), [firestore]);
     const { data: registrationSettings, isLoading: isSettingsLoading } = useDoc<RegistrationFormValues>(settingsDocRef);
     
-    const [isInitialized, setIsInitialized] = useState(false);
-
     const form = useForm<RegistrationFormValues>({
         defaultValues: defaultSettings
     })
 
     useEffect(() => {
-        // Prevent running initialization logic multiple times
-        if (isSettingsLoading || isInitialized) return;
-
-        // Mark as initialized to block this effect from re-running
-        setIsInitialized(true);
-
         if (registrationSettings) {
-            // If data exists, reset the form with it
-            const completeSettings = {
-                ...defaultSettings,
-                customer: { ...defaultSettings.customer, ...registrationSettings.customer },
-                product: { ...defaultSettings.product, ...registrationSettings.product }
-            };
-            form.reset(completeSettings);
-        } else if (firestore) {
-            // If no data and not loading, it means the document doesn't exist.
-            // Create it with default settings.
-            setDoc(settingsDocRef, defaultSettings)
-                .then(() => {
-                    // Reset the form with the newly created default settings
-                    form.reset(defaultSettings);
-                })
-                .catch((error) => {
-                    console.error("Failed to create default registration settings:", error);
-                });
+            form.reset(registrationSettings);
         }
-    }, [registrationSettings, isSettingsLoading, form, settingsDocRef, firestore, isInitialized]);
+    }, [registrationSettings, form]);
     
     async function onSubmit(data: RegistrationFormValues) {
         try {
@@ -74,7 +50,7 @@ export function RegistrationManager() {
                 title: "Sucesso!",
                 description: "Configurações de campos obrigatórios atualizadas.",
             });
-            form.reset(data); // Mark form as not dirty
+            form.reset(data); 
         } catch (error) {
             console.error("Error saving settings:", error);
             toast({
@@ -85,9 +61,7 @@ export function RegistrationManager() {
         }
     }
 
-    const isLoading = isSettingsLoading && !isInitialized;
-
-    if (isLoading) {
+    if (isSettingsLoading) {
         return (
             <div className="flex justify-center items-center h-40">
                 <Loader2 className="h-8 w-8 animate-spin" />

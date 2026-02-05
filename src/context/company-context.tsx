@@ -1,3 +1,4 @@
+
 'use client'
 
 import React, { createContext, useContext, useState, ReactNode, useEffect, useCallback } from 'react';
@@ -40,74 +41,42 @@ export const CompanyProvider = ({ children }: { children: ReactNode }) => {
   const firestore = useFirestore();
   
   const settingsDocRef = useMemoFirebase(() => {
-    // Only create the doc ref if we have a user and firestore instance
     return firestore && user ? doc(firestore, 'settings', 'companyData') : null;
   }, [firestore, user]);
   
   const { data: remoteCompanyData, isLoading: isSettingsLoading } = useDoc<CompanyData>(settingsDocRef);
 
-  // State for the data currently reflected in the UI (local, might be unsaved)
   const [companyData, setCompanyDataState] = useState<CompanyData>(defaultCompanyData);
-  // State for the data as it is saved in Firestore
   const [savedCompanyData, setSavedCompanyData] = useState<CompanyData>(defaultCompanyData);
-  
   const [isInitialized, setIsInitialized] = useState(false);
 
   const isLoading = isUserLoading || (user && isSettingsLoading && !isInitialized);
 
   useEffect(() => {
-    // If we're loading the user or settings, or if we're already initialized, don't do anything.
-    if (isUserLoading || isSettingsLoading || isInitialized) {
-      // If there's no user and we're not loading, it's initialized with defaults.
-      if (!user && !isUserLoading) {
-        setIsInitialized(true);
-      }
-      return;
-    }
+    if (isUserLoading || isSettingsLoading) return;
 
-    // This block runs when user is loaded, but settings might not be yet.
-    if (user) {
-      if (remoteCompanyData) {
-        const fullData = { ...defaultCompanyData, ...remoteCompanyData };
-        setCompanyDataState(fullData);
-        setSavedCompanyData(fullData);
-        setIsInitialized(true);
-      } else if (!isSettingsLoading && settingsDocRef) {
-        // User is loaded, settings are not, and doc doesn't exist. Create it.
-        setDoc(settingsDocRef, defaultCompanyData)
-          .then(() => {
-            setCompanyDataState(defaultCompanyData);
-            setSavedCompanyData(defaultCompanyData);
-            setIsInitialized(true);
-          })
-          .catch((error) => {
-            console.error("Failed to create default company data:", error);
-            // Proceed with defaults even on error.
-            setCompanyDataState(defaultCompanyData);
-            setSavedCompanyData(defaultCompanyData);
-            setIsInitialized(true);
-          });
-      }
+    if (user && remoteCompanyData) {
+      const fullData = { ...defaultCompanyData, ...remoteCompanyData };
+      setCompanyDataState(fullData);
+      setSavedCompanyData(fullData);
+      setIsInitialized(true);
+    } else if (!user && !isUserLoading) {
+      setIsInitialized(true);
     }
-
-  }, [user, isUserLoading, remoteCompanyData, isSettingsLoading, settingsDocRef, isInitialized]);
+  }, [user, isUserLoading, remoteCompanyData, isSettingsLoading]);
   
-  // Only updates the local state for UI previews
   const handleSetCompanyData = useCallback((data: Partial<CompanyData>) => {
     setCompanyDataState(prevData => ({ ...prevData, ...data }));
   }, []);
 
-  // Persists the current local state to Firebase
   const handleSaveCompanyData = async () => {
     if (!settingsDocRef) return;
     try {
         await setDoc(settingsDocRef, companyData, { merge: true });
-        setSavedCompanyData(companyData); // Mark current state as saved
+        setSavedCompanyData(companyData); 
     } catch (error) {
         console.error("Failed to save company data:", error);
-        // Optionally revert state on error by uncommenting below
-        // setCompanyDataState(savedCompanyData); 
-        throw error; // re-throw to be caught in the component
+        throw error; 
     }
   };
 
@@ -119,7 +88,6 @@ export const CompanyProvider = ({ children }: { children: ReactNode }) => {
     savedCompanyData,
   };
   
-  // Show a loader while user state is resolving or initial settings are loading
   if (isLoading) {
      return (
         <div className="flex items-center justify-center h-screen bg-background">
