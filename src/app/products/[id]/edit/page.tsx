@@ -51,8 +51,16 @@ const createProductFormSchema = (settings: any) => z.object({
     path: ["quantity"],
 });
 
-type ProductFormValues = z.infer<ReturnType<typeof createProductFormSchema>>;
-
+type ProductFormValues = {
+  name: string;
+  description?: string;
+  price: number;
+  cost?: number;
+  type: 'piece' | 'service';
+  quantity?: number;
+  link?: string;
+  imageUrl?: string;
+};
 
 function EditProductPageContent() {
   const router = useRouter()
@@ -72,10 +80,12 @@ function EditProductPageContent() {
   const productDocRef = useMemoFirebase(() => doc(firestore, 'parts', productId), [firestore, productId]);
   const { data: product, isLoading: productLoading } = useDoc<Product>(productDocRef);
   
-  const productFormSchema = useMemo(() => createProductFormSchema(registrationSettings), [registrationSettings]);
+  const resolver = useMemo(() => {
+    return zodResolver(createProductFormSchema(registrationSettings));
+  }, [registrationSettings]);
 
   const form = useForm<ProductFormValues>({
-    resolver: zodResolver(productFormSchema),
+    resolver,
     defaultValues: {
       name: "",
       description: "",

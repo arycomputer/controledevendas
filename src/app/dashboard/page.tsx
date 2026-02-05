@@ -10,6 +10,7 @@ import { useCollection, useFirestore, useMemoFirebase } from "@/firebase";
 import { collection } from "firebase/firestore";
 import type { Customer, Product, Sale } from "@/lib/types";
 import { AuthGuard } from "@/components/app/auth-guard";
+import { useMemo } from "react";
 
 function DashboardPageContent() {
   const firestore = useFirestore();
@@ -25,36 +26,42 @@ function DashboardPageContent() {
 
   const isLoading = salesLoading || customersLoading || productsLoading;
   
+  const stats = useMemo(() => {
+    if (!sales || !products) return { totalSalesValue: 0, totalPartsCost: 0, totalServicesRevenue: 0, recentSales: [] };
+
+    const totalSalesValue = sales.reduce((sum, sale) => sum + sale.totalAmount, 0);
+    
+    const recentSales = [...sales]
+      .sort((a, b) => new Date(b.saleDate).getTime() - new Date(a.saleDate).getTime())
+      .slice(0, 5);
+      
+    const productsMap = new Map(products.map(p => [p.id, p]));
+    let totalPartsCost = 0;
+    let totalServicesRevenue = 0;
+
+    sales.forEach(sale => {
+      sale.items.forEach(item => {
+        const product = productsMap.get(item.productId);
+        if (product) {
+          if (product.type === 'piece') {
+            totalPartsCost += (product.cost || 0) * item.quantity;
+          } else if (product.type === 'service') {
+            totalServicesRevenue += item.unitPrice * item.quantity;
+          }
+        }
+      });
+    });
+
+    return { totalSalesValue, totalPartsCost, totalServicesRevenue, recentSales };
+  }, [sales, products]);
+
   if (isLoading) {
     return (
         <div className="flex justify-center items-center h-64">
-            <Loader2 className="h-8 w-8 animate-spin" />
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
         </div>
     )
   }
-  
-  const totalSalesValue = sales?.reduce((sum, sale) => sum + sale.totalAmount, 0) || 0;
-  
-  const recentSales = sales
-    ?.sort((a, b) => new Date(b.saleDate).getTime() - new Date(a.saleDate).getTime())
-    .slice(0, 5) || [];
-    
-  const productsMap = new Map(products?.map(p => [p.id, p]));
-  let totalPartsCost = 0;
-  let totalServicesRevenue = 0;
-
-  sales?.forEach(sale => {
-    sale.items.forEach(item => {
-      const product = productsMap.get(item.productId);
-      if (product) {
-        if (product.type === 'piece') {
-          totalPartsCost += (product.cost || 0) * item.quantity;
-        } else if (product.type === 'service') {
-          totalServicesRevenue += item.unitPrice * item.quantity;
-        }
-      }
-    });
-  });
 
   return (
     <div className="flex flex-col gap-8">
@@ -62,17 +69,17 @@ function DashboardPageContent() {
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         <StatCard 
           title="Receita Total" 
-          value={new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(totalSalesValue)} 
+          value={new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(stats.totalSalesValue)} 
           icon={CircleDollarSign} 
         />
          <StatCard 
           title="Custo de Peças" 
-          value={new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(totalPartsCost)} 
+          value={new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(stats.totalPartsCost)} 
           icon={Wrench} 
         />
         <StatCard 
           title="Receita de Serviços" 
-          value={new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(totalServicesRevenue)} 
+          value={new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(stats.totalServicesRevenue)} 
           icon={Handshake} 
         />
         <StatCard 
@@ -114,7 +121,7 @@ function DashboardPageContent() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {recentSales.map((sale) => {
+                {stats.recentSales.map((sale) => {
                   const customer = customers?.find(c => c.id === sale.customerId);
                   return (
                     <TableRow key={sale.id}>
@@ -139,7 +146,6 @@ function DashboardPageContent() {
     </div>
   );
 }
-
 
 export default function DashboardPage() {
     return (

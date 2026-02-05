@@ -63,8 +63,19 @@ const createCustomerFormSchema = (settings: any) => z.object({
     path: ["state"],
 });
 
-
-type CustomerFormValues = z.infer<ReturnType<typeof createCustomerFormSchema>>;
+type CustomerFormValues = {
+  name: string;
+  email?: string;
+  phone?: string;
+  document?: string;
+  zipCode?: string;
+  street?: string;
+  number?: string;
+  complement?: string;
+  neighborhood?: string;
+  city?: string;
+  state?: string;
+};
 
 function EditCustomerPageContent() {
   const router = useRouter()
@@ -80,10 +91,12 @@ function EditCustomerPageContent() {
   const customerDocRef = useMemoFirebase(() => doc(firestore, 'customers', customerId), [firestore, customerId]);
   const { data: customer, isLoading: customerLoading } = useDoc(customerDocRef);
 
-  const customerFormSchema = useMemo(() => createCustomerFormSchema(registrationSettings), [registrationSettings]);
+  const resolver = useMemo(() => {
+    return zodResolver(createCustomerFormSchema(registrationSettings));
+  }, [registrationSettings]);
 
   const form = useForm<CustomerFormValues>({
-    resolver: zodResolver(customerFormSchema),
+    resolver,
     defaultValues: {
       name: "",
       email: "",
