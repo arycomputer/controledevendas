@@ -148,33 +148,41 @@ export function DatabaseManager() {
         if (!firestore) return;
         setIsProvisioning(true);
         try {
-            const batch = writeBatch(firestore);
-
+            // Usando operações individuais para melhor diagnóstico se falhar
+            
             // 1. Garantir configurações de cadastro
-            const settingsRef = doc(firestore, 'settings', 'registration');
-            batch.set(settingsRef, {
+            await setDoc(doc(firestore, 'settings', 'registration'), {
                 customer: { email: true, phone: true, document: true, address: true },
                 product: { description: true, quantity: true }
             }, { merge: true });
 
-            // 2. "Criar tabela" de Compras inserindo um documento de inicialização
-            const purchaseInitRef = doc(firestore, 'purchases', '_init');
-            batch.set(purchaseInitRef, { 
+            // 2. Inicializar coleção de Compras
+            await setDoc(doc(firestore, 'purchases', '_init'), { 
                 initialized: true, 
                 date: new Date().toISOString(),
                 description: "Coleção de compras inicializada pelo sistema." 
             });
 
             // 3. Garantir documento de empresa
-            const companyRef = doc(firestore, 'settings', 'companyData');
-            batch.set(companyRef, { initialized: true }, { merge: true });
+            await setDoc(doc(firestore, 'settings', 'companyData'), { 
+                initialized: true 
+            }, { merge: true });
 
-            await batch.commit();
-            
-            toast({ title: "Estrutura Provisionada", description: "As coleções base (incluindo Compras) foram verificadas e inicializadas." });
-        } catch (error) {
+            toast({ 
+                title: "Estrutura Provisionada", 
+                description: "As coleções base (incluindo Compras) foram verificadas e inicializadas com sucesso." 
+            });
+        } catch (error: any) {
             console.error("Provisioning error:", error);
-            toast({ title: "Erro", description: "Falha ao provisionar estrutura de dados.", variant: "destructive" });
+            let detail = "Verifique sua conexão ou permissões.";
+            if (error.code === 'permission-denied') {
+                detail = "Acesso negado pelas regras do Firebase. Tente recarregar a página.";
+            }
+            toast({ 
+                title: "Falha no Provisionamento", 
+                description: detail, 
+                variant: "destructive" 
+            });
         } finally {
             setIsProvisioning(false);
         }

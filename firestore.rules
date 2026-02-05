@@ -1,66 +1,62 @@
 
 /**
- * Ruleset for VendasControl - Versão 1.0.8
- * Forçando atualização de permissões para a coleção de Compras.
+ * Ruleset for VendasControl - Versão 1.0.9
+ * Aplicando wildcards recursivos para garantir permissões de listagem em todas as coleções.
  */
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Helper functions
+    // Funções auxiliares
     function isSignedIn() {
       return request.auth != null;
     }
 
     function isAdmin() {
-       return isSignedIn() && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+       return isSignedIn() && 
+       exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+       get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
     }
 
-    // Clientes
-    match /customers/{customerId} {
+    // Regra Geral para usuários autenticados em coleções de negócio
+    // O uso de {document=**} garante que listagens e subcoleções funcionem corretamente
+    
+    match /customers/{document=**} {
       allow read, write: if isSignedIn();
     }
 
-    // Produtos e Serviços
-    match /parts/{partId} {
+    match /parts/{document=**} {
       allow read, write: if isSignedIn();
     }
 
-    // Vendas
-    match /sales/{saleId} {
+    match /sales/{document=**} {
       allow read, write: if isSignedIn();
     }
 
-    // Compras e Entrada de Estoque
-    // Explicitamente permitindo read (get + list) e write (create + update + delete)
-    match /purchases/{purchaseId} {
+    match /purchases/{document=**} {
       allow read, write: if isSignedIn();
     }
 
-    // Ordens de Serviço
-    match /serviceOrders/{serviceOrderId} {
+    match /serviceOrders/{document=**} {
       allow read, write: if isSignedIn();
     }
     
-    // Orçamentos
-    match /budgets/{budgetId} {
+    match /budgets/{document=**} {
         allow read, write: if isSignedIn();
     }
 
-    // Descartes
-    match /discards/{discardId} {
+    match /discards/{document=**} {
       allow read, write: if isSignedIn();
     }
 
-    // Perfis de Usuário
+    match /settings/{document=**} {
+        allow read, write: if isSignedIn();
+    }
+
+    // Perfis de Usuário - Regra específica para proteção de roles
     match /users/{userId} {
       allow read: if isSignedIn();
       allow write: if isSignedIn() && (request.auth.uid == userId || isAdmin());
-    }
-
-    // Configurações Globais
-    match /settings/{settingId} {
-        allow read, write: if isSignedIn();
     }
   }
 }
