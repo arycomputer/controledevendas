@@ -1,6 +1,7 @@
 
 /**
  * This ruleset enforces a simple, yet secure, access model for the VendasControl application.
+ * Updated to include explicit permissions for the 'purchases' collection.
  */
 rules_version = '2';
 service cloud.firestore {
