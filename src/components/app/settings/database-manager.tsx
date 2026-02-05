@@ -148,21 +148,33 @@ export function DatabaseManager() {
         if (!firestore) return;
         setIsProvisioning(true);
         try {
-            // "Provisioning" in Firestore means ensuring the structure exists by writing something
-            // We'll ensure the registration settings are 100% correct
+            const batch = writeBatch(firestore);
+
+            // 1. Garantir configurações de cadastro
             const settingsRef = doc(firestore, 'settings', 'registration');
-            await setDoc(settingsRef, {
+            batch.set(settingsRef, {
                 customer: { email: true, phone: true, document: true, address: true },
                 product: { description: true, quantity: true }
             }, { merge: true });
 
-            // We touch the purchases collection with a hidden system doc if we really want it to "exist"
-            // but normally, writing the first real purchase is enough.
+            // 2. "Criar tabela" de Compras inserindo um documento de inicialização
+            const purchaseInitRef = doc(firestore, 'purchases', '_init');
+            batch.set(purchaseInitRef, { 
+                initialized: true, 
+                date: new Date().toISOString(),
+                description: "Coleção de compras inicializada pelo sistema." 
+            });
+
+            // 3. Garantir documento de empresa
+            const companyRef = doc(firestore, 'settings', 'companyData');
+            batch.set(companyRef, { initialized: true }, { merge: true });
+
+            await batch.commit();
             
-            toast({ title: "Estrutura Provisionada", description: "As coleções base foram verificadas e inicializadas." });
+            toast({ title: "Estrutura Provisionada", description: "As coleções base (incluindo Compras) foram verificadas e inicializadas." });
         } catch (error) {
             console.error("Provisioning error:", error);
-            toast({ title: "Erro", description: "Falha ao provisionar estrutura.", variant: "destructive" });
+            toast({ title: "Erro", description: "Falha ao provisionar estrutura de dados.", variant: "destructive" });
         } finally {
             setIsProvisioning(false);
         }

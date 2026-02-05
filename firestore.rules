@@ -1,17 +1,13 @@
 
 /**
- * This ruleset enforces a simple, yet secure, access model for the VendasControl application.
- * Updated to allow users to create their own profile documents and manage all collections.
- * Version: 1.0.5 - Explicit permissions for purchases and settings initialization.
+ * Ruleset for VendasControl - Versão 1.0.8
+ * Forçando atualização de permissões para a coleção de Compras.
  */
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // --------------------------------
-    // Helper Functions
-    // --------------------------------
-
+    // Helper functions
     function isSignedIn() {
       return request.auth != null;
     }
@@ -20,53 +16,49 @@ service cloud.firestore {
        return isSignedIn() && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
     }
 
-
-    // --------------------------------
-    // Collection Rules
-    // --------------------------------
-
-    // Customers management
+    // Clientes
     match /customers/{customerId} {
       allow read, write: if isSignedIn();
     }
 
-    // Products and services inventory
+    // Produtos e Serviços
     match /parts/{partId} {
       allow read, write: if isSignedIn();
     }
 
-    // Sales transactions
+    // Vendas
     match /sales/{saleId} {
       allow read, write: if isSignedIn();
     }
 
-    // Purchase and stock entry - Explicit list/get
+    // Compras e Entrada de Estoque
+    // Explicitamente permitindo read (get + list) e write (create + update + delete)
     match /purchases/{purchaseId} {
-      allow get, list, write: if isSignedIn();
+      allow read, write: if isSignedIn();
     }
 
-    // Service Orders
+    // Ordens de Serviço
     match /serviceOrders/{serviceOrderId} {
       allow read, write: if isSignedIn();
     }
     
-    // Budgets/Quotes
+    // Orçamentos
     match /budgets/{budgetId} {
         allow read, write: if isSignedIn();
     }
 
-    // Discarded items management
+    // Descartes
     match /discards/{discardId} {
       allow read, write: if isSignedIn();
     }
 
-    // User profiles
+    // Perfis de Usuário
     match /users/{userId} {
       allow read: if isSignedIn();
       allow write: if isSignedIn() && (request.auth.uid == userId || isAdmin());
     }
 
-    // Global application settings
+    // Configurações Globais
     match /settings/{settingId} {
         allow read, write: if isSignedIn();
     }
