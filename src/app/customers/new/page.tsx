@@ -5,7 +5,8 @@ import { useForm } from "react-hook-form"
 import * as z from "zod"
 import { useRouter } from "next/navigation"
 import { doc, setDoc } from "firebase/firestore"
-import { v4 as uuidv4 } from 'uuid';
+import { v4 as uuidv4 } from 'uuid'
+import React, { useEffect, useMemo } from "react"
 
 import { Button } from "@/components/ui/button"
 import {
@@ -20,10 +21,10 @@ import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { useToast } from "@/hooks/use-toast"
 import { useDoc, useFirestore, useMemoFirebase } from "@/firebase"
-import { useEffect } from "react"
 import { Loader2 } from "lucide-react"
 import { Separator } from "@/components/ui/separator"
 import { maskCEP, maskDocument, maskPhone } from "@/lib/utils"
+import { AuthGuard } from "@/components/app/auth-guard"
 
 const createCustomerFormSchema = (settings: any) => z.object({
     name: z.string().min(2, "O nome deve ter pelo menos 2 caracteres."),
@@ -63,11 +64,9 @@ const createCustomerFormSchema = (settings: any) => z.object({
     path: ["state"],
 });
 
-
 type CustomerFormValues = z.infer<ReturnType<typeof createCustomerFormSchema>>;
 
-
-export default function NewCustomerPage() {
+function NewCustomerPageContent() {
   const router = useRouter()
   const { toast } = useToast()
   const firestore = useFirestore();
@@ -75,7 +74,7 @@ export default function NewCustomerPage() {
   const settingsDocRef = useMemoFirebase(() => doc(firestore, 'settings', 'registration'), [firestore]);
   const { data: registrationSettings, isLoading: settingsLoading } = useDoc(settingsDocRef);
   
-  const customerFormSchema = createCustomerFormSchema(registrationSettings);
+  const customerFormSchema = useMemo(() => createCustomerFormSchema(registrationSettings), [registrationSettings]);
 
   const form = useForm<CustomerFormValues>({
     resolver: zodResolver(customerFormSchema),
@@ -372,4 +371,12 @@ export default function NewCustomerPage() {
       </CardContent>
     </Card>
   )
+}
+
+export default function NewCustomerPage() {
+    return (
+        <AuthGuard>
+            <NewCustomerPageContent />
+        </AuthGuard>
+    )
 }

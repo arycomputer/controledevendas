@@ -4,9 +4,9 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
 import * as z from "zod"
 import { useRouter } from "next/navigation"
-import { v4 as uuidv4 } from 'uuid';
-import React, { useRef, useState, useMemo } from "react";
-import Image from "next/image";
+import { v4 as uuidv4 } from 'uuid'
+import React, { useRef, useState, useMemo } from "react"
+import Image from "next/image"
 
 import { Button } from "@/components/ui/button"
 import {
@@ -26,9 +26,8 @@ import { useDoc, useFirestore, useMemoFirebase } from "@/firebase"
 import { doc, setDoc } from "firebase/firestore"
 import { AuthGuard } from "@/components/app/auth-guard"
 import { Loader2, UploadCloud, ImageIcon, Link as LinkIcon } from "lucide-react"
-import { uploadImage, uploadImageFromUrl } from "@/services/image-upload-service";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-
+import { uploadImage, uploadImageFromUrl } from "@/services/image-upload-service"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 
 const createProductFormSchema = (settings: any) => z.object({
     name: z.string().min(2, "O nome deve ter pelo menos 2 caracteres."),
@@ -54,7 +53,6 @@ const createProductFormSchema = (settings: any) => z.object({
 
 type ProductFormValues = z.infer<ReturnType<typeof createProductFormSchema>>;
 
-
 function NewProductPageContent() {
   const router = useRouter()
   const { toast } = useToast()
@@ -68,7 +66,7 @@ function NewProductPageContent() {
   const settingsDocRef = useMemoFirebase(() => doc(firestore, 'settings', 'registration'), [firestore]);
   const { data: registrationSettings, isLoading: settingsLoading } = useDoc(settingsDocRef);
   
-  const productFormSchema = createProductFormSchema(registrationSettings);
+  const productFormSchema = useMemo(() => createProductFormSchema(registrationSettings), [registrationSettings]);
 
   const form = useForm<ProductFormValues>({
     resolver: zodResolver(productFormSchema),
@@ -136,7 +134,6 @@ function NewProductPageContent() {
         setIsUploading(false);
     }
 };
-
 
   async function onSubmit(data: ProductFormValues) {
     if (!firestore) return;
