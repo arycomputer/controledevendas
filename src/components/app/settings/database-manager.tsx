@@ -148,38 +148,42 @@ export function DatabaseManager() {
         if (!firestore) return;
         setIsProvisioning(true);
         try {
+            // Criar um lote de operações para garantir que tudo seja tentado
+            const batch = writeBatch(firestore);
+
             // 1. Garantir configurações de cadastro
-            await setDoc(doc(firestore, 'settings', 'registration'), {
+            const regRef = doc(firestore, 'settings', 'registration');
+            batch.set(regRef, {
                 customer: { email: true, phone: true, document: true, address: true },
                 product: { description: true, quantity: true }
             }, { merge: true });
 
-            // 2. Inicializar coleção de Compras com um documento de sistema
-            // Usamos merge: true para não sobrescrever caso já exista
-            await setDoc(doc(firestore, 'purchases', '_init_check'), { 
-                initialized: true, 
-                lastCheck: new Date().toISOString(),
-                status: "Permissões OK" 
+            // 2. FORÇAR a criação da coleção de Compras
+            // Gravamos um documento de inicialização. Isso cria a coleção no Firebase.
+            const purchaseInitRef = doc(firestore, 'purchases', '_init_system');
+            batch.set(purchaseInitRef, { 
+                name: "Sistema de Compras",
+                status: "active",
+                createdAt: new Date().toISOString()
             }, { merge: true });
 
             // 3. Garantir documento de empresa
-            await setDoc(doc(firestore, 'settings', 'companyData'), { 
+            const companyRef = doc(firestore, 'settings', 'companyData');
+            batch.set(companyRef, { 
                 initialized: true 
             }, { merge: true });
 
+            await batch.commit();
+
             toast({ 
                 title: "Sucesso!", 
-                description: "As tabelas e permissões foram verificadas e estão prontas para uso." 
+                description: "A coleção 'purchases' foi inicializada e as permissões foram verificadas." 
             });
         } catch (error: any) {
             console.error("Provisioning error:", error);
-            let detail = "Ocorreu um erro ao gravar no banco.";
-            if (error.code === 'permission-denied') {
-                detail = "Permissão negada. As regras do Firebase podem demorar alguns segundos para propagar.";
-            }
             toast({ 
-                title: "Falha na Verificação", 
-                description: detail, 
+                title: "Falha no Provisionamento", 
+                description: "Certifique-se de estar logado. Se o erro persistir, as regras do Firebase podem estar demorando a propagar.", 
                 variant: "destructive" 
             });
         } finally {
@@ -296,11 +300,11 @@ export function DatabaseManager() {
             <div className="space-y-2">
                 <h4 className="font-medium">Provisionar Estrutura</h4>
                 <p className="text-sm text-muted-foreground">
-                    Cria as coleções necessárias e confirma as permissões de acesso ao banco de dados.
+                    Este botão forçará a criação da coleção de <strong>Compras</strong> e verificará as permissões. Clique aqui se receber erro de permissão.
                 </p>
                 <Button variant="secondary" onClick={handleProvisionDatabase} disabled={isProvisioning || isSyncing}>
                     {isProvisioning ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Database className="mr-2 h-4 w-4" />}
-                    {isProvisioning ? "Verificando..." : "Verificar Estrutura"}
+                    {isProvisioning ? "Provisionando..." : "Verificar e Criar Estrutura"}
                 </Button>
             </div>
 
