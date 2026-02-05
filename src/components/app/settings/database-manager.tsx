@@ -3,7 +3,7 @@
 
 import { useState, useRef } from "react"
 import { useFirestore, useAuth } from "@/firebase"
-import { collection, getDocs, writeBatch, doc, query, where, setDoc } from "firebase/firestore"
+import { collection, getDocs, writeBatch, doc, query, where, setDoc, limit } from "firebase/firestore"
 import { useToast } from "@/hooks/use-toast"
 import { Button } from "@/components/ui/button"
 import { Loader2, Upload, Download, RefreshCw, Database } from "lucide-react"
@@ -142,40 +142,43 @@ export function DatabaseManager() {
 
     const handleProvisionDatabase = async () => {
         if (!firestore || !auth.currentUser) {
-            toast({ title: "Ação Necessária", description: "Você deve estar logado para criar as tabelas.", variant: "destructive" });
+            toast({ title: "Ação Necessária", description: "Você deve estar logado para realizar esta ação.", variant: "destructive" });
             return;
         }
 
         setIsProvisioning(true);
         try {
-            // 1. Forçar a criação da coleção de Compras com um documento de teste
-            // Isso valida a permissão de escrita e faz a coleção aparecer no Firebase
+            // 1. Validar permissão de listagem na coleção de Compras (isso dispara a regra do Firebase)
+            const purchasesRef = collection(firestore, 'purchases');
+            await getDocs(query(purchasesRef, limit(1)));
+
+            // 2. Criar documento de inicialização para garantir que a coleção exista
             await setDoc(doc(firestore, 'purchases', '_init_system'), { 
                 systemName: "VendasControl Purchases",
                 status: "active",
                 lastUpdate: new Date().toISOString()
             }, { merge: true });
 
-            // 2. Garantir configurações de cadastro
+            // 3. Garantir configurações de cadastro
             await setDoc(doc(firestore, 'settings', 'registration'), {
                 customer: { email: true, phone: true, document: true, address: true },
                 product: { description: true, quantity: true }
             }, { merge: true });
 
-            // 3. Garantir documento de empresa
+            // 4. Garantir documento de empresa
             await setDoc(doc(firestore, 'settings', 'companyData'), { 
                 initialized: true 
             }, { merge: true });
 
             toast({ 
-                title: "Estrutura Criada!", 
-                description: "As tabelas foram verificadas e criadas no Firebase. O erro de permissão deve desaparecer agora." 
+                title: "Sucesso!", 
+                description: "Estrutura verificada e permissões validadas." 
             });
         } catch (error: any) {
             console.error("Provisioning error:", error);
             toast({ 
-                title: "Falha no Provisionamento", 
-                description: "Certifique-se de que sua conta tem permissões de Admin no Firebase Console. Erro: " + error.message, 
+                title: "Erro no Provisionamento", 
+                description: "Não foi possível validar as permissões. Erro: " + error.message, 
                 variant: "destructive" 
             });
         } finally {
@@ -292,14 +295,14 @@ export function DatabaseManager() {
             <div className="space-y-2 p-4 border rounded-lg bg-primary/5">
                 <h4 className="font-medium flex items-center gap-2">
                     <Database className="h-4 w-4" /> 
-                    Verificar e Criar Estrutura
+                    Verificar e Criar Tabelas
                 </h4>
                 <p className="text-sm text-muted-foreground">
-                    Cria automaticamente a tabela de Compras e valida as permissões de acesso. Clique aqui para resolver o erro de "Acesso Negado".
+                    Cria automaticamente as tabelas necessárias e valida as permissões de acesso. Clique aqui caso veja erros de "Acesso Negado".
                 </p>
                 <Button variant="secondary" onClick={handleProvisionDatabase} disabled={isProvisioning || isSyncing}>
                     {isProvisioning ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                    {isProvisioning ? "Provisionando..." : "Verificar e Criar Tabelas"}
+                    {isProvisioning ? "Sincronizando..." : "Verificar e Criar Tabelas"}
                 </Button>
             </div>
 
