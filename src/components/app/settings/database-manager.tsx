@@ -142,25 +142,24 @@ export function DatabaseManager() {
 
     const handleProvisionDatabase = async () => {
         if (!firestore || !auth.currentUser) {
-            toast({ title: "Erro", description: "Você precisa estar logado para realizar esta operação.", variant: "destructive" });
+            toast({ title: "Ação Necessária", description: "Você deve estar logado para criar as tabelas.", variant: "destructive" });
             return;
         }
 
         setIsProvisioning(true);
         try {
-            // Realizar operações individualmente para evitar falhas silenciosas de batch
-            
-            // 1. Garantir configurações de cadastro
+            // 1. Forçar a criação da coleção de Compras com um documento de teste
+            // Isso valida a permissão de escrita e faz a coleção aparecer no Firebase
+            await setDoc(doc(firestore, 'purchases', '_init_system'), { 
+                systemName: "VendasControl Purchases",
+                status: "active",
+                lastUpdate: new Date().toISOString()
+            }, { merge: true });
+
+            // 2. Garantir configurações de cadastro
             await setDoc(doc(firestore, 'settings', 'registration'), {
                 customer: { email: true, phone: true, document: true, address: true },
                 product: { description: true, quantity: true }
-            }, { merge: true });
-
-            // 2. FORÇAR a criação da coleção de Compras
-            await setDoc(doc(firestore, 'purchases', '_init_system'), { 
-                name: "Sistema de Compras",
-                status: "active",
-                lastChecked: new Date().toISOString()
             }, { merge: true });
 
             // 3. Garantir documento de empresa
@@ -169,14 +168,14 @@ export function DatabaseManager() {
             }, { merge: true });
 
             toast({ 
-                title: "Sucesso!", 
-                description: "Estrutura verificada. A coleção 'Compras' está pronta para uso." 
+                title: "Estrutura Criada!", 
+                description: "As tabelas foram verificadas e criadas no Firebase. O erro de permissão deve desaparecer agora." 
             });
         } catch (error: any) {
             console.error("Provisioning error:", error);
             toast({ 
                 title: "Falha no Provisionamento", 
-                description: error.message || "Erro de permissão ao acessar o banco de dados.", 
+                description: "Certifique-se de que sua conta tem permissões de Admin no Firebase Console. Erro: " + error.message, 
                 variant: "destructive" 
             });
         } finally {
@@ -293,14 +292,14 @@ export function DatabaseManager() {
             <div className="space-y-2 p-4 border rounded-lg bg-primary/5">
                 <h4 className="font-medium flex items-center gap-2">
                     <Database className="h-4 w-4" /> 
-                    Provisionar Estrutura
+                    Verificar e Criar Estrutura
                 </h4>
                 <p className="text-sm text-muted-foreground">
-                    Cria automaticamente as pastas necessárias (como a de Compras) e valida as permissões de acesso. Clique aqui se vir erros de "Acesso Negado".
+                    Cria automaticamente a tabela de Compras e valida as permissões de acesso. Clique aqui para resolver o erro de "Acesso Negado".
                 </p>
                 <Button variant="secondary" onClick={handleProvisionDatabase} disabled={isProvisioning || isSyncing}>
                     {isProvisioning ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                    {isProvisioning ? "Provisionando..." : "Verificar e Criar Estrutura"}
+                    {isProvisioning ? "Provisionando..." : "Verificar e Criar Tabelas"}
                 </Button>
             </div>
 
