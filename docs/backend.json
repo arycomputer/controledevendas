@@ -218,20 +218,24 @@
       "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "Purchase",
       "type": "object",
-      "description": "Represents a purchase transaction for restock.",
+      "description": "Represents a purchase transaction for restock and cost management.",
       "properties": {
         "id": {
-          "type": "string"
+          "type": "string",
+          "description": "Unique identifier for the Purchase entity."
         },
         "supplierName": {
-          "type": "string"
+          "type": "string",
+          "description": "The name of the supplier."
         },
         "purchaseDate": {
           "type": "string",
+          "description": "The date of the purchase.",
           "format": "date-time"
         },
         "items": {
           "type": "array",
+          "description": "List of products purchased.",
           "items": {
             "type": "object",
             "properties": {
@@ -243,10 +247,12 @@
           }
         },
         "totalAmount": {
-          "type": "number"
+          "type": "number",
+          "description": "The total value of the purchase."
         },
         "notes": {
-          "type": "string"
+          "type": "string",
+          "description": "Additional notes about the purchase."
         }
       },
       "required": ["id", "supplierName", "purchaseDate", "items", "totalAmount"]
@@ -579,7 +585,7 @@
           "schema": {
             "$ref": "#/backend/entities/Purchase"
           },
-          "description": "Stores purchase transaction data. Any authenticated user can manage purchases."
+          "description": "Stores purchase transaction data for restock. Any authenticated user can manage purchases."
         }
       },
       {
