@@ -1,3 +1,4 @@
+
 'use client';
 
 import { z } from "zod";
@@ -5,9 +6,9 @@ import { z } from "zod";
 export const CustomerSchema = z.object({
   id: z.string(),
   name: z.string(),
-  email: z.string().email(),
-  phone: z.string(),
-  document: z.string(),
+  email: z.string().email().optional().or(z.literal('')),
+  phone: z.string().optional().or(z.literal('')),
+  document: z.string().optional().or(z.literal('')),
   zipCode: z.string().optional(),
   street: z.string().optional(),
   number: z.string().optional(),
@@ -22,7 +23,7 @@ export type Customer = z.infer<typeof CustomerSchema>;
 export const ProductSchema = z.object({
   id: z.string(),
   name: z.string(),
-  description: z.string(),
+  description: z.string().optional().or(z.literal('')),
   price: z.number(),
   cost: z.number().optional(),
   quantity: z.number().optional(),
@@ -38,6 +39,13 @@ export const SaleItemSchema = z.object({
   unitPrice: z.number(),
 });
 export type SaleItem = z.infer<typeof SaleItemSchema>;
+
+export const PurchaseItemSchema = z.object({
+  productId: z.string(),
+  quantity: z.number(),
+  unitCost: z.number(),
+});
+export type PurchaseItem = z.infer<typeof PurchaseItemSchema>;
 
 export const DiscardItemSchema = z.object({
   productId: z.string(),
@@ -59,6 +67,16 @@ export const SaleSchema = z.object({
   amountReceivable: z.coerce.number().optional(),
 });
 export type Sale = z.infer<typeof SaleSchema>;
+
+export const PurchaseSchema = z.object({
+  id: z.string(),
+  supplierName: z.string(),
+  purchaseDate: z.string(), // ISO date string
+  items: z.array(PurchaseItemSchema),
+  totalAmount: z.number(),
+  notes: z.string().optional(),
+});
+export type Purchase = z.infer<typeof PurchaseSchema>;
 
 
 export const UserSchema = z.object({

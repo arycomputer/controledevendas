@@ -1,8 +1,9 @@
+
 'use client';
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, Users, ShoppingCart, Package, Settings, LogOut, FileText, ClipboardList, Trash2 } from 'lucide-react';
+import { LayoutDashboard, Users, ShoppingCart, Package, Settings, LogOut, FileText, ClipboardList, Trash2, Truck } from 'lucide-react';
 import Image from 'next/image';
 import {
   Sidebar,
@@ -25,6 +26,7 @@ const navItems = [
   { href: '/products', label: 'Produtos', icon: Package },
   { href: '/budgets', label: 'Orçamentos', icon: ClipboardList },
   { href: '/sales', label: 'Vendas', icon: ShoppingCart },
+  { href: '/purchases', label: 'Compras', icon: Truck },
   { href: '/service-orders', label: 'Ordens de Serviço', icon: FileText },
   { href: '/discards', label: 'Descartes', icon: Trash2 },
   { href: '/settings', label: 'Configurações', icon: Settings },
@@ -39,10 +41,8 @@ export function AppSidebar() {
   const handleSignOut = () => {
     if (auth) {
         signOut(auth).then(() => {
-            // Limpa o armazenamento local para garantir que nenhum dado de sessão persista.
             localStorage.clear();
             sessionStorage.clear();
-            // Redireciona para a página inicial para forçar a recarga e a verificação de autenticação.
             window.location.href = '/';
         });
     }
