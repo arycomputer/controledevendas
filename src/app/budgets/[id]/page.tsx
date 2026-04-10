@@ -2,9 +2,11 @@
 
 import { useParams, useRouter } from "next/navigation"
 import Link from "next/link"
-import { ArrowLeft, Loader2, Printer, FilePenLine } from "lucide-react"
-import React, { useState } from 'react';
+import { ArrowLeft, Loader2, Printer, FilePenLine, Share2, MessageSquare, FileText, ImageIcon } from "lucide-react"
+import React, { useState, useRef } from 'react';
 import Image from "next/image";
+import html2canvas from 'html2canvas';
+import { jsPDF } from 'jspdf';
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -13,11 +15,12 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { useToast } from "@/hooks/use-toast";
 import { useDoc, useCollection, useFirestore, useMemoFirebase } from "@/firebase"
 import type { Budget, Customer, Product, Sale } from "@/lib/types"
-import { collection, doc, setDoc, writeBatch } from "firebase/firestore"
+import { collection, doc, writeBatch } from "firebase/firestore"
 import { AuthGuard } from "@/components/app/auth-guard"
 import { useCompany } from "@/context/company-context";
 import { Badge } from "@/components/ui/badge";
 import { v4 as uuidv4 } from 'uuid';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 
 
 const statusLabels: { [key: string]: string } = {
@@ -40,8 +43,9 @@ function BudgetDetailsPageContent() {
     const { companyData } = useCompany();
     const { toast } = useToast();
 
-    const printRef = React.useRef<HTMLDivElement>(null);
+    const printRef = useRef<HTMLDivElement>(null);
     const [isConverting, setIsConverting] = useState(false);
+    const [isSharing, setIsSharing] = useState(false);
 
     const budgetDocRef = useMemoFirebase(() => doc(firestore, 'budgets', budgetId), [firestore, budgetId]);
     const { data: budget, isLoading: budgetLoading } = useDoc<Budget>(budgetDocRef);
@@ -92,6 +96,85 @@ function BudgetDetailsPageContent() {
             printWindow?.document.close();
             printWindow?.focus();
             printWindow?.print();
+        }
+    }
+
+    const generateBlob = async (type: 'image' | 'pdf'): Promise<{ blob: Blob, fileName: string }> => {
+        if (!printRef.current) throw new Error("Elemento não encontrado");
+
+        // Capturar a tela com html2canvas
+        // Nota: O uso de useCORS é essencial para imagens de domínios externos como picsum ou ibb.co
+        const canvas = await html2canvas(printRef.current, {
+            useCORS: true,
+            scale: 2,
+            backgroundColor: "#ffffff",
+            logging: false,
+        });
+
+        const fileName = `orcamento-${budgetId.substring(0, 6)}.`;
+
+        if (type === 'image') {
+            return new Promise((resolve) => {
+                canvas.toBlob((blob) => {
+                    if (blob) resolve({ blob, fileName: fileName + 'png' });
+                }, 'image/png');
+            });
+        } else {
+            const imgData = canvas.toDataURL('image/jpeg', 1.0);
+            const pdf = new jsPDF('p', 'mm', 'a4');
+            const imgProps = pdf.getImageProperties(imgData);
+            const pdfWidth = pdf.internal.pageSize.getWidth();
+            const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
+            pdf.addImage(imgData, 'JPEG', 0, 0, pdfWidth, pdfHeight);
+            const blob = pdf.output('blob');
+            return { blob, fileName: fileName + 'pdf' };
+        }
+    }
+
+    const handleShare = async (type: 'image' | 'pdf') => {
+        if (!customer) return;
+        setIsSharing(true);
+
+        try {
+            const { blob, fileName } = await generateBlob(type);
+            const file = new File([blob], fileName, { type: blob.type });
+
+            // Mensagem para o WhatsApp
+            const message = `Olá ${customer.name}, segue em anexo o orçamento solicitado. ID: #${budgetId.substring(0,6).toUpperCase()}`;
+            const whatsappUrl = `https://wa.me/${customer.phone?.replace(/\D/g, '')}?text=${encodeURIComponent(message)}`;
+
+            // Tentar usar a Web Share API (Mobile)
+            if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
+                await navigator.share({
+                    files: [file],
+                    title: 'Orçamento',
+                    text: message,
+                });
+            } else {
+                // Fallback Desktop: Baixar arquivo e abrir WhatsApp
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = fileName;
+                a.click();
+                URL.revokeObjectURL(url);
+
+                toast({
+                    title: "Arquivo gerado!",
+                    description: "O arquivo foi baixado. Agora, envie-o manualmente no WhatsApp que acabamos de abrir.",
+                });
+
+                window.open(whatsappUrl, '_blank');
+            }
+        } catch (error) {
+            console.error("Erro ao compartilhar:", error);
+            toast({
+                title: "Erro ao gerar arquivo",
+                description: "Não foi possível preparar o arquivo para compartilhamento.",
+                variant: "destructive"
+            });
+        } finally {
+            setIsSharing(false);
         }
     }
     
@@ -204,17 +287,36 @@ function BudgetDetailsPageContent() {
         <>
             <Card className="max-w-4xl mx-auto">
                 <CardHeader>
-                    <div className="flex justify-between items-start no-print">
+                    <div className="flex flex-col sm:flex-row justify-between items-start gap-4 no-print">
                         <div>
                             <CardTitle>Detalhes do Orçamento</CardTitle>
                             <CardDescription className="font-mono text-xs mt-1">#{budget.id.toUpperCase()}</CardDescription>
                         </div>
-                        <div className="flex items-center gap-2">
-                            <Button variant="outline" onClick={() => router.back()}>
+                        <div className="flex flex-wrap items-center gap-2">
+                            <Button variant="outline" size="sm" onClick={() => router.back()}>
                                 <ArrowLeft className="mr-2 h-4 w-4" /> Voltar
                             </Button>
+                            
+                            <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                    <Button variant="secondary" size="sm" disabled={isSharing}>
+                                        {isSharing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Share2 className="mr-2 h-4 w-4" />}
+                                        Compartilhar
+                                    </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end">
+                                    <DropdownMenuLabel>Formato de Envio</DropdownMenuLabel>
+                                    <DropdownMenuItem onClick={() => handleShare('image')}>
+                                        <ImageIcon className="mr-2 h-4 w-4" /> WhatsApp (Imagem)
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem onClick={() => handleShare('pdf')}>
+                                        <FileText className="mr-2 h-4 w-4" /> WhatsApp (PDF)
+                                    </DropdownMenuItem>
+                                </DropdownMenuContent>
+                            </DropdownMenu>
+
                              {budget.status === 'approved' && (
-                                <Button onClick={handleConvertToSale} disabled={isConverting}>
+                                <Button size="sm" onClick={handleConvertToSale} disabled={isConverting}>
                                     {isConverting ? (
                                         <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                                     ) : (
@@ -223,38 +325,38 @@ function BudgetDetailsPageContent() {
                                     {isConverting ? 'Convertendo...' : 'Virar Venda'}
                                 </Button>
                             )}
-                             <Button onClick={handlePrint}>
+                             <Button size="sm" onClick={handlePrint}>
                                 <Printer className="mr-2 h-4 w-4" /> Imprimir
                             </Button>
                         </div>
                     </div>
                 </CardHeader>
-                <CardContent ref={printRef}>
+                <CardContent ref={printRef} className="bg-white text-black p-8">
                     <div className="header">
-                        <h1>{companyData.name}</h1>
+                        <h1 className="text-2xl font-bold">{companyData.name}</h1>
                         <p>{companyData.address}</p>
                         <p>Telefone: {companyData.phone} | E-mail: {companyData.email}</p>
                     </div>
 
-                    <hr/>
+                    <hr className="my-4 border-gray-200"/>
 
-                    <div className="grid md:grid-cols-2 gap-6 text-sm mb-6">
+                    <div className="grid grid-cols-2 gap-6 text-sm mb-6">
                         <div className="info-item">
-                            <h4 className="font-semibold">Cliente</h4>
-                            <p>{customer.name}</p>
+                            <h4 className="font-bold uppercase text-gray-500 text-[10px] mb-1">Cliente</h4>
+                            <p className="font-semibold">{customer.name}</p>
                             <p>{customer.email}</p>
                             <p>{customer.phone}</p>
                         </div>
                         <div className="info-item">
-                            <h4 className="font-semibold">Datas e Status</h4>
-                            <p>Data do Orçamento: {new Date(budget.budgetDate).toLocaleDateString('pt-BR')}</p>
-                            <p>Válido até: {new Date(budget.validUntil).toLocaleDateString('pt-BR')}</p>
-                             <div className="flex items-center gap-2">
-                                Status:
-                                <Badge variant='default' className={`${statusColors[budget.status]} no-print`}>
+                            <h4 className="font-bold uppercase text-gray-500 text-[10px] mb-1">Datas e Status</h4>
+                            <p><span className="font-medium">Data:</span> {new Date(budget.budgetDate).toLocaleDateString('pt-BR')}</p>
+                            <p><span className="font-medium">Válido até:</span> {new Date(budget.validUntil).toLocaleDateString('pt-BR')}</p>
+                             <div className="flex items-center gap-2 mt-1">
+                                <span className="font-medium">Status:</span>
+                                <Badge variant='default' className={`${statusColors[budget.status]} no-print text-[10px] px-2 py-0`}>
                                     {statusLabels[budget.status]}
                                 </Badge>
-                                <span className="print-only">{statusLabels[budget.status]}</span>
+                                <span className="print-only uppercase font-bold text-[10px]">{statusLabels[budget.status]}</span>
                             </div>
                         </div>
                     </div>
@@ -263,10 +365,10 @@ function BudgetDetailsPageContent() {
                          <>
                             <Separator className="my-4"/>
                              <div className="space-y-6 text-sm mb-6">
-                                <div className="grid md:grid-cols-2 gap-6">
+                                <div className="grid grid-cols-2 gap-6">
                                     {(budget.itemDescription || budget.model) && (
                                         <div className="info-item">
-                                            <h4 className="font-semibold">Equipamento</h4>
+                                            <h4 className="font-bold uppercase text-gray-500 text-[10px] mb-1">Equipamento</h4>
                                             {budget.itemDescription && <p>{budget.itemDescription}</p>}
                                             {budget.model && <p className="font-medium">{budget.model}</p>}
                                             {budget.serialNumber && <p className="text-xs text-muted-foreground">S/N: {budget.serialNumber}</p>}
@@ -274,14 +376,14 @@ function BudgetDetailsPageContent() {
                                     )}
                                     {budget.problemDescription && (
                                          <div className="info-item">
-                                            <h4 className="font-semibold">Problema/Defeito Relatado</h4>
+                                            <h4 className="font-bold uppercase text-gray-500 text-[10px] mb-1">Problema Relatado</h4>
                                             <p>{budget.problemDescription}</p>
                                         </div>
                                     )}
                                 </div>
                                 {budget.solutionDescription && (
                                     <div className="info-item mt-6">
-                                        <h4 className="font-semibold">Solução Proposta</h4>
+                                        <h4 className="font-bold uppercase text-gray-500 text-[10px] mb-1">Solução Proposta</h4>
                                         <p>{budget.solutionDescription}</p>
                                     </div>
                                 )}
@@ -293,14 +395,12 @@ function BudgetDetailsPageContent() {
                         <>
                             <Separator className="my-4"/>
                             <div>
-                                <h4 className="font-semibold text-sm mb-4">Fotos do Equipamento</h4>
-                                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+                                <h4 className="font-bold uppercase text-gray-500 text-[10px] mb-2">Fotos do Equipamento</h4>
+                                <div className="grid grid-cols-4 gap-2">
                                     {budget.imageUrls.map((url, index) => (
-                                        <a key={index} href={url} target="_blank" rel="noopener noreferrer">
-                                            <div className="relative aspect-square group overflow-hidden rounded-md border">
-                                                <Image src={url} alt={`Imagem do equipamento ${index + 1}`} fill className="object-cover transition-transform group-hover:scale-105" />
-                                            </div>
-                                        </a>
+                                        <div key={index} className="relative aspect-square rounded border overflow-hidden">
+                                            <img src={url} alt="Foto equipamento" className="object-cover w-full h-full" />
+                                        </div>
                                     ))}
                                 </div>
                             </div>
@@ -308,30 +408,30 @@ function BudgetDetailsPageContent() {
                     )}
 
 
-                    <Separator />
+                    <Separator className="my-4" />
                     
                     <div>
-                        <h3 className="font-semibold my-4 text-sm section-title">Itens do Orçamento</h3>
-                        <Table>
-                            <TableHeader>
+                        <h3 className="font-bold uppercase text-gray-500 text-[10px] mb-2">Itens do Orçamento</h3>
+                        <Table className="border rounded-md">
+                            <TableHeader className="bg-gray-50">
                                 <TableRow>
-                                    <TableHead>Item</TableHead>
-                                    <TableHead className="text-center">Qtd.</TableHead>
-                                    <TableHead className="text-right">Preço Unit.</TableHead>
-                                    <TableHead className="text-right">Subtotal</TableHead>
+                                    <TableHead className="text-black font-bold h-8 text-xs">Item</TableHead>
+                                    <TableHead className="text-black font-bold h-8 text-xs text-center">Qtd.</TableHead>
+                                    <TableHead className="text-black font-bold h-8 text-xs text-right">Preço Unit.</TableHead>
+                                    <TableHead className="text-black font-bold h-8 text-xs text-right">Subtotal</TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
                                 {budget.items.map((item, index) => {
                                     const product = products?.find(p => p.id === item.productId);
                                     return (
-                                    <TableRow key={index}>
-                                        <TableCell className="font-medium">{product?.name || 'Item não encontrado'}</TableCell>
-                                        <TableCell className="text-center">{item.quantity}</TableCell>
-                                        <TableCell className="text-right">
+                                    <TableRow key={index} className="h-8">
+                                        <TableCell className="py-1 text-xs">{product?.name || 'Item não encontrado'}</TableCell>
+                                        <TableCell className="py-1 text-xs text-center">{item.quantity}</TableCell>
+                                        <TableCell className="py-1 text-xs text-right">
                                             {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(item.unitPrice)}
                                         </TableCell>
-                                        <TableCell className="text-right">
+                                        <TableCell className="py-1 text-xs text-right font-medium">
                                             {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(item.quantity * item.unitPrice)}
                                         </TableCell>
                                     </TableRow>
@@ -341,12 +441,10 @@ function BudgetDetailsPageContent() {
                         </Table>
                     </div>
 
-                    <Separator className="my-6" />
-
-                    <div className="flex justify-end">
-                        <div className="w-full max-w-sm space-y-2 totals">
-                            <div className="flex justify-between items-center text-lg font-bold total">
-                                <span>Total</span>
+                    <div className="flex justify-end mt-6">
+                        <div className="w-full max-w-[200px] space-y-1">
+                            <div className="flex justify-between items-center text-base font-bold border-t-2 border-black pt-2">
+                                <span>TOTAL</span>
                                 <span>{new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(budget.totalAmount)}</span>
                             </div>
                         </div>
