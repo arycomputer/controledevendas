@@ -81,8 +81,8 @@ function NewBudgetPageContent() {
     name: "items",
   })
   
-  const watchedItems = form.watch("items");
-  const watchedImageUrls = form.watch("imageUrls");
+  const watchedItems = form.watch("items") || [];
+  const watchedImageUrls = form.watch("imageUrls") || [];
 
   const totalAmount = watchedItems.reduce((acc, current) => {
     return acc + ((Number(current.unitPrice) || 0) * (Number(current.quantity) || 0));
@@ -132,14 +132,25 @@ function NewBudgetPageContent() {
     if (!firestore || !products) return;
     try {
       const budgetId = uuidv4();
-      const budgetData = {
-        ...data,
+      
+      // Limpeza de campos vazios para evitar 'undefined' no Firestore
+      const budgetData: any = {
         id: budgetId,
+        customerId: data.customerId,
+        items: data.items,
         totalAmount,
         budgetDate: new Date().toISOString(),
         validUntil: data.validUntil.toISOString(),
         status: 'pending',
       };
+
+      if (data.itemDescription) budgetData.itemDescription = data.itemDescription;
+      if (data.model) budgetData.model = data.model;
+      if (data.problemDescription) budgetData.problemDescription = data.problemDescription;
+      if (data.solutionDescription) budgetData.solutionDescription = data.solutionDescription;
+      if (data.serialNumber) budgetData.serialNumber = data.serialNumber;
+      if (data.imageUrls && data.imageUrls.length > 0) budgetData.imageUrls = data.imageUrls;
+
       await setDoc(doc(firestore, "budgets", budgetId), budgetData);
 
       toast({

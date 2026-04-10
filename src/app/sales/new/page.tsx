@@ -62,7 +62,7 @@ function NewSalePageContent() {
     name: "items",
   })
   
-  const watchedItems = form.watch("items");
+  const watchedItems = form.watch("items") || [];
   const watchedStatus = form.watch("status");
   const watchedDownPayment = form.watch("downPayment");
 
@@ -111,15 +111,24 @@ function NewSalePageContent() {
       }
       
       const saleId = uuidv4();
-      const saleData = {
-        ...data,
+      
+      // Construir objeto de dados sem valores 'undefined'
+      const saleData: any = {
         id: saleId,
-        totalAmount,
+        customerId: data.customerId,
+        items: data.items,
+        totalAmount: totalAmount,
         amountReceivable: amountReceivable,
         downPayment: data.downPayment || 0,
+        paymentMethod: data.paymentMethod,
+        status: data.status,
         saleDate: new Date().toISOString(),
-        paymentDate: data.status === 'paid' ? new Date().toISOString() : undefined,
       };
+
+      if (data.status === 'paid') {
+        saleData.paymentDate = new Date().toISOString();
+      }
+
       await setDoc(doc(firestore, "sales", saleId), saleData);
 
       toast({
@@ -131,7 +140,7 @@ function NewSalePageContent() {
       console.error("Error creating sale: ", error)
       toast({
         title: "Erro!",
-        description: "Não foi possível registrar a venda.",
+        description: "Não foi possível registrar a venda. Erro de dados inválidos.",
         variant: 'destructive',
       })
     }
