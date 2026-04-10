@@ -25,6 +25,8 @@ import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { uploadImage } from "@/services/image-upload-service"
 import { SearchableSelect } from "@/components/app/searchable-select"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
+import { ProductForm } from "@/components/app/product-form"
 
 const budgetFormSchema = z.object({
   customerId: z.string({ required_error: "É necessário selecionar um cliente." }).min(1, "É necessário selecionar um cliente."),
@@ -52,6 +54,7 @@ function EditBudgetPageContent() {
   const budgetId = params.id as string
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isUploading, setIsUploading] = useState(false);
+  const [isNewProductDialogOpen, setIsNewProductDialogOpen] = useState(false);
 
   const budgetDocRef = useMemoFirebase(() => doc(firestore, 'budgets', budgetId), [firestore, budgetId]);
   const { data: budget, isLoading: budgetLoading } = useDoc<Budget>(budgetDocRef);
@@ -185,6 +188,10 @@ function EditBudgetPageContent() {
     }
   }
 
+  const handleProductCreated = (newProduct: Product) => {
+    append({ productId: newProduct.id, quantity: 1, unitPrice: newProduct.price || 0 });
+  }
+
   const isLoading = budgetLoading || customersLoading || productsLoading;
 
   if (isLoading) {
@@ -213,296 +220,323 @@ function EditBudgetPageContent() {
   })) || [];
 
   return (
-    <Card className="max-w-4xl mx-auto">
-      <CardHeader>
-        <CardTitle>Editar Orçamento</CardTitle>
-        <CardDescription>Atualize os dados do Orçamento #{budgetId.substring(0,6).toUpperCase()}</CardDescription>
-      </CardHeader>
-      <CardContent>
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <FormField
-                  control={form.control}
-                  name="customerId"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Cliente</FormLabel>
-                      <FormControl>
-                        <SearchableSelect 
-                            options={customerOptions}
-                            value={field.value}
-                            onValueChange={field.onChange}
-                            placeholder="Selecione um cliente"
-                            searchPlaceholder="Pesquisar cliente..."
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                control={form.control}
-                name="validUntil"
-                render={({ field }) => (
-                    <FormItem className="flex flex-col pt-2 md:pt-0">
-                        <FormLabel>Válido Até</FormLabel>
-                        <Popover>
-                            <PopoverTrigger asChild>
-                            <FormControl>
-                                <Button
-                                variant={"outline"}
-                                className={cn(
-                                    "pl-3 text-left font-normal",
-                                    !field.value && "text-muted-foreground"
-                                )}
-                                >
-                                {field.value ? (
-                                    format(field.value, "dd/MM/yyyy")
-                                ) : (
-                                    <span>Selecione uma data</span>
-                                )}
-                                <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                                </Button>
-                            </FormControl>
-                            </PopoverTrigger>
-                            <PopoverContent className="w-auto p-0" align="start">
-                            <Calendar
-                                mode="single"
-                                selected={field.value}
-                                onSelect={field.onChange}
-                                initialFocus
+    <>
+        <Card className="max-w-4xl mx-auto">
+        <CardHeader>
+            <CardTitle>Editar Orçamento</CardTitle>
+            <CardDescription>Atualize os dados do Orçamento #{budgetId.substring(0,6).toUpperCase()}</CardDescription>
+        </CardHeader>
+        <CardContent>
+            <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <FormField
+                    control={form.control}
+                    name="customerId"
+                    render={({ field }) => (
+                        <FormItem>
+                        <FormLabel>Cliente</FormLabel>
+                        <FormControl>
+                            <SearchableSelect 
+                                options={customerOptions}
+                                value={field.value}
+                                onValueChange={field.onChange}
+                                placeholder="Selecione um cliente"
+                                searchPlaceholder="Pesquisar cliente..."
                             />
-                            </PopoverContent>
-                        </Popover>
+                        </FormControl>
                         <FormMessage />
-                    </FormItem>
-                 )}
-                />
-            </div>
-
-            <Separator />
-            
-             <div>
-                <h3 className="text-lg font-medium mb-4">Dados do Equipamento (Opcional)</h3>
-                 <div className="space-y-6">
-                     <FormField
-                      control={form.control}
-                      name="itemDescription"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Descrição do Equipamento</FormLabel>
-                          <FormControl>
-                            <Input placeholder="Ex: Notebook, Smartphone, etc." {...field} />
-                          </FormControl>
-                          <FormMessage />
                         </FormItem>
-                      )}
-                    />
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      <FormField
-                        control={form.control}
-                        name="model"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Marca/Modelo</FormLabel>
-                            <FormControl>
-                              <Input placeholder="Ex: Dell Vostro 3400" {...field} />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                       <FormField
-                        control={form.control}
-                        name="serialNumber"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Número de Série</FormLabel>
-                            <FormControl>
-                              <Input placeholder="Ex: BR-123XYZ" {...field} />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                    </div>
-                     <FormField
-                      control={form.control}
-                      name="problemDescription"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Problema/Defeito Relatado</FormLabel>
-                          <FormControl>
-                            <Textarea placeholder="Ex: Tela não liga, faz barulho ao iniciar." className="resize-none" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
+                    )}
                     />
                     <FormField
-                      control={form.control}
-                      name="solutionDescription"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Solução do Defeito</FormLabel>
-                          <FormControl>
-                            <Textarea placeholder="Ex: Troca da fonte de alimentação e limpeza interna." className="resize-none" {...field} />
-                          </FormControl>
-                          <FormMessage />
+                    control={form.control}
+                    name="validUntil"
+                    render={({ field }) => (
+                        <FormItem className="flex flex-col pt-2 md:pt-0">
+                            <FormLabel>Válido Até</FormLabel>
+                            <Popover>
+                                <PopoverTrigger asChild>
+                                <FormControl>
+                                    <Button
+                                    variant={"outline"}
+                                    className={cn(
+                                        "pl-3 text-left font-normal",
+                                        !field.value && "text-muted-foreground"
+                                    )}
+                                    >
+                                    {field.value ? (
+                                        format(field.value, "dd/MM/yyyy")
+                                    ) : (
+                                        <span>Selecione uma data</span>
+                                    )}
+                                    <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                                    </Button>
+                                </FormControl>
+                                </PopoverTrigger>
+                                <PopoverContent className="w-auto p-0" align="start">
+                                <Calendar
+                                    mode="single"
+                                    selected={field.value}
+                                    onSelect={field.onChange}
+                                    initialFocus
+                                />
+                                </PopoverContent>
+                            </Popover>
+                            <FormMessage />
                         </FormItem>
-                      )}
+                    )}
                     />
                 </div>
-            </div>
 
-            <Separator />
+                <Separator />
+                
+                <div>
+                    <h3 className="text-lg font-medium mb-4">Dados do Equipamento (Opcional)</h3>
+                    <div className="space-y-6">
+                        <FormField
+                        control={form.control}
+                        name="itemDescription"
+                        render={({ field }) => (
+                            <FormItem>
+                            <FormLabel>Descrição do Equipamento</FormLabel>
+                            <FormControl>
+                                <Input placeholder="Ex: Notebook, Smartphone, etc." {...field} />
+                            </FormControl>
+                            <FormMessage />
+                            </FormItem>
+                        )}
+                        />
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <FormField
+                            control={form.control}
+                            name="model"
+                            render={({ field }) => (
+                            <FormItem>
+                                <FormLabel>Marca/Modelo</FormLabel>
+                                <FormControl>
+                                <Input placeholder="Ex: Dell Vostro 3400" {...field} />
+                                </FormControl>
+                                <FormMessage />
+                            </FormItem>
+                            )}
+                        />
+                        <FormField
+                            control={form.control}
+                            name="serialNumber"
+                            render={({ field }) => (
+                            <FormItem>
+                                <FormLabel>Número de Série</FormLabel>
+                                <FormControl>
+                                <Input placeholder="Ex: BR-123XYZ" {...field} />
+                                </FormControl>
+                                <FormMessage />
+                            </FormItem>
+                            )}
+                        />
+                        </div>
+                        <FormField
+                        control={form.control}
+                        name="problemDescription"
+                        render={({ field }) => (
+                            <FormItem>
+                            <FormLabel>Problema/Defeito Relatado</FormLabel>
+                            <FormControl>
+                                <Textarea placeholder="Ex: Tela não liga, faz barulho ao iniciar." className="resize-none" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                            </FormItem>
+                        )}
+                        />
+                        <FormField
+                        control={form.control}
+                        name="solutionDescription"
+                        render={({ field }) => (
+                            <FormItem>
+                            <FormLabel>Solução do Defeito</FormLabel>
+                            <FormControl>
+                                <Textarea placeholder="Ex: Troca da fonte de alimentação e limpeza interna." className="resize-none" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                            </FormItem>
+                        )}
+                        />
+                    </div>
+                </div>
 
-            <div>
-                <h3 className="text-lg font-medium mb-4">Fotos do Equipamento</h3>
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 mb-4">
-                    {watchedImageUrls.map((url, index) => (
-                        <div key={index} className="relative aspect-square group">
-                            <Image src={url} alt={`Imagem do equipamento ${index + 1}`} fill className="object-cover rounded-md border" />
-                            <Button
-                                type="button"
-                                variant="destructive"
-                                size="icon"
-                                className="absolute top-1 right-1 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
-                                onClick={() => removeImage(index)}
-                            >
-                                <X className="h-4 w-4" />
-                                <span className="sr-only">Remover imagem</span>
+                <Separator />
+
+                <div>
+                    <h3 className="text-lg font-medium mb-4">Fotos do Equipamento</h3>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 mb-4">
+                        {watchedImageUrls.map((url, index) => (
+                            <div key={index} className="relative aspect-square group">
+                                <Image src={url} alt={`Imagem do equipamento ${index + 1}`} fill className="object-cover rounded-md border" />
+                                <Button
+                                    type="button"
+                                    variant="destructive"
+                                    size="icon"
+                                    className="absolute top-1 right-1 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
+                                    onClick={() => removeImage(index)}
+                                >
+                                    <X className="h-4 w-4" />
+                                    <span className="sr-only">Remover imagem</span>
+                                </Button>
+                            </div>
+                        ))}
+                        {isUploading && (
+                            <div className="relative aspect-square group flex items-center justify-center border-2 border-dashed rounded-md bg-muted">
+                            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                            </div>
+                        )}
+                    </div>
+                    <Input
+                        type="file"
+                        ref={fileInputRef}
+                        className="hidden"
+                        accept="image/png, image/jpeg, image/gif, image/webp"
+                        onChange={handleImageUpload}
+                        disabled={isUploading}
+                        multiple
+                    />
+                    <Button type="button" variant="outline" onClick={() => fileInputRef.current?.click()} disabled={isUploading}>
+                        <UploadCloud className="mr-2 h-4 w-4" />
+                        Adicionar Imagens
+                    </Button>
+                </div>
+
+                <Separator />
+                
+                <div>
+                <FormLabel>Itens do Orçamento</FormLabel>
+                <div className="mt-2 space-y-4">
+                    {fields.map((field, index) => {
+                    const selectedProduct = products?.find(p => p.id === watchedItems[index]?.productId);
+                    const isService = selectedProduct?.type === 'service';
+
+                    return (
+                        <div key={field.id} className="grid grid-cols-1 md:grid-cols-[1fr_80px_120px_120px_auto] items-end gap-4 p-4 border rounded-lg bg-muted/20">
+                            <FormField
+                            control={form.control}
+                            name={`items.${index}.productId`}
+                            render={({ field }) => (
+                                <FormItem>
+                                <FormLabel className="text-xs md:hidden">Produto/Serviço</FormLabel>
+                                <FormControl>
+                                    <SearchableSelect 
+                                        options={productOptions.map(opt => ({
+                                            ...opt,
+                                            disabled: watchedItems.some((item, itemIndex) => item.productId === opt.value && itemIndex !== index)
+                                        }))}
+                                        value={field.value}
+                                        onValueChange={(val) => handleProductChange(val, index)}
+                                        placeholder="Selecione um item"
+                                        searchPlaceholder="Pesquisar produto..."
+                                    />
+                                </FormControl>
+                                <FormMessage />
+                                </FormItem>
+                            )}
+                            />
+                            <FormField
+                            control={form.control}
+                            name={`items.${index}.quantity`}
+                            render={({ field }) => (
+                                <FormItem>
+                                <FormLabel className="text-xs md:hidden">Qtd.</FormLabel>
+                                <FormControl>
+                                    <Input type="number" min="1" disabled={isService} {...field} />
+                                </FormControl>
+                                <FormMessage />
+                                </FormItem>
+                            )}
+                            />
+                            <FormField
+                            control={form.control}
+                            name={`items.${index}.unitPrice`}
+                            render={({ field }) => (
+                                <FormItem>
+                                <FormLabel className="text-xs md:hidden">Preço Unit. (R$)</FormLabel>
+                                <FormControl>
+                                    <Input type="number" step="0.01" placeholder="0,00" {...field} />
+                                </FormControl>
+                                <FormMessage />
+                                </FormItem>
+                            )}
+                            />
+                            <div className="flex items-center space-x-2">
+                                <span className="text-sm text-muted-foreground whitespace-nowrap">Subtotal:</span>
+                                <span className="font-semibold text-sm">
+                                    {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(
+                                        (Number(watchedItems[index]?.unitPrice) || 0) * (Number(watchedItems[index]?.quantity) || 0)
+                                    )}
+                                </span>
+                            </div>
+                            <Button type="button" variant="destructive" size="icon" onClick={() => remove(index)}>
+                            <Trash2 className="h-4 w-4" />
+                            <span className="sr-only">Remover item</span>
                             </Button>
                         </div>
-                    ))}
-                     {isUploading && (
-                        <div className="relative aspect-square group flex items-center justify-center border-2 border-dashed rounded-md bg-muted">
-                           <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                        </div>
-                    )}
-                </div>
-                <Input
-                    type="file"
-                    ref={fileInputRef}
-                    className="hidden"
-                    accept="image/png, image/jpeg, image/gif, image/webp"
-                    onChange={handleImageUpload}
-                    disabled={isUploading}
-                    multiple
-                />
-                <Button type="button" variant="outline" onClick={() => fileInputRef.current?.click()} disabled={isUploading}>
-                    <UploadCloud className="mr-2 h-4 w-4" />
-                    Adicionar Imagens
-                </Button>
-            </div>
-
-            <Separator />
-            
-            <div>
-              <FormLabel>Itens do Orçamento</FormLabel>
-              <div className="mt-2 space-y-4">
-                {fields.map((field, index) => {
-                   const selectedProduct = products?.find(p => p.id === watchedItems[index]?.productId);
-                   const isService = selectedProduct?.type === 'service';
-
-                   return (
-                     <div key={field.id} className="grid grid-cols-1 md:grid-cols-[1fr_80px_120px_120px_auto] items-end gap-4 p-4 border rounded-lg bg-muted/20">
-                        <FormField
-                          control={form.control}
-                          name={`items.${index}.productId`}
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel className="text-xs md:hidden">Produto/Serviço</FormLabel>
-                              <FormControl>
-                                <SearchableSelect 
-                                    options={productOptions.map(opt => ({
-                                        ...opt,
-                                        disabled: watchedItems.some((item, itemIndex) => item.productId === opt.value && itemIndex !== index)
-                                    }))}
-                                    value={field.value}
-                                    onValueChange={(val) => handleProductChange(val, index)}
-                                    placeholder="Selecione um item"
-                                    searchPlaceholder="Pesquisar produto..."
-                                />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                         <FormField
-                          control={form.control}
-                          name={`items.${index}.quantity`}
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel className="text-xs md:hidden">Qtd.</FormLabel>
-                              <FormControl>
-                                <Input type="number" min="1" disabled={isService} {...field} />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                        <FormField
-                          control={form.control}
-                          name={`items.${index}.unitPrice`}
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel className="text-xs md:hidden">Preço Unit. (R$)</FormLabel>
-                              <FormControl>
-                                <Input type="number" step="0.01" placeholder="0,00" {...field} />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                        <div className="flex items-center space-x-2">
-                            <span className="text-sm text-muted-foreground whitespace-nowrap">Subtotal:</span>
-                            <span className="font-semibold text-sm">
-                                {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(
-                                    (Number(watchedItems[index]?.unitPrice) || 0) * (Number(watchedItems[index]?.quantity) || 0)
-                                )}
-                            </span>
-                        </div>
-                        <Button type="button" variant="destructive" size="icon" onClick={() => remove(index)}>
-                          <Trash2 className="h-4 w-4" />
-                          <span className="sr-only">Remover item</span>
+                    )
+                    })}
+                    <div className="flex gap-2">
+                        <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => append({ productId: "", quantity: 1, unitPrice: 0 })}
+                        >
+                            <PlusCircle className="mr-2 h-4 w-4" /> Adicionar Item
                         </Button>
-                      </div>
-                   )
-                })}
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={() => append({ productId: "", quantity: 1, unitPrice: 0 })}
-                >
-                  <PlusCircle className="mr-2 h-4 w-4" /> Adicionar Item
-                </Button>
-                 {form.formState.errors.items && <p className="text-sm font-medium text-destructive">{form.formState.errors.items.message}</p>}
-              </div>
-            </div>
-            
-            <Separator />
-            
-            <div className="flex flex-col sm:flex-row justify-end items-center gap-4 sm:gap-6">
-                 <div className="text-lg text-right w-full sm:w-auto">
-                    <span>Total do Orçamento: </span>
-                    <span className="font-bold">
-                        {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(totalAmount)}
-                    </span>
+                        <Button
+                            type="button"
+                            variant="secondary"
+                            size="sm"
+                            onClick={() => setIsNewProductDialogOpen(true)}
+                        >
+                            <PlusCircle className="mr-2 h-4 w-4" /> Criar Novo Produto
+                        </Button>
+                    </div>
+                    {form.formState.errors.items && <p className="text-sm font-medium text-destructive">{form.formState.errors.items.message}</p>}
                 </div>
-                 <div className="flex justify-end gap-2 w-full sm:w-auto">
-                    <Button type="button" variant="outline" onClick={() => router.push('/budgets')}>
-                        Cancelar
-                    </Button>
-                    <Button type="submit">Salvar Alterações</Button>
                 </div>
-            </div>
-          </form>
-        </Form>
-      </CardContent>
-    </Card>
+                
+                <Separator />
+                
+                <div className="flex flex-col sm:flex-row justify-end items-center gap-4 sm:gap-6">
+                    <div className="text-lg text-right w-full sm:w-auto">
+                        <span>Total do Orçamento: </span>
+                        <span className="font-bold">
+                            {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(totalAmount)}
+                        </span>
+                    </div>
+                    <div className="flex justify-end gap-2 w-full sm:w-auto">
+                        <Button type="button" variant="outline" onClick={() => router.push('/budgets')}>
+                            Cancelar
+                        </Button>
+                        <Button type="submit">Salvar Alterações</Button>
+                    </div>
+                </div>
+            </form>
+            </Form>
+        </CardContent>
+        </Card>
+
+        <Dialog open={isNewProductDialogOpen} onOpenChange={setIsNewProductDialogOpen}>
+            <DialogContent>
+                <DialogHeader>
+                    <DialogTitle>Criar Novo Produto</DialogTitle>
+                    <DialogDescription>
+                        Adicione um novo produto ou serviço ao seu inventário. Ele estará disponível para o orçamento imediatamente.
+                    </DialogDescription>
+                </DialogHeader>
+                <ProductForm 
+                    onSuccess={handleProductCreated}
+                    onClose={() => setIsNewProductDialogOpen(false)} 
+                />
+            </DialogContent>
+        </Dialog>
+    </>
   )
 }
 

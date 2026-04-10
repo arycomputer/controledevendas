@@ -1,4 +1,3 @@
-
 'use client'
 
 import { zodResolver } from "@hookform/resolvers/zod"
@@ -7,6 +6,7 @@ import * as z from "zod"
 import { useRouter } from "next/navigation"
 import { PlusCircle, Trash2, Loader2 } from "lucide-react"
 import { v4 as uuidv4 } from 'uuid';
+import React, { useEffect, useState } from "react"
 
 import { Button } from "@/components/ui/button"
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
@@ -14,13 +14,14 @@ import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Separator } from "@/components/ui/separator"
 import { useToast } from "@/hooks/use-toast"
-import { useEffect } from "react"
 import { useCollection, useFirestore, useMemoFirebase } from "@/firebase"
 import { collection, doc, writeBatch } from "firebase/firestore"
 import type { Customer, Product } from "@/lib/types"
 import { AuthGuard } from "@/components/app/auth-guard"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { SearchableSelect } from "@/components/app/searchable-select"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
+import { ProductForm } from "@/components/app/product-form"
 
 const saleFormSchema = z.object({
   customerId: z.string({ required_error: "É necessário selecionar um cliente." }).min(1, "É necessário selecionar um cliente."),
@@ -40,6 +41,7 @@ function NewSalePageContent() {
   const router = useRouter()
   const { toast } = useToast()
   const firestore = useFirestore()
+  const [isNewProductDialogOpen, setIsNewProductDialogOpen] = useState(false);
 
   const customersCollection = useMemoFirebase(() => collection(firestore, 'customers'), [firestore]);
   const { data: customers, isLoading: customersLoading } = useCollection<Customer>(customersCollection);
@@ -157,6 +159,10 @@ function NewSalePageContent() {
     }
   }
 
+  const handleProductCreated = (newProduct: Product) => {
+    append({ productId: newProduct.id, quantity: 1, unitPrice: newProduct.price || 0 });
+  }
+
   const isLoading = customersLoading || productsLoading;
 
   if (isLoading) {
@@ -174,272 +180,299 @@ function NewSalePageContent() {
   })) || [];
 
   return (
-    <Card className="max-w-4xl mx-auto">
-      <CardHeader>
-        <CardTitle>Registrar Nova Venda</CardTitle>
-        <CardDescription>Selecione o cliente e os produtos/serviços para registrar uma nova venda.</CardDescription>
-      </CardHeader>
-      <CardContent>
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
-            <FormField
-              control={form.control}
-              name="customerId"
-              render={({ field }) => (
-                <FormItem className="max-w-sm">
-                  <FormLabel>Cliente</FormLabel>
-                  <FormControl>
-                    <SearchableSelect 
-                        options={customerOptions}
-                        value={field.value}
-                        onValueChange={field.onChange}
-                        placeholder="Selecione um cliente"
-                        searchPlaceholder="Pesquisar cliente..."
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            
-            <div>
-              <FormLabel>Itens da Venda</FormLabel>
-              <div className="mt-2 space-y-4">
-                {fields.map((field, index) => {
-                   const selectedProduct = products?.find(p => p.id === watchedItems[index]?.productId);
-                   const isService = selectedProduct?.type === 'service';
-
-                   return (
-                     <div key={field.id} className="grid grid-cols-1 md:grid-cols-[1fr_80px_120px_120px_auto] items-end gap-4 p-4 border rounded-lg bg-muted/20">
-                        <FormField
-                          control={form.control}
-                          name={`items.${index}.productId`}
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel className="text-xs md:hidden">Produto/Serviço</FormLabel>
-                              <FormControl>
-                                <SearchableSelect 
-                                    options={productOptions.map(opt => {
-                                        const p = products?.find(prod => prod.id === opt.value);
-                                        const isOutOfStock = p?.type === 'piece' && (!p.quantity || p.quantity <= 0);
-                                        const isAlreadySelected = watchedItems.some((item, itemIndex) => item.productId === opt.value && itemIndex !== index);
-                                        return {
-                                            ...opt,
-                                            disabled: isOutOfStock || isAlreadySelected
-                                        };
-                                    })}
-                                    value={field.value}
-                                    onValueChange={(val) => handleProductChange(val, index)}
-                                    placeholder="Selecione um item"
-                                    searchPlaceholder="Pesquisar produto..."
-                                />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                         <FormField
-                          control={form.control}
-                          name={`items.${index}.quantity`}
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel className="text-xs md:hidden">Qtd.</FormLabel>
-                              <FormControl>
-                                <Input type="number" min="1" disabled={isService} {...field} />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                        <FormField
-                          control={form.control}
-                          name={`items.${index}.unitPrice`}
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel className="text-xs md:hidden">Preço Unit. (R$)</FormLabel>
-                              <FormControl>
-                                <Input type="number" step="0.01" placeholder="0,00" {...field} />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                        <div className="flex items-center space-x-2">
-                            <span className="text-sm text-muted-foreground whitespace-nowrap">Subtotal:</span>
-                            <span className="font-semibold text-sm">
-                                {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(
-                                    (Number(watchedItems[index]?.unitPrice) || 0) * (Number(watchedItems[index]?.quantity) || 0)
-                                )}
-                            </span>
-                        </div>
-                        <Button type="button" variant="destructive" size="icon" onClick={() => remove(index)}>
-                          <Trash2 className="h-4 w-4" />
-                          <span className="sr-only">Remover item</span>
-                        </Button>
-                      </div>
-                   )
-                })}
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={() => append({ productId: "", quantity: 1, unitPrice: 0 })}
-                >
-                  <PlusCircle className="mr-2 h-4 w-4" /> Adicionar Item
-                </Button>
-                 {form.formState.errors.items && <p className="text-sm font-medium text-destructive">{form.formState.errors.items.message}</p>}
-              </div>
-            </div>
-            
-            <Separator />
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                <div className="space-y-6">
-                    <FormField
-                    control={form.control}
-                    name="paymentMethod"
-                    render={({ field }) => (
-                        <FormItem className="space-y-3">
-                        <FormLabel>Forma de Pagamento</FormLabel>
-                        <FormControl>
-                            <RadioGroup
+    <>
+        <Card className="max-w-4xl mx-auto">
+        <CardHeader>
+            <CardTitle>Registrar Nova Venda</CardTitle>
+            <CardDescription>Selecione o cliente e os produtos/serviços para registrar uma nova venda.</CardDescription>
+        </CardHeader>
+        <CardContent>
+            <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+                <FormField
+                control={form.control}
+                name="customerId"
+                render={({ field }) => (
+                    <FormItem className="max-w-sm">
+                    <FormLabel>Cliente</FormLabel>
+                    <FormControl>
+                        <SearchableSelect 
+                            options={customerOptions}
+                            value={field.value}
                             onValueChange={field.onChange}
-                            defaultValue={field.value}
-                            className="flex flex-wrap gap-4"
-                            >
-                            <FormItem className="flex items-center space-x-3 space-y-0">
-                                <FormControl>
-                                <RadioGroupItem value="cash" />
-                                </FormControl>
-                                <FormLabel className="font-normal">Dinheiro</FormLabel>
-                            </FormItem>
-                            <FormItem className="flex items-center space-x-3 space-y-0">
-                                <FormControl>
-                                <RadioGroupItem value="pix" />
-                                </FormControl>
-                                <FormLabel className="font-normal">Pix</FormLabel>
-                            </FormItem>
-                             <FormItem className="flex items-center space-x-3 space-y-0">
-                                <FormControl>
-                                <RadioGroupItem value="debit_card" />
-                                </FormControl>
-                                <FormLabel className="font-normal">Cartão de Débito</FormLabel>
-                            </FormItem>
-                            <FormItem className="flex items-center space-x-3 space-y-0">
-                                <FormControl>
-                                <RadioGroupItem value="credit_card" />
-                                </FormControl>
-                                <FormLabel className="font-normal">Cartão de Crédito</FormLabel>
-                            </FormItem>
-                            </RadioGroup>
-                        </FormControl>
-                        <FormMessage />
-                        </FormItem>
-                    )}
-                    />
-                    <FormField
-                    control={form.control}
-                    name="status"
-                    render={({ field }) => (
-                        <FormItem className="space-y-3">
-                        <FormLabel>Status do Pagamento</FormLabel>
-                        <FormControl>
-                            <RadioGroup
-                            onValueChange={field.onChange}
-                            defaultValue={field.value}
-                            className="flex items-center space-x-4"
-                            >
-                            <FormItem className="flex items-center space-x-3 space-y-0">
-                                <FormControl>
-                                <RadioGroupItem value="paid" />
-                                </FormControl>
-                                <FormLabel className="font-normal">Pago</FormLabel>
-                            </FormItem>
-                            <FormItem className="flex items-center space-x-3 space-y-0">
-                                <FormControl>
-                                <RadioGroupItem value="pending" />
-                                </FormControl>
-                                <FormLabel className="font-normal">A Receber</FormLabel>
-                            </FormItem>
-                            </RadioGroup>
-                        </FormControl>
-                        <FormMessage />
-                        </FormItem>
-                    )}
-                    />
-                    {watchedStatus === 'pending' && (
-                        <FormField
+                            placeholder="Selecione um cliente"
+                            searchPlaceholder="Pesquisar cliente..."
+                        />
+                    </FormControl>
+                    <FormMessage />
+                    </FormItem>
+                )}
+                />
+                
+                <div>
+                <FormLabel>Itens da Venda</FormLabel>
+                <div className="mt-2 space-y-4">
+                    {fields.map((field, index) => {
+                    const selectedProduct = products?.find(p => p.id === watchedItems[index]?.productId);
+                    const isService = selectedProduct?.type === 'service';
+
+                    return (
+                        <div key={field.id} className="grid grid-cols-1 md:grid-cols-[1fr_80px_120px_120px_auto] items-end gap-4 p-4 border rounded-lg bg-muted/20">
+                            <FormField
                             control={form.control}
-                            name="downPayment"
+                            name={`items.${index}.productId`}
                             render={({ field }) => (
                                 <FormItem>
-                                <FormLabel>Entrada (R$)</FormLabel>
+                                <FormLabel className="text-xs md:hidden">Produto/Serviço</FormLabel>
                                 <FormControl>
-                                    <Input type="number" step="0.01" placeholder="Ex: 50,00" {...field} />
+                                    <SearchableSelect 
+                                        options={productOptions.map(opt => {
+                                            const p = products?.find(prod => prod.id === opt.value);
+                                            const isOutOfStock = p?.type === 'piece' && (!p.quantity || p.quantity <= 0);
+                                            const isAlreadySelected = watchedItems.some((item, itemIndex) => item.productId === opt.value && itemIndex !== index);
+                                            return {
+                                                ...opt,
+                                                disabled: isOutOfStock || isAlreadySelected
+                                            };
+                                        })}
+                                        value={field.value}
+                                        onValueChange={(val) => handleProductChange(val, index)}
+                                        placeholder="Selecione um item"
+                                        searchPlaceholder="Pesquisar produto..."
+                                    />
                                 </FormControl>
                                 <FormMessage />
                                 </FormItem>
                             )}
-                        />
-                    )}
-                </div>
-                 <div className="space-y-4 rounded-lg bg-muted/30 p-6">
-                    <h4 className="text-lg font-semibold">Resumo Financeiro</h4>
-                    <div className="flex justify-between items-center text-lg">
-                        <span>Total dos Itens</span>
-                        <span className="font-bold">
-                            {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(totalAmount)}
-                        </span>
+                            />
+                            <FormField
+                            control={form.control}
+                            name={`items.${index}.quantity`}
+                            render={({ field }) => (
+                                <FormItem>
+                                <FormLabel className="text-xs md:hidden">Qtd.</FormLabel>
+                                <FormControl>
+                                    <Input type="number" min="1" disabled={isService} {...field} />
+                                </FormControl>
+                                <FormMessage />
+                                </FormItem>
+                            )}
+                            />
+                            <FormField
+                            control={form.control}
+                            name={`items.${index}.unitPrice`}
+                            render={({ field }) => (
+                                <FormItem>
+                                <FormLabel className="text-xs md:hidden">Preço Unit. (R$)</FormLabel>
+                                <FormControl>
+                                    <Input type="number" step="0.01" placeholder="0,00" {...field} />
+                                </FormControl>
+                                <FormMessage />
+                                </FormItem>
+                            )}
+                            />
+                            <div className="flex items-center space-x-2">
+                                <span className="text-sm text-muted-foreground whitespace-nowrap">Subtotal:</span>
+                                <span className="font-semibold text-sm">
+                                    {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(
+                                        (Number(watchedItems[index]?.unitPrice) || 0) * (Number(watchedItems[index]?.quantity) || 0)
+                                    )}
+                                </span>
+                            </div>
+                            <Button type="button" variant="destructive" size="icon" onClick={() => remove(index)}>
+                            <Trash2 className="h-4 w-4" />
+                            <span className="sr-only">Remover item</span>
+                            </Button>
+                        </div>
+                    )
+                    })}
+                    <div className="flex gap-2">
+                        <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => append({ productId: "", quantity: 1, unitPrice: 0 })}
+                        >
+                            <PlusCircle className="mr-2 h-4 w-4" /> Adicionar Item
+                        </Button>
+                        <Button
+                            type="button"
+                            variant="secondary"
+                            size="sm"
+                            onClick={() => setIsNewProductDialogOpen(true)}
+                        >
+                            <PlusCircle className="mr-2 h-4 w-4" /> Criar Novo Produto
+                        </Button>
                     </div>
-                     {watchedStatus === 'pending' && (
-                        <>
-                            <div className="flex justify-between items-center text-sm">
-                                <span className="text-muted-foreground">Entrada</span>
-                                <span>
-                                    {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(watchedDownPayment || 0)}
-                                </span>
-                            </div>
-                            <Separator/>
-                            <div className="flex justify-between items-center text-lg">
-                                <span className="text-destructive">Valor a Receber</span>
-                                <span className="font-bold text-destructive">
-                                    {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(amountReceivable)}
-                                </span>
-                            </div>
-                        </>
-                    )}
-                     {watchedStatus === 'paid' && (
-                        <>
-                            <div className="flex justify-between items-center text-sm">
-                                <span className="text-muted-foreground">Total Pago</span>
-                                <span>
-                                    {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(totalAmount)}
-                                </span>
-                            </div>
-                            <Separator/>
-                             <div className="flex justify-between items-center text-lg">
-                                <span className="text-green-600">Total a Receber</span>
-                                <span className="font-bold text-green-600">
-                                    {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(0)}
-                                </span>
-                            </div>
-                        </>
-                    )}
-
+                    {form.formState.errors.items && <p className="text-sm font-medium text-destructive">{form.formState.errors.items.message}</p>}
                 </div>
-            </div>
+                </div>
+                
+                <Separator />
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <div className="space-y-6">
+                        <FormField
+                        control={form.control}
+                        name="paymentMethod"
+                        render={({ field }) => (
+                            <FormItem className="space-y-3">
+                            <FormLabel>Forma de Pagamento</FormLabel>
+                            <FormControl>
+                                <RadioGroup
+                                onValueChange={field.onChange}
+                                defaultValue={field.value}
+                                className="flex flex-wrap gap-4"
+                                >
+                                <FormItem className="flex items-center space-x-3 space-y-0">
+                                    <FormControl>
+                                    <RadioGroupItem value="cash" />
+                                    </FormControl>
+                                    <FormLabel className="font-normal">Dinheiro</FormLabel>
+                                </FormItem>
+                                <FormItem className="flex items-center space-x-3 space-y-0">
+                                    <FormControl>
+                                    <RadioGroupItem value="pix" />
+                                    </FormControl>
+                                    <FormLabel className="font-normal">Pix</FormLabel>
+                                </FormItem>
+                                <FormItem className="flex items-center space-x-3 space-y-0">
+                                    <FormControl>
+                                    <RadioGroupItem value="debit_card" />
+                                    </FormControl>
+                                    <FormLabel className="font-normal">Cartão de Débito</FormLabel>
+                                </FormItem>
+                                <FormItem className="flex items-center space-x-3 space-y-0">
+                                    <FormControl>
+                                    <RadioGroupItem value="credit_card" />
+                                    </FormControl>
+                                    <FormLabel className="font-normal">Cartão de Crédito</FormLabel>
+                                </FormItem>
+                                </RadioGroup>
+                            </FormControl>
+                            <FormMessage />
+                            </FormItem>
+                        )}
+                        />
+                        <FormField
+                        control={form.control}
+                        name="status"
+                        render={({ field }) => (
+                            <FormItem className="space-y-3">
+                            <FormLabel>Status do Pagamento</FormLabel>
+                            <FormControl>
+                                <RadioGroup
+                                onValueChange={field.onChange}
+                                defaultValue={field.value}
+                                className="flex items-center space-x-4"
+                                >
+                                <FormItem className="flex items-center space-x-3 space-y-0">
+                                    <FormControl>
+                                    <RadioGroupItem value="paid" />
+                                    </FormControl>
+                                    <FormLabel className="font-normal">Pago</FormLabel>
+                                </FormItem>
+                                <FormItem className="flex items-center space-x-3 space-y-0">
+                                    <FormControl>
+                                    <RadioGroupItem value="pending" />
+                                    </FormControl>
+                                    <FormLabel className="font-normal">A Receber</FormLabel>
+                                </FormItem>
+                                </RadioGroup>
+                            </FormControl>
+                            <FormMessage />
+                            </FormItem>
+                        )}
+                        />
+                        {watchedStatus === 'pending' && (
+                            <FormField
+                                control={form.control}
+                                name="downPayment"
+                                render={({ field }) => (
+                                    <FormItem>
+                                    <FormLabel>Entrada (R$)</FormLabel>
+                                    <FormControl>
+                                        <Input type="number" step="0.01" placeholder="Ex: 50,00" {...field} />
+                                    </FormControl>
+                                    <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+                        )}
+                    </div>
+                    <div className="space-y-4 rounded-lg bg-muted/30 p-6">
+                        <h4 className="text-lg font-semibold">Resumo Financeiro</h4>
+                        <div className="flex justify-between items-center text-lg">
+                            <span>Total dos Itens</span>
+                            <span className="font-bold">
+                                {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(totalAmount)}
+                            </span>
+                        </div>
+                        {watchedStatus === 'pending' && (
+                            <>
+                                <div className="flex justify-between items-center text-sm">
+                                    <span className="text-muted-foreground">Entrada</span>
+                                    <span>
+                                        {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(watchedDownPayment || 0)}
+                                    </span>
+                                </div>
+                                <Separator/>
+                                <div className="flex justify-between items-center text-lg">
+                                    <span className="text-destructive">Valor a Receber</span>
+                                    <span className="font-bold text-destructive">
+                                        {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(amountReceivable)}
+                                    </span>
+                                </div>
+                            </>
+                        )}
+                        {watchedStatus === 'paid' && (
+                            <>
+                                <div className="flex justify-between items-center text-sm">
+                                    <span className="text-muted-foreground">Total Pago</span>
+                                    <span>
+                                        {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(totalAmount)}
+                                    </span>
+                                </div>
+                                <Separator/>
+                                <div className="flex justify-between items-center text-lg">
+                                    <span className="text-green-600">Total a Receber</span>
+                                    <span className="font-bold text-green-600">
+                                        {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(0)}
+                                    </span>
+                                </div>
+                            </>
+                        )}
+
+                    </div>
+                </div>
 
 
-            <div className="flex justify-end gap-2 pt-8">
-                <Button type="button" variant="outline" onClick={() => router.back()}>
-                    Cancelar
-                </Button>
-                <Button type="submit">Registrar Venda</Button>
-            </div>
-          </form>
-        </Form>
-      </CardContent>
-    </Card>
+                <div className="flex justify-end gap-2 pt-8">
+                    <Button type="button" variant="outline" onClick={() => router.back()}>
+                        Cancelar
+                    </Button>
+                    <Button type="submit">Registrar Venda</Button>
+                </div>
+            </form>
+            </Form>
+        </CardContent>
+        </Card>
+
+        <Dialog open={isNewProductDialogOpen} onOpenChange={setIsNewProductDialogOpen}>
+            <DialogContent>
+                <DialogHeader>
+                    <DialogTitle>Criar Novo Produto</DialogTitle>
+                    <DialogDescription>
+                        Adicione um novo produto ou serviço ao seu inventário. Ele estará disponível para a venda imediatamente.
+                    </DialogDescription>
+                </DialogHeader>
+                <ProductForm 
+                    onSuccess={handleProductCreated}
+                    onClose={() => setIsNewProductDialogOpen(false)} 
+                />
+            </DialogContent>
+        </Dialog>
+    </>
   )
 }
 
