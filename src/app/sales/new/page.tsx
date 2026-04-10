@@ -1,3 +1,4 @@
+
 'use client'
 
 import { zodResolver } from "@hookform/resolvers/zod"
@@ -15,7 +16,7 @@ import { Separator } from "@/components/ui/separator"
 import { useToast } from "@/hooks/use-toast"
 import { useEffect } from "react"
 import { useCollection, useFirestore, useMemoFirebase } from "@/firebase"
-import { collection, doc, setDoc, updateDoc } from "firebase/firestore"
+import { collection, doc, writeBatch } from "firebase/firestore"
 import type { Customer, Product } from "@/lib/types"
 import { AuthGuard } from "@/components/app/auth-guard"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
@@ -87,32 +88,27 @@ function NewSalePageContent() {
   async function onSubmit(data: SaleFormValues) {
     if (!firestore || !products) return;
     try {
-      // Stock validation
-      for (const item of data.items) {
-        const product = products.find(p => p.id === item.productId);
-        if (product && product.type === 'piece' && (product.quantity === undefined || product.quantity < item.quantity)) {
-          toast({
-            title: "Erro de Estoque",
-            description: `Estoque insuficiente para o produto "${product.name}". Disponível: ${product.quantity || 0}.`,
-            variant: "destructive",
-          });
-          return;
-        }
-      }
+      const batch = writeBatch(firestore);
+      const saleId = uuidv4();
 
-      // Update stock
+      // Validação de estoque e preparação do Batch
       for (const item of data.items) {
         const product = products.find(p => p.id === item.productId);
         if (product && product.type === 'piece') {
+          if ((product.quantity === undefined || product.quantity < item.quantity)) {
+            toast({
+              title: "Erro de Estoque",
+              description: `Estoque insuficiente para o produto "${product.name}". Disponível: ${product.quantity || 0}.`,
+              variant: "destructive",
+            });
+            return;
+          }
           const productRef = doc(firestore, 'parts', product.id);
           const newQuantity = (product.quantity || 0) - item.quantity;
-          await updateDoc(productRef, { quantity: newQuantity });
+          batch.update(productRef, { quantity: newQuantity });
         }
       }
       
-      const saleId = uuidv4();
-      
-      // Construir objeto de dados sem valores 'undefined'
       const saleData: any = {
         id: saleId,
         customerId: data.customerId,
@@ -129,18 +125,21 @@ function NewSalePageContent() {
         saleData.paymentDate = new Date().toISOString();
       }
 
-      await setDoc(doc(firestore, "sales", saleId), saleData);
+      batch.set(doc(firestore, "sales", saleId), saleData);
+
+      // Executa tudo como uma única transação
+      await batch.commit();
 
       toast({
         title: "Sucesso!",
-        description: "Nova venda registrada.",
+        description: "Nova venda registrada e estoque atualizado.",
       })
       router.push('/sales')
     } catch (error) {
       console.error("Error creating sale: ", error)
       toast({
         title: "Erro!",
-        description: "Não foi possível registrar a venda. Erro de dados inválidos.",
+        description: "Não foi possível registrar a venda no banco de dados.",
         variant: 'destructive',
       })
     }

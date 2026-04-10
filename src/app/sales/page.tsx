@@ -1,3 +1,4 @@
+
 'use client'
 
 import React, { useState, useMemo } from 'react';
@@ -9,11 +10,11 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 import { Badge } from '@/components/ui/badge';
-import type { Sale, Customer } from '@/lib/types';
+import type { Sale, Customer, Product } from '@/lib/types';
 import { ConfirmationDialog } from '@/components/app/confirmation-dialog';
 import { useToast } from '@/hooks/use-toast';
 import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
-import { collection, doc, deleteDoc, updateDoc } from 'firebase/firestore';
+import { collection, doc, deleteDoc, updateDoc, writeBatch } from 'firebase/firestore';
 import { AuthGuard } from '@/components/app/auth-guard';
 import { Input } from '@/components/ui/input';
 
@@ -34,6 +35,9 @@ function SalesPageContent() {
 
     const customersCollection = useMemoFirebase(() => collection(firestore, 'customers'), [firestore]);
     const { data: customers, isLoading: customersLoading } = useCollection<Customer>(customersCollection);
+
+    const productsCollection = useMemoFirebase(() => collection(firestore, 'parts'), [firestore]);
+    const { data: products, isLoading: productsLoading } = useCollection<Product>(productsCollection);
 
     const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
     const [saleToCancel, setSaleToCancel] = useState<Sale | null>(null);
@@ -102,20 +106,35 @@ function SalesPageContent() {
     };
 
     const handleConfirmCancel = async () => {
-        if (!saleToCancel) return;
+        if (!saleToCancel || !firestore || !products) return;
 
         try {
-            await deleteDoc(doc(firestore, 'sales', saleToCancel.id));
+            const batch = writeBatch(firestore);
+
+            // Estornar estoque para produtos
+            for (const item of saleToCancel.items) {
+                const product = products.find(p => p.id === item.productId);
+                if (product && product.type === 'piece') {
+                    const productRef = doc(firestore, 'parts', product.id);
+                    const newQuantity = (product.quantity || 0) + item.quantity;
+                    batch.update(productRef, { quantity: newQuantity });
+                }
+            }
+
+            // Excluir a venda
+            batch.delete(doc(firestore, 'sales', saleToCancel.id));
+
+            await batch.commit();
+
             toast({
-                title: "Sucesso!",
-                description: `Venda ${saleToCancel.id.toUpperCase().substring(0,6)} cancelada.`,
-                variant: "default",
+                title: "Venda Cancelada",
+                description: `A venda foi excluída e os produtos retornaram ao estoque.`,
             });
         } catch (error) {
             console.error("Error cancelling sale: ", error);
             toast({
                 title: "Erro!",
-                description: "Não foi possível cancelar a venda.",
+                description: "Não foi possível cancelar a venda e restaurar o estoque.",
                 variant: "destructive"
             });
         }
@@ -160,7 +179,7 @@ function SalesPageContent() {
         router.push(`/sales/${saleId}`);
     };
     
-    const isLoading = salesLoading || customersLoading;
+    const isLoading = salesLoading || customersLoading || productsLoading;
 
     return (
         <>
@@ -304,7 +323,7 @@ function SalesPageContent() {
                     open={cancelDialogOpen}
                     onOpenChange={setCancelDialogOpen}
                     title="Tem certeza?"
-                    description={`Esta ação não pode ser desfeita. Isso cancelará permanentemente a venda ${saleToCancel.id.substring(0,6).toUpperCase()}.`}
+                    description={`Esta ação devolverá os itens ao estoque e excluirá permanentemente a venda ${saleToCancel.id.substring(0,6).toUpperCase()}.`}
                     onConfirm={handleConfirmCancel}
                     confirmText="Sim, cancelar venda"
                 />

@@ -1,3 +1,4 @@
+
 'use client'
 
 import React, { useState, useMemo } from 'react';
@@ -12,7 +13,7 @@ import type { Budget, Customer, Product, Sale } from '@/lib/types';
 import { ConfirmationDialog } from '@/components/app/confirmation-dialog';
 import { useToast } from '@/hooks/use-toast';
 import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
-import { collection, doc, deleteDoc, updateDoc, setDoc } from 'firebase/firestore';
+import { collection, doc, deleteDoc, updateDoc, writeBatch } from 'firebase/firestore';
 import { AuthGuard } from '@/components/app/auth-guard';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
@@ -168,7 +169,9 @@ function BudgetsPageContent() {
 
         if (newStatus === 'approved') {
             try {
-                // Stock validation
+                const batch = writeBatch(firestore);
+
+                // Validação de estoque
                 for (const item of budget.items) {
                     const product = products.find(p => p.id === item.productId);
                     if (product && product.type === 'piece' && (product.quantity === undefined || product.quantity < item.quantity)) {
@@ -181,13 +184,13 @@ function BudgetsPageContent() {
                     }
                 }
 
-                // Update stock
+                // Atualização de estoque no Batch
                 for (const item of budget.items) {
                     const product = products.find(p => p.id === item.productId);
                     if (product && product.type === 'piece') {
                         const productRef = doc(firestore, 'parts', product.id);
                         const newQuantity = (product.quantity || 0) - item.quantity;
-                        await updateDoc(productRef, { quantity: newQuantity });
+                        batch.update(productRef, { quantity: newQuantity });
                     }
                 }
                 
@@ -198,15 +201,17 @@ function BudgetsPageContent() {
                     items: budget.items,
                     totalAmount: budget.totalAmount,
                     saleDate: new Date().toISOString(),
-                    paymentMethod: 'cash', // Default
-                    status: 'pending', // Default
+                    paymentMethod: 'cash', 
+                    status: 'pending', 
                     downPayment: 0,
                     amountReceivable: budget.totalAmount,
                     budgetId: budget.id,
                 };
-                await setDoc(doc(firestore, "sales", saleId), saleData);
+                
+                batch.set(doc(firestore, "sales", saleId), saleData);
+                batch.update(budgetRef, { status: "approved" });
 
-                await updateDoc(budgetRef, { status: "approved" });
+                await batch.commit();
 
                 toast({
                     title: "Sucesso!",
