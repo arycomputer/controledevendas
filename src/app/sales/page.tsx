@@ -4,7 +4,7 @@
 import React, { useState, useMemo } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { PlusCircle, MoreHorizontal, Loader2, Eye, XCircle, ArrowUpDown, Search, CreditCard } from 'lucide-react';
+import { PlusCircle, MoreHorizontal, Loader2, Eye, XCircle, ArrowUpDown, Search, CreditCard, RotateCcw, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -25,6 +25,18 @@ const paymentMethodLabels: { [key: string]: string } = {
     debit_card: 'Cartão de Débito',
 };
 
+const statusLabels: { [key: string]: string } = {
+    paid: 'Pago',
+    pending: 'A Receber',
+    cancelled: 'Estornado',
+};
+
+const statusColors: { [key: string]: string } = {
+    paid: 'bg-green-600 hover:bg-green-700',
+    pending: 'bg-destructive hover:bg-destructive/80',
+    cancelled: 'bg-slate-500 hover:bg-slate-600',
+};
+
 function SalesPageContent() {
     const router = useRouter();
     const { toast } = useToast();
@@ -39,9 +51,12 @@ function SalesPageContent() {
     const productsCollection = useMemoFirebase(() => collection(firestore, 'parts'), [firestore]);
     const { data: products, isLoading: productsLoading } = useCollection<Product>(productsCollection);
 
-    const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
-    const [saleToCancel, setSaleToCancel] = useState<Sale | null>(null);
+    const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+    const [saleToDelete, setSaleToDelete] = useState<Sale | null>(null);
     
+    const [reverseDialogOpen, setReverseDialogOpen] = useState(false);
+    const [saleToReverse, setSaleToReverse] = useState<Sale | null>(null);
+
     const [paymentDialogOpen, setPaymentDialogOpen] = useState(false);
     const [saleToPay, setSaleToPay] = useState<Sale | null>(null);
 
@@ -100,19 +115,44 @@ function SalesPageContent() {
         setSortConfig({ key, direction });
     };
 
-    const handleCancelClick = (sale: Sale) => {
-        setSaleToCancel(sale);
-        setCancelDialogOpen(true);
+    const handleDeleteClick = (sale: Sale) => {
+        setSaleToDelete(sale);
+        setDeleteDialogOpen(true);
     };
 
-    const handleConfirmCancel = async () => {
-        if (!saleToCancel || !firestore || !products) return;
+    const handleConfirmDelete = async () => {
+        if (!saleToDelete || !firestore) return;
+        try {
+            await deleteDoc(doc(firestore, 'sales', saleToDelete.id));
+            toast({
+                title: "Venda Excluída",
+                description: `O registro da venda foi removido permanentemente.`,
+            });
+        } catch (error) {
+            console.error("Error deleting sale: ", error);
+            toast({
+                title: "Erro!",
+                description: "Não foi possível excluir o registro.",
+                variant: "destructive"
+            });
+        }
+        setSaleToDelete(null);
+        setDeleteDialogOpen(false);
+    };
+
+    const handleReverseClick = (sale: Sale) => {
+        setSaleToReverse(sale);
+        setReverseDialogOpen(true);
+    };
+
+    const handleConfirmReverse = async () => {
+        if (!saleToReverse || !firestore || !products) return;
 
         try {
             const batch = writeBatch(firestore);
 
             // Estornar estoque para produtos
-            for (const item of saleToCancel.items) {
+            for (const item of saleToReverse.items) {
                 const product = products.find(p => p.id === item.productId);
                 if (product && product.type === 'piece') {
                     const productRef = doc(firestore, 'parts', product.id);
@@ -121,26 +161,30 @@ function SalesPageContent() {
                 }
             }
 
-            // Excluir a venda
-            batch.delete(doc(firestore, 'sales', saleToCancel.id));
+            // Marcar como Estornada em vez de excluir
+            batch.update(doc(firestore, 'sales', saleToReverse.id), {
+                status: 'cancelled',
+                amountReceivable: 0,
+                downPayment: 0
+            });
 
             await batch.commit();
 
             toast({
-                title: "Venda Cancelada",
-                description: `A venda foi excluída e os produtos retornaram ao estoque.`,
+                title: "Venda Estornada",
+                description: `Os produtos retornaram ao estoque e a venda foi marcada como cancelada.`,
             });
         } catch (error) {
-            console.error("Error cancelling sale: ", error);
+            console.error("Error reversing sale: ", error);
             toast({
                 title: "Erro!",
-                description: "Não foi possível cancelar a venda e restaurar o estoque.",
+                description: "Não foi possível estornar a venda.",
                 variant: "destructive"
             });
         }
 
-        setSaleToCancel(null);
-        setCancelDialogOpen(false);
+        setSaleToReverse(null);
+        setReverseDialogOpen(false);
     };
     
      const handlePaymentClick = (sale: Sale) => {
@@ -261,7 +305,11 @@ function SalesPageContent() {
                             ) : processedSales.length > 0 ? (
                                 processedSales.map((sale) => {
                                     return (
-                                        <TableRow key={sale.id} onDoubleClick={() => handleViewClick(sale.id)} className="cursor-pointer">
+                                        <TableRow 
+                                            key={sale.id} 
+                                            onDoubleClick={() => handleViewClick(sale.id)} 
+                                            className={`cursor-pointer ${sale.status === 'cancelled' ? 'opacity-60' : ''}`}
+                                        >
                                             <TableCell className="font-medium">{sale.customerName}</TableCell>
                                             <TableCell className="hidden md:table-cell">{new Date(sale.saleDate).toLocaleDateString('pt-BR')}</TableCell>
                                             <TableCell className="hidden lg:table-cell">{sale.paymentDate ? new Date(sale.paymentDate).toLocaleDateString('pt-BR') : '-'}</TableCell>
@@ -269,17 +317,18 @@ function SalesPageContent() {
                                             <TableCell className="text-center">
                                                 <Badge 
                                                     variant={sale.status === 'paid' ? 'default' : 'destructive'} 
-                                                    className={
-                                                        sale.status === 'paid' 
-                                                        ? 'bg-green-600 hover:bg-green-700' 
-                                                        : 'cursor-pointer hover:bg-destructive/80'
-                                                    }
-                                                    onClick={() => sale.status === 'pending' && handlePaymentClick(sale)}
+                                                    className={`${statusColors[sale.status]} ${sale.status === 'pending' ? 'cursor-pointer hover:bg-destructive/80' : ''}`}
+                                                    onClick={(e) => {
+                                                        if (sale.status === 'pending') {
+                                                            e.stopPropagation();
+                                                            handlePaymentClick(sale);
+                                                        }
+                                                    }}
                                                 >
-                                                    {sale.status === 'paid' ? 'Pago' : 'A Receber'}
+                                                    {statusLabels[sale.status]}
                                                 </Badge>
                                             </TableCell>
-                                            <TableCell className="text-right font-semibold">
+                                            <TableCell className={`text-right font-semibold ${sale.status === 'cancelled' ? 'line-through' : ''}`}>
                                                 {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(sale.totalAmount)}
                                             </TableCell>
                                             <TableCell className="text-right">
@@ -298,8 +347,18 @@ function SalesPageContent() {
                                                                 <CreditCard className="mr-2 h-4 w-4" /> Marcar como Pago
                                                             </DropdownMenuItem>
                                                         )}
+                                                        {sale.status !== 'cancelled' && (
+                                                            <>
+                                                                <DropdownMenuSeparator />
+                                                                <DropdownMenuItem onClick={() => handleReverseClick(sale)} className="text-orange-600 focus:text-orange-600 focus:bg-orange-50">
+                                                                    <RotateCcw className="mr-2 h-4 w-4" /> Estornar Venda
+                                                                </DropdownMenuItem>
+                                                            </>
+                                                        )}
                                                         <DropdownMenuSeparator />
-                                                        <DropdownMenuItem onClick={() => handleCancelClick(sale)} className="text-destructive focus:text-destructive focus:bg-destructive/10"><XCircle className="mr-2 h-4 w-4" /> Cancelar Venda</DropdownMenuItem>
+                                                        <DropdownMenuItem onClick={() => handleDeleteClick(sale)} className="text-destructive focus:text-destructive focus:bg-destructive/10">
+                                                            <Trash2 className="mr-2 h-4 w-4" /> Excluir Registro
+                                                        </DropdownMenuItem>
                                                     </DropdownMenuContent>
                                                 </DropdownMenu>
                                             </TableCell>
@@ -318,14 +377,25 @@ function SalesPageContent() {
                 </CardContent>
             </Card>
             
-            {saleToCancel && (
+            {saleToReverse && (
                 <ConfirmationDialog
-                    open={cancelDialogOpen}
-                    onOpenChange={setCancelDialogOpen}
-                    title="Tem certeza?"
-                    description={`Esta ação devolverá os itens ao estoque e excluirá permanentemente a venda ${saleToCancel.id.substring(0,6).toUpperCase()}.`}
-                    onConfirm={handleConfirmCancel}
-                    confirmText="Sim, cancelar venda"
+                    open={reverseDialogOpen}
+                    onOpenChange={setReverseDialogOpen}
+                    title="Confirmar Estorno"
+                    description={`Deseja estornar a venda ${saleToReverse.id.substring(0,6).toUpperCase()}? Os produtos retornarão ao estoque e o registro será mantido como "Estornado".`}
+                    onConfirm={handleConfirmReverse}
+                    confirmText="Sim, estornar venda"
+                />
+            )}
+
+            {saleToDelete && (
+                <ConfirmationDialog
+                    open={deleteDialogOpen}
+                    onOpenChange={setDeleteDialogOpen}
+                    title="Excluir Registro"
+                    description={`Tem certeza que deseja excluir permanentemente a venda ${saleToDelete.id.substring(0,6).toUpperCase()}? Isso NÃO devolverá os itens ao estoque automaticamente.`}
+                    onConfirm={handleConfirmDelete}
+                    confirmText="Sim, excluir permanentemente"
                 />
             )}
             

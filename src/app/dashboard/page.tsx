@@ -1,3 +1,4 @@
+
 'use client'
 
 import { CircleDollarSign, Users, Package, ShoppingCart, Loader2, Wrench, Handshake } from "lucide-react";
@@ -29,9 +30,12 @@ function DashboardPageContent() {
   const stats = useMemo(() => {
     if (!sales || !products) return { totalSalesValue: 0, totalPartsCost: 0, totalServicesRevenue: 0, recentSales: [] };
 
-    const totalSalesValue = sales.reduce((sum, sale) => sum + sale.totalAmount, 0);
+    // Filtrar apenas vendas ativas (pagas ou pendentes)
+    const activeSales = sales.filter(s => s.status !== 'cancelled');
+
+    const totalSalesValue = activeSales.reduce((sum, sale) => sum + sale.totalAmount, 0);
     
-    const recentSales = [...sales]
+    const recentSales = [...activeSales]
       .sort((a, b) => new Date(b.saleDate).getTime() - new Date(a.saleDate).getTime())
       .slice(0, 5);
       
@@ -39,7 +43,7 @@ function DashboardPageContent() {
     let totalPartsCost = 0;
     let totalServicesRevenue = 0;
 
-    sales.forEach(sale => {
+    activeSales.forEach(sale => {
       sale.items.forEach(item => {
         const product = productsMap.get(item.productId);
         if (product) {
@@ -84,7 +88,7 @@ function DashboardPageContent() {
         />
         <StatCard 
           title="Vendas" 
-          value={`+${sales?.length || 0}`} 
+          value={`+${sales?.filter(s => s.status !== 'cancelled').length || 0}`} 
           icon={ShoppingCart}
         />
         <StatCard 
@@ -104,7 +108,7 @@ function DashboardPageContent() {
             <CardTitle>Visão Geral de Vendas</CardTitle>
           </CardHeader>
           <CardContent className="pl-2">
-            <SalesChart sales={sales || []}/>
+            <SalesChart sales={sales?.filter(s => s.status !== 'cancelled') || []}/>
           </CardContent>
         </Card>
         <Card className="lg:col-span-3">

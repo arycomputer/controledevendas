@@ -1,3 +1,4 @@
+
 'use client'
 
 import { useParams, useRouter } from "next/navigation"
@@ -19,6 +20,18 @@ const paymentMethodLabels: { [key: string]: string } = {
     pix: 'Pix',
     credit_card: 'Cartão de Crédito',
     debit_card: 'Cartão de Débito',
+};
+
+const statusLabels: { [key: string]: string } = {
+    paid: 'Pago',
+    pending: 'A Receber',
+    cancelled: 'Estornado',
+};
+
+const statusColors: { [key: string]: string } = {
+    paid: 'bg-green-600 hover:bg-green-700',
+    pending: 'bg-destructive hover:bg-destructive/80',
+    cancelled: 'bg-slate-500 hover:bg-slate-600',
 };
 
 
@@ -70,11 +83,16 @@ function SaleDetailsPageContent() {
     const totalItems = sale.items.reduce((sum, item) => sum + item.quantity, 0);
 
     return (
-        <Card className="max-w-4xl mx-auto">
+        <Card className={`max-w-4xl mx-auto ${sale.status === 'cancelled' ? 'border-slate-300' : ''}`}>
             <CardHeader>
                 <div className="flex justify-between items-center">
                     <div>
-                        <CardTitle>Detalhes da Venda</CardTitle>
+                        <CardTitle className="flex items-center gap-2">
+                            Detalhes da Venda
+                            {sale.status === 'cancelled' && (
+                                <Badge variant="secondary" className="bg-slate-100 text-slate-600 uppercase text-[10px]">Anulada</Badge>
+                            )}
+                        </CardTitle>
                         <CardDescription className="font-mono text-xs mt-1">{sale.id.toUpperCase()}</CardDescription>
                     </div>
                      <Button variant="outline" onClick={() => router.back()}>
@@ -83,6 +101,12 @@ function SaleDetailsPageContent() {
                 </div>
             </CardHeader>
             <CardContent className="space-y-6">
+                {sale.status === 'cancelled' && (
+                    <div className="bg-slate-50 border border-slate-200 rounded-lg p-4 text-slate-600 text-sm italic mb-4">
+                        Esta venda foi estornada. Os itens foram devolvidos ao estoque e os valores não constam mais nos relatórios financeiros.
+                    </div>
+                )}
+
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-sm">
                     <div className="space-y-1">
                         <h3 className="font-semibold">Cliente</h3>
@@ -94,15 +118,15 @@ function SaleDetailsPageContent() {
                         <h3 className="font-semibold">Detalhes da Venda</h3>
                         <p className="text-muted-foreground">Data da Venda: {new Date(sale.saleDate).toLocaleDateString('pt-BR')}</p>
                         {sale.paymentDate && <p className="text-muted-foreground">Data do Pagamento: {new Date(sale.paymentDate).toLocaleDateString('pt-BR')}</p>}
-                        <div className="text-muted-foreground">Itens: <Badge variant="secondary" className="ml-1">&lt;div&gt;{totalItems}&lt;/div&gt;</Badge></div>
+                        <div className="text-muted-foreground">Itens: <Badge variant="secondary" className="ml-1">{totalItems}</Badge></div>
                     </div>
                     <div className="space-y-1">
                         <h3 className="font-semibold">Pagamento</h3>
                         <p className="text-muted-foreground">Forma: {paymentMethodLabels[sale.paymentMethod]}</p>
                         <div className="text-muted-foreground flex items-center gap-2">
                             Status:
-                             <Badge variant={sale.status === 'paid' ? 'default' : 'destructive'} className={sale.status === 'paid' ? 'bg-green-600 hover:bg-green-700' : ''}>
-                                {sale.status === 'paid' ? 'Pago' : 'A Receber'}
+                             <Badge variant="default" className={statusColors[sale.status]}>
+                                {statusLabels[sale.status]}
                             </Badge>
                         </div>
                     </div>
@@ -148,7 +172,9 @@ function SaleDetailsPageContent() {
                      <div className="space-y-2">
                         <div className="flex justify-between items-center">
                             <span className="text-muted-foreground">Subtotal</span>
-                            <span>{new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(sale.totalAmount)}</span>
+                            <span className={sale.status === 'cancelled' ? 'line-through text-slate-400' : ''}>
+                                {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(sale.totalAmount)}
+                            </span>
                         </div>
                         {sale.status === 'pending' && (
                         <div className="flex justify-between items-center">
@@ -158,9 +184,15 @@ function SaleDetailsPageContent() {
                         )}
                          <Separator />
                           <div className="flex justify-between items-center font-bold text-base">
-                            <span>{sale.status === 'paid' ? 'Total Pago' : 'Total a Receber'}</span>
-                            <span className={sale.status === 'pending' ? 'text-destructive' : 'text-green-600'}>
-                                {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(sale.status === 'paid' ? sale.totalAmount : sale.amountReceivable || 0)}
+                            <span>{sale.status === 'paid' ? 'Total Pago' : sale.status === 'cancelled' ? 'Total (Estornado)' : 'Total a Receber'}</span>
+                            <span className={
+                                sale.status === 'pending' ? 'text-destructive' : 
+                                sale.status === 'cancelled' ? 'text-slate-400 line-through' : 
+                                'text-green-600'
+                            }>
+                                {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(
+                                    sale.status === 'cancelled' ? sale.totalAmount : (sale.status === 'paid' ? sale.totalAmount : (sale.amountReceivable || 0))
+                                )}
                             </span>
                         </div>
                     </div>
