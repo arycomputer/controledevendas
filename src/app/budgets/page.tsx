@@ -1,4 +1,3 @@
-
 'use client'
 
 import React, { useState, useMemo } from 'react';
@@ -37,13 +36,13 @@ function BudgetsPageContent() {
     const { toast } = useToast();
     const firestore = useFirestore();
 
-    const budgetsCollection = useMemoFirebase(() => collection(firestore, 'budgets'), [firestore]);
+    const budgetsCollection = useMemoFirebase(() => firestore ? collection(firestore, 'budgets') : null, [firestore]);
     const { data: budgets, isLoading: budgetsLoading } = useCollection<Budget>(budgetsCollection);
 
-    const customersCollection = useMemoFirebase(() => collection(firestore, 'customers'), [firestore]);
+    const customersCollection = useMemoFirebase(() => firestore ? collection(firestore, 'customers') : null, [firestore]);
     const { data: customers, isLoading: customersLoading } = useCollection<Customer>(customersCollection);
 
-    const productsCollection = useMemoFirebase(() => collection(firestore, 'parts'), [firestore]);
+    const productsCollection = useMemoFirebase(() => firestore ? collection(firestore, 'parts') : null, [firestore]);
     const { data: products, isLoading: productsLoading } = useCollection<Product>(productsCollection);
 
     const [dialogOpen, setDialogOpen] = useState(false);
@@ -171,7 +170,6 @@ function BudgetsPageContent() {
             try {
                 const batch = writeBatch(firestore);
 
-                // Validação de estoque
                 for (const item of budget.items) {
                     const product = products.find(p => p.id === item.productId);
                     if (product && product.type === 'piece' && (product.quantity === undefined || product.quantity < item.quantity)) {
@@ -184,7 +182,6 @@ function BudgetsPageContent() {
                     }
                 }
 
-                // Atualização de estoque no Batch
                 for (const item of budget.items) {
                     const product = products.find(p => p.id === item.productId);
                     if (product && product.type === 'piece') {

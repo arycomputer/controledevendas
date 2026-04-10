@@ -1,4 +1,3 @@
-
 'use client'
 
 import React, { useState, useMemo } from 'react';
@@ -42,13 +41,13 @@ function SalesPageContent() {
     const { toast } = useToast();
     const firestore = useFirestore();
 
-    const salesCollection = useMemoFirebase(() => collection(firestore, 'sales'), [firestore]);
+    const salesCollection = useMemoFirebase(() => firestore ? collection(firestore, 'sales') : null, [firestore]);
     const { data: sales, isLoading: salesLoading } = useCollection<Sale>(salesCollection);
 
-    const customersCollection = useMemoFirebase(() => collection(firestore, 'customers'), [firestore]);
+    const customersCollection = useMemoFirebase(() => firestore ? collection(firestore, 'customers') : null, [firestore]);
     const { data: customers, isLoading: customersLoading } = useCollection<Customer>(customersCollection);
 
-    const productsCollection = useMemoFirebase(() => collection(firestore, 'parts'), [firestore]);
+    const productsCollection = useMemoFirebase(() => firestore ? collection(firestore, 'parts') : null, [firestore]);
     const { data: products, isLoading: productsLoading } = useCollection<Product>(productsCollection);
 
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -151,7 +150,6 @@ function SalesPageContent() {
         try {
             const batch = writeBatch(firestore);
 
-            // Estornar estoque para produtos
             for (const item of saleToReverse.items) {
                 const product = products.find(p => p.id === item.productId);
                 if (product && product.type === 'piece') {
@@ -161,7 +159,6 @@ function SalesPageContent() {
                 }
             }
 
-            // Marcar como Estornada em vez de excluir
             batch.update(doc(firestore, 'sales', saleToReverse.id), {
                 status: 'cancelled',
                 amountReceivable: 0,

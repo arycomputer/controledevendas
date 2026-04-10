@@ -1,4 +1,3 @@
-
 'use client'
 
 import { CircleDollarSign, Users, Package, ShoppingCart, Loader2, Wrench, Handshake } from "lucide-react";
@@ -16,13 +15,13 @@ import { useMemo } from "react";
 function DashboardPageContent() {
   const firestore = useFirestore();
 
-  const salesCollection = useMemoFirebase(() => collection(firestore, 'sales'), [firestore]);
+  const salesCollection = useMemoFirebase(() => firestore ? collection(firestore, 'sales') : null, [firestore]);
   const { data: sales, isLoading: salesLoading } = useCollection<Sale>(salesCollection);
 
-  const customersCollection = useMemoFirebase(() => collection(firestore, 'customers'), [firestore]);
+  const customersCollection = useMemoFirebase(() => firestore ? collection(firestore, 'customers') : null, [firestore]);
   const { data: customers, isLoading: customersLoading } = useCollection<Customer>(customersCollection);
   
-  const productsCollection = useMemoFirebase(() => collection(firestore, 'parts'), [firestore]);
+  const productsCollection = useMemoFirebase(() => firestore ? collection(firestore, 'parts') : null, [firestore]);
   const { data: products, isLoading: productsLoading } = useCollection<Product>(productsCollection);
 
   const isLoading = salesLoading || customersLoading || productsLoading;
@@ -30,9 +29,7 @@ function DashboardPageContent() {
   const stats = useMemo(() => {
     if (!sales || !products) return { totalSalesValue: 0, totalPartsCost: 0, totalServicesRevenue: 0, recentSales: [] };
 
-    // Filtrar apenas vendas ativas (pagas ou pendentes)
     const activeSales = sales.filter(s => s.status !== 'cancelled');
-
     const totalSalesValue = activeSales.reduce((sum, sale) => sum + sale.totalAmount, 0);
     
     const recentSales = [...activeSales]
