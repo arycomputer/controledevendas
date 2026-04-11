@@ -88,7 +88,7 @@ function SalesPageContent() {
             let aValue: any = a[key as keyof typeof a];
             let bValue: any = b[key as keyof typeof b];
             
-            if (key === 'saleDate' || key === 'paymentDate') {
+            if (key === 'saleDate') {
                 aValue = aValue ? new Date(aValue).getTime() : 0;
                 bValue = bValue ? new Date(bValue).getTime() : 0;
             }
@@ -106,7 +106,7 @@ function SalesPageContent() {
 
     }, [sales, customers, searchTerm, sortConfig]);
 
-    const requestSort = (key: keyof Sale | 'customerName' | 'paymentDate') => {
+    const requestSort = (key: keyof Sale | 'customerName') => {
         let direction: 'ascending' | 'descending' = 'ascending';
         if (sortConfig.key === key && sortConfig.direction === 'ascending') {
             direction = 'descending';
@@ -264,12 +264,6 @@ function SalesPageContent() {
                                     </Button>
                                 </TableHead>
                                 <TableHead className="hidden lg:table-cell">
-                                    <Button variant="ghost" onClick={() => requestSort('paymentDate')}>
-                                        Data Pag.
-                                        <ArrowUpDown className="ml-2 h-4 w-4" />
-                                    </Button>
-                                </TableHead>
-                                <TableHead className="hidden lg:table-cell">
                                     <Button variant="ghost" onClick={() => requestSort('paymentMethod' as any)}>
                                         Forma Pag.
                                         <ArrowUpDown className="ml-2 h-4 w-4" />
@@ -295,7 +289,7 @@ function SalesPageContent() {
                         <TableBody>
                             {isLoading ? (
                                 <TableRow>
-                                    <TableCell colSpan={7} className="h-24 text-center">
+                                    <TableCell colSpan={6} className="h-24 text-center">
                                         <Loader2 className="h-6 w-6 animate-spin mx-auto" />
                                     </TableCell>
                                 </TableRow>
@@ -309,7 +303,6 @@ function SalesPageContent() {
                                         >
                                             <TableCell className="font-medium">{sale.customerName}</TableCell>
                                             <TableCell className="hidden md:table-cell">{new Date(sale.saleDate).toLocaleDateString('pt-BR')}</TableCell>
-                                            <TableCell className="hidden lg:table-cell">{sale.paymentDate ? new Date(sale.paymentDate).toLocaleDateString('pt-BR') : '-'}</TableCell>
                                             <TableCell className="hidden lg:table-cell">{paymentMethodLabels[sale.paymentMethod]}</TableCell>
                                             <TableCell className="text-center">
                                                 <Badge 
@@ -364,7 +357,7 @@ function SalesPageContent() {
                                 })
                              ) : (
                                 <TableRow>
-                                    <TableCell colSpan={7} className="h-24 text-center">
+                                    <TableCell colSpan={6} className="h-24 text-center">
                                         Nenhuma venda encontrada.
                                     </TableCell>
                                 </TableRow>
