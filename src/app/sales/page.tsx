@@ -41,13 +41,22 @@ function SalesPageContent() {
     const { toast } = useToast();
     const firestore = useFirestore();
 
-    const salesCollection = useMemoFirebase(() => firestore ? collection(firestore, 'sales') : null, [firestore]);
+    const salesCollection = useMemoFirebase(() => {
+        if (!firestore) return null;
+        return collection(firestore, 'sales');
+    }, [firestore]);
     const { data: sales, isLoading: salesLoading } = useCollection<Sale>(salesCollection);
 
-    const customersCollection = useMemoFirebase(() => firestore ? collection(firestore, 'customers') : null, [firestore]);
+    const customersCollection = useMemoFirebase(() => {
+        if (!firestore) return null;
+        return collection(firestore, 'customers');
+    }, [firestore]);
     const { data: customers, isLoading: customersLoading } = useCollection<Customer>(customersCollection);
 
-    const productsCollection = useMemoFirebase(() => firestore ? collection(firestore, 'parts') : null, [firestore]);
+    const productsCollection = useMemoFirebase(() => {
+        if (!firestore) return null;
+        return collection(firestore, 'parts');
+    }, [firestore]);
     const { data: products, isLoading: productsLoading } = useCollection<Product>(productsCollection);
 
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -247,41 +256,41 @@ function SalesPageContent() {
                         />
                     </div>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="p-0 sm:p-6">
                     <Table>
                         <TableHeader>
                             <TableRow>
                                 <TableHead>
-                                     <Button variant="ghost" onClick={() => requestSort('customerName')}>
+                                     <Button variant="ghost" onClick={() => requestSort('customerName')} className="p-0 hover:bg-transparent">
                                         Cliente
                                         <ArrowUpDown className="ml-2 h-4 w-4" />
                                     </Button>
                                 </TableHead>
                                 <TableHead className="hidden md:table-cell">
-                                    <Button variant="ghost" onClick={() => requestSort('saleDate')}>
+                                    <Button variant="ghost" onClick={() => requestSort('saleDate')} className="p-0 hover:bg-transparent">
                                         Data Venda
                                         <ArrowUpDown className="ml-2 h-4 w-4" />
                                     </Button>
                                 </TableHead>
                                 <TableHead className="hidden lg:table-cell">
-                                    <Button variant="ghost" onClick={() => requestSort('paymentMethod' as any)}>
+                                    <Button variant="ghost" onClick={() => requestSort('paymentMethod' as any)} className="p-0 hover:bg-transparent">
                                         Forma Pag.
                                         <ArrowUpDown className="ml-2 h-4 w-4" />
                                     </Button>
                                 </TableHead>
                                 <TableHead className="text-center">
-                                    <Button variant="ghost" onClick={() => requestSort('status')}>
+                                    <Button variant="ghost" onClick={() => requestSort('status')} className="p-0 hover:bg-transparent mx-auto">
                                         Status
                                         <ArrowUpDown className="ml-2 h-4 w-4" />
                                     </Button>
                                 </TableHead>
                                 <TableHead className="text-right">
-                                     <Button variant="ghost" onClick={() => requestSort('totalAmount')}>
+                                     <Button variant="ghost" onClick={() => requestSort('totalAmount')} className="p-0 hover:bg-transparent ml-auto">
                                         Valor Total
                                         <ArrowUpDown className="ml-2 h-4 w-4" />
                                     </Button>
                                 </TableHead>
-                                <TableHead>
+                                <TableHead className="w-[80px]">
                                     <span className="sr-only">Ações</span>
                                 </TableHead>
                             </TableRow>
@@ -303,11 +312,11 @@ function SalesPageContent() {
                                         >
                                             <TableCell className="font-medium">{sale.customerName}</TableCell>
                                             <TableCell className="hidden md:table-cell">{new Date(sale.saleDate).toLocaleDateString('pt-BR')}</TableCell>
-                                            <TableCell className="hidden lg:table-cell">{paymentMethodLabels[sale.paymentMethod]}</TableCell>
+                                            <TableCell className="hidden lg:table-cell text-xs uppercase">{paymentMethodLabels[sale.paymentMethod]}</TableCell>
                                             <TableCell className="text-center">
                                                 <Badge 
                                                     variant={sale.status === 'paid' ? 'default' : 'destructive'} 
-                                                    className={`${statusColors[sale.status]} ${sale.status === 'pending' ? 'cursor-pointer hover:bg-destructive/80' : ''}`}
+                                                    className={`${statusColors[sale.status]} ${sale.status === 'pending' ? 'cursor-pointer hover:bg-destructive/80' : ''} text-[10px] uppercase px-2 py-0`}
                                                     onClick={(e) => {
                                                         if (sale.status === 'pending') {
                                                             e.stopPropagation();
@@ -318,7 +327,7 @@ function SalesPageContent() {
                                                     {statusLabels[sale.status]}
                                                 </Badge>
                                             </TableCell>
-                                            <TableCell className={`text-right font-semibold ${sale.status === 'cancelled' ? 'line-through' : ''}`}>
+                                            <TableCell className={`text-right font-semibold font-mono ${sale.status === 'cancelled' ? 'line-through' : ''}`}>
                                                 {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(sale.totalAmount)}
                                             </TableCell>
                                             <TableCell className="text-right">

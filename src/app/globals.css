@@ -23,6 +23,7 @@
     --border: 0 0% 89.8%;
     --input: 0 0% 89.8%;
     --ring: 231 48% 48%;
+    --radius: 0.5rem;
     --chart-1: 12 76% 61%;
     --chart-2: 173 58% 39%;
     --chart-3: 197 37% 24%;
@@ -72,96 +73,6 @@
     --sidebar-border: 217.2 32.6% 17.5%;
     --sidebar-ring: 0 0% 98%;
   }
-
-  .blue {
-    --background: 210 40% 96.1%;
-    --foreground: 222.2 84% 4.9%;
-    --card: 210 40% 98%;
-    --card-foreground: 222.2 84% 4.9%;
-    --popover: 210 40% 98%;
-    --popover-foreground: 222.2 84% 4.9%;
-    --primary: 217 91% 60%;
-    --primary-foreground: 0 0% 98%;
-    --secondary: 210 40% 94.1%;
-    --secondary-foreground: 0 0% 9%;
-    --muted: 210 40% 94.1%;
-    --muted-foreground: 0 0% 45.1%;
-    --accent: 217 91% 65%;
-    --accent-foreground: 0 0% 9%;
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 0 0% 98%;
-    --border: 210 40% 91.8%;
-    --input: 210 40% 91.8%;
-    --ring: 217 91% 60%;
-    --sidebar-background: 217 91% 60%;
-    --sidebar-foreground: 0 0% 98%;
-    --sidebar-primary: 0 0% 98%;
-    --sidebar-primary-foreground: 217 91% 60%;
-    --sidebar-accent: 217 80% 65%;
-    --sidebar-accent-foreground: 0 0% 98%;
-    --sidebar-border: 217 91% 55%;
-    --sidebar-ring: 0 0% 98%;
-  }
-
-  .green {
-    --background: 140 25% 96%;
-    --foreground: 140 25% 10%;
-    --card: 140 25% 98%;
-    --card-foreground: 140 25% 10%;
-    --popover: 140 25% 98%;
-    --popover-foreground: 140 25% 10%;
-    --primary: 142.1 76.2% 36.3%;
-    --primary-foreground: 0 0% 98%;
-    --secondary: 140 25% 94%;
-    --secondary-foreground: 0 0% 9%;
-    --muted: 140 25% 94%;
-    --muted-foreground: 0 0% 45.1%;
-    --accent: 142.1 76.2% 41.3%;
-    --accent-foreground: 0 0% 9%;
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 0 0% 98%;
-    --border: 140 25% 92%;
-    --input: 140 25% 92%;
-    --ring: 142.1 76.2% 36.3%;
-    --sidebar-background: 142.1 76.2% 36.3%;
-    --sidebar-foreground: 0 0% 98%;
-    --sidebar-primary: 0 0% 98%;
-    --sidebar-primary-foreground: 142.1 76.2% 36.3%;
-    --sidebar-accent: 142.1 76.2% 41.3%;
-    --sidebar-accent-foreground: 0 0% 98%;
-    --sidebar-border: 142.1 76.2% 31.3%;
-    --sidebar-ring: 0 0% 98%;
-  }
-
-  .orange {
-    --background: 24 90% 96%;
-    --foreground: 24 90% 10%;
-    --card: 24 90% 98%;
-    --card-foreground: 24 90% 10%;
-    --popover: 24 90% 98%;
-    --popover-foreground: 24 90% 10%;
-    --primary: 24.6 95% 53.1%;
-    --primary-foreground: 0 0% 98%;
-    --secondary: 24 90% 94%;
-    --secondary-foreground: 0 0% 9%;
-    --muted: 24 90% 94%;
-    --muted-foreground: 0 0% 45.1%;
-    --accent: 24.6 95% 58.1%;
-    --accent-foreground: 0 0% 9%;
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 0 0% 98%;
-    --border: 24 90% 92%;
-    --input: 24 90% 92%;
-    --ring: 24.6 95% 53.1%;
-    --sidebar-background: 24.6 95% 53.1%;
-    --sidebar-foreground: 0 0% 98%;
-    --sidebar-primary: 0 0% 98%;
-    --sidebar-primary-foreground: 24.6 95% 53.1%;
-    --sidebar-accent: 24.6 95% 58.1%;
-    --sidebar-accent-foreground: 0 0% 98%;
-    --sidebar-border: 24.6 95% 48.1%;
-    --sidebar-ring: 0 0% 98%;
-  }
 }
 
 @layer base {
@@ -171,4 +82,51 @@
   body {
     @apply bg-background text-foreground;
   }
+}
+
+/* Custom Table Resizing Styles */
+.resize-x {
+  resize: horizontal;
+  overflow: hidden;
+  position: relative;
+}
+
+/* Hide the default resize handle and show a custom one on hover */
+.resize-x::-webkit-resizer {
+  background-color: transparent;
+}
+
+.resize-x::after {
+  content: "";
+  position: absolute;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  width: 4px;
+  cursor: col-resize;
+  background-color: transparent;
+  transition: background-color 0.2s;
+}
+
+.resize-x:hover::after {
+  background-color: hsl(var(--primary) / 0.2);
+}
+
+/* Custom Scrollbar for Tables */
+.overflow-auto::-webkit-scrollbar {
+  height: 8px;
+  width: 8px;
+}
+
+.overflow-auto::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.overflow-auto::-webkit-scrollbar-thumb {
+  background: hsl(var(--muted-foreground) / 0.3);
+  border-radius: 4px;
+}
+
+.overflow-auto::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--muted-foreground) / 0.5);
 }

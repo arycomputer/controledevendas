@@ -23,7 +23,10 @@ function CustomersPageContent() {
     const [searchTerm, setSearchTerm] = useState('');
     const [sortConfig, setSortConfig] = useState<{ key: keyof Customer; direction: 'ascending' | 'descending' }>({ key: 'name', direction: 'ascending' });
     
-    const customersCollection = useMemoFirebase(() => collection(firestore, 'customers'), [firestore]);
+    const customersCollection = useMemoFirebase(() => {
+        if (!firestore) return null;
+        return collection(firestore, 'customers');
+    }, [firestore]);
     const { data: customers, isLoading } = useCollection<Customer>(customersCollection);
 
     const [dialogOpen, setDialogOpen] = useState(false);
@@ -77,7 +80,7 @@ function CustomersPageContent() {
     };
 
     const handleConfirmDelete = async () => {
-        if (!customerToDelete) return;
+        if (!customerToDelete || !firestore) return;
         
         try {
             await deleteDoc(doc(firestore, 'customers', customerToDelete.id));
@@ -127,35 +130,35 @@ function CustomersPageContent() {
                         />
                     </div>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="p-0 sm:p-6">
                     <Table>
                         <TableHeader>
                             <TableRow>
                                 <TableHead>
-                                    <Button variant="ghost" onClick={() => requestSort('name')}>
+                                    <Button variant="ghost" onClick={() => requestSort('name')} className="p-0 hover:bg-transparent">
                                         Nome
                                         <ArrowUpDown className="ml-2 h-4 w-4" />
                                     </Button>
                                 </TableHead>
                                 <TableHead className="hidden md:table-cell">
-                                     <Button variant="ghost" onClick={() => requestSort('email')}>
+                                     <Button variant="ghost" onClick={() => requestSort('email')} className="p-0 hover:bg-transparent">
                                         Contato
                                         <ArrowUpDown className="ml-2 h-4 w-4" />
                                     </Button>
                                 </TableHead>
                                 <TableHead className="hidden lg:table-cell">
-                                     <Button variant="ghost" onClick={() => requestSort('document')}>
+                                     <Button variant="ghost" onClick={() => requestSort('document')} className="p-0 hover:bg-transparent">
                                         Documento
                                         <ArrowUpDown className="ml-2 h-4 w-4" />
                                     </Button>
                                 </TableHead>
                                 <TableHead className="hidden lg:table-cell">
-                                     <Button variant="ghost" onClick={() => requestSort('street')}>
+                                     <Button variant="ghost" onClick={() => requestSort('street' as any)} className="p-0 hover:bg-transparent">
                                         Endereço
                                         <ArrowUpDown className="ml-2 h-4 w-4" />
                                     </Button>
                                 </TableHead>
-                                <TableHead>
+                                <TableHead className="w-[80px]">
                                     <span className="sr-only">Ações</span>
                                 </TableHead>
                             </TableRow>
@@ -175,10 +178,10 @@ function CustomersPageContent() {
                                             <div className="text-sm">{customer.email}</div>
                                             <div className="text-xs text-muted-foreground">{customer.phone}</div>
                                         </TableCell>
-                                        <TableCell className="hidden lg:table-cell">{customer.document}</TableCell>
+                                        <TableCell className="hidden lg:table-cell font-mono text-xs">{customer.document}</TableCell>
                                         <TableCell className="hidden lg:table-cell">
-                                            <div className="text-sm">{customer.street}{customer.number ? `, ${customer.number}` : ''}</div>
-                                            <div className="text-xs text-muted-foreground">{customer.neighborhood}, {customer.city} - {customer.state}</div>
+                                            <div className="text-sm truncate max-w-[200px]">{customer.street}{customer.number ? `, ${customer.number}` : ''}</div>
+                                            <div className="text-xs text-muted-foreground truncate max-w-[200px]">{customer.neighborhood}, {customer.city} - {customer.state}</div>
                                         </TableCell>
                                         <TableCell className="text-right">
                                             <DropdownMenu>

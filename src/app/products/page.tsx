@@ -23,7 +23,10 @@ function ProductsPageContent() {
     const { toast } = useToast();
     const firestore = useFirestore();
     
-    const productsCollection = useMemoFirebase(() => collection(firestore, 'parts'), [firestore]);
+    const productsCollection = useMemoFirebase(() => {
+        if (!firestore) return null;
+        return collection(firestore, 'parts');
+    }, [firestore]);
     const { data: products, isLoading } = useCollection<Product>(productsCollection);
 
     const [dialogOpen, setDialogOpen] = useState(false);
@@ -78,7 +81,7 @@ function ProductsPageContent() {
     };
 
     const handleConfirmDelete = async () => {
-        if (!productToDelete) return;
+        if (!productToDelete || !firestore) return;
 
         try {
             await deleteDoc(doc(firestore, 'parts', productToDelete.id));
@@ -128,30 +131,30 @@ function ProductsPageContent() {
                         />
                     </div>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="p-0 sm:p-6">
                     <Table>
                         <TableHeader>
                             <TableRow>
-                                <TableHead className="hidden sm:table-cell w-16">Imagem</TableHead>
+                                <TableHead className="hidden sm:table-cell w-[80px]">Imagem</TableHead>
                                 <TableHead>
-                                     <Button variant="ghost" onClick={() => requestSort('name')}>
+                                     <Button variant="ghost" onClick={() => requestSort('name')} className="p-0 hover:bg-transparent">
                                         Nome
                                         <ArrowUpDown className="ml-2 h-4 w-4" />
                                     </Button>
                                 </TableHead>
                                 <TableHead className="hidden md:table-cell">
-                                    <Button variant="ghost" onClick={() => requestSort('type')}>
+                                    <Button variant="ghost" onClick={() => requestSort('type')} className="p-0 hover:bg-transparent">
                                         Tipo
                                         <ArrowUpDown className="ml-2 h-4 w-4" />
                                     </Button>
                                 </TableHead>
                                 <TableHead className="text-right">
-                                     <Button variant="ghost" onClick={() => requestSort('price')}>
+                                     <Button variant="ghost" onClick={() => requestSort('price')} className="p-0 hover:bg-transparent ml-auto">
                                         Preço
                                         <ArrowUpDown className="ml-2 h-4 w-4" />
                                     </Button>
                                 </TableHead>
-                                <TableHead>
+                                <TableHead className="w-[80px]">
                                     <span className="sr-only">Ações</span>
                                 </TableHead>
                             </TableRow>
@@ -167,11 +170,11 @@ function ProductsPageContent() {
                                 sortedAndFilteredProducts.map((product: Product) => (
                                     <TableRow key={product.id} onDoubleClick={() => handleEditClick(product.id)} className="cursor-pointer">
                                         <TableCell className="hidden sm:table-cell">
-                                            <div className="relative h-12 w-12 rounded-md overflow-hidden border bg-muted flex items-center justify-center">
+                                            <div className="relative h-10 w-10 rounded-md overflow-hidden border bg-muted flex items-center justify-center">
                                                 {product.imageUrl ? (
                                                     <Image src={product.imageUrl} alt={product.name} fill className="object-cover" />
                                                 ) : (
-                                                    <ImageIcon className="h-6 w-6 text-muted-foreground" />
+                                                    <ImageIcon className="h-5 w-5 text-muted-foreground" />
                                                 )}
                                             </div>
                                         </TableCell>
@@ -181,7 +184,7 @@ function ProductsPageContent() {
                                                 {product.type === 'piece' ? 'Peça' : 'Serviço'}
                                             </Badge>
                                         </TableCell>
-                                        <TableCell className="text-right">
+                                        <TableCell className="text-right font-mono">
                                             {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(product.price)}
                                         </TableCell>
                                         <TableCell className="text-right">
