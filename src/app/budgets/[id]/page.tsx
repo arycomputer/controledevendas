@@ -47,16 +47,28 @@ function BudgetDetailsPageContent() {
     const [isConverting, setIsConverting] = useState(false);
     const [isSharing, setIsSharing] = useState(false);
 
-    const budgetDocRef = useMemoFirebase(() => doc(firestore, 'budgets', budgetId), [firestore, budgetId]);
+    const budgetDocRef = useMemoFirebase(() => {
+        if (!firestore) return null;
+        return doc(firestore, 'budgets', budgetId);
+    }, [firestore, budgetId]);
     const { data: budget, isLoading: budgetLoading } = useDoc<Budget>(budgetDocRef);
     
-    const customerDocRef = useMemoFirebase(() => budget ? doc(firestore, 'customers', budget.customerId) : null, [firestore, budget]);
+    const customerDocRef = useMemoFirebase(() => {
+        if (!firestore || !budget) return null;
+        return doc(firestore, 'customers', budget.customerId);
+    }, [firestore, budget]);
     const { data: customer, isLoading: customerLoading } = useDoc<Customer>(customerDocRef);
     
-    const productsCollectionRef = useMemoFirebase(() => collection(firestore, 'parts'), [firestore]);
+    const productsCollectionRef = useMemoFirebase(() => {
+        if (!firestore) return null;
+        return collection(firestore, 'parts');
+    }, [firestore]);
     const { data: products, isLoading: productsLoading } = useCollection<Product>(productsCollectionRef);
 
-    const salesCollectionRef = useMemoFirebase(() => collection(firestore, 'sales'), [firestore]);
+    const salesCollectionRef = useMemoFirebase(() => {
+        if (!firestore) return null;
+        return collection(firestore, 'sales');
+    }, [firestore]);
     const { data: sales, isLoading: salesLoading } = useCollection<Sale>(salesCollectionRef);
 
     const handlePrint = () => {
@@ -84,6 +96,7 @@ function BudgetDetailsPageContent() {
                     .totals span { font-size: 0.9rem; }
                     .totals .total { font-weight: bold; font-size: 1rem; }
                     hr { border: none; border-top: 1px solid #eee; margin: 1.5rem 0; }
+                    .print-image { max-width: 150px; border-radius: 4px; margin: 5px; }
                     @media print {
                         body { margin: 0; }
                         .no-print { display: none; }
@@ -102,8 +115,6 @@ function BudgetDetailsPageContent() {
     const generateBlob = async (type: 'image' | 'pdf'): Promise<{ blob: Blob, fileName: string }> => {
         if (!printRef.current) throw new Error("Elemento não encontrado");
 
-        // Capturar a tela com html2canvas
-        // Nota: O uso de useCORS é essencial para imagens de domínios externos como picsum ou ibb.co
         const canvas = await html2canvas(printRef.current, {
             useCORS: true,
             scale: 2,
@@ -139,11 +150,9 @@ function BudgetDetailsPageContent() {
             const { blob, fileName } = await generateBlob(type);
             const file = new File([blob], fileName, { type: blob.type });
 
-            // Mensagem para o WhatsApp
             const message = `Olá ${customer.name}, segue em anexo o orçamento solicitado. ID: #${budgetId.substring(0,6).toUpperCase()}`;
             const whatsappUrl = `https://wa.me/${customer.phone?.replace(/\D/g, '')}?text=${encodeURIComponent(message)}`;
 
-            // Tentar usar a Web Share API (Mobile)
             if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
                 await navigator.share({
                     files: [file],
@@ -151,7 +160,6 @@ function BudgetDetailsPageContent() {
                     text: message,
                 });
             } else {
-                // Fallback Desktop: Baixar arquivo e abrir WhatsApp
                 const url = URL.createObjectURL(blob);
                 const a = document.createElement('a');
                 a.href = url;
@@ -284,7 +292,7 @@ function BudgetDetailsPageContent() {
     }
 
     return (
-        <>
+        <AuthGuard>
             <Card className="max-w-4xl mx-auto">
                 <CardHeader>
                     <div className="flex flex-col sm:flex-row justify-between items-start gap-4 no-print">
@@ -332,10 +340,10 @@ function BudgetDetailsPageContent() {
                     </div>
                 </CardHeader>
                 <CardContent ref={printRef} className="bg-white text-black p-8">
-                    <div className="header">
+                    <div className="header text-center mb-6">
                         <h1 className="text-2xl font-bold">{companyData.name}</h1>
-                        <p>{companyData.address}</p>
-                        <p>Telefone: {companyData.phone} | E-mail: {companyData.email}</p>
+                        <p className="text-sm">{companyData.address}</p>
+                        <p className="text-sm">Telefone: {companyData.phone} | E-mail: {companyData.email}</p>
                     </div>
 
                     <hr className="my-4 border-gray-200"/>
@@ -396,10 +404,16 @@ function BudgetDetailsPageContent() {
                             <Separator className="my-4"/>
                             <div>
                                 <h4 className="font-bold uppercase text-gray-500 text-[10px] mb-2">Fotos do Equipamento</h4>
-                                <div className="grid grid-cols-4 gap-2">
+                                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
                                     {budget.imageUrls.map((url, index) => (
-                                        <div key={index} className="relative aspect-square rounded border overflow-hidden">
-                                            <img src={url} alt="Foto equipamento" className="object-cover w-full h-full" />
+                                        <div key={index} className="relative aspect-square rounded-md border overflow-hidden w-full">
+                                            <Image 
+                                                src={url} 
+                                                alt={`Equipamento ${index + 1}`} 
+                                                fill 
+                                                className="object-cover"
+                                                sizes="(max-width: 768px) 50vw, 25vw"
+                                            />
                                         </div>
                                     ))}
                                 </div>
@@ -410,15 +424,15 @@ function BudgetDetailsPageContent() {
 
                     <Separator className="my-4" />
                     
-                    <div>
+                    <div className="overflow-x-auto">
                         <h3 className="font-bold uppercase text-gray-500 text-[10px] mb-2">Itens do Orçamento</h3>
-                        <Table className="border rounded-md">
+                        <Table className="border rounded-md w-full">
                             <TableHeader className="bg-gray-50">
                                 <TableRow>
                                     <TableHead className="text-black font-bold h-8 text-xs">Item</TableHead>
-                                    <TableHead className="text-black font-bold h-8 text-xs text-center">Qtd.</TableHead>
-                                    <TableHead className="text-black font-bold h-8 text-xs text-right">Preço Unit.</TableHead>
-                                    <TableHead className="text-black font-bold h-8 text-xs text-right">Subtotal</TableHead>
+                                    <TableHead className="text-black font-bold h-8 text-xs text-center w-[60px]">Qtd.</TableHead>
+                                    <TableHead className="text-black font-bold h-8 text-xs text-right w-[100px]">Preço Unit.</TableHead>
+                                    <TableHead className="text-black font-bold h-8 text-xs text-right w-[100px]">Subtotal</TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
@@ -451,14 +465,12 @@ function BudgetDetailsPageContent() {
                     </div>
                 </CardContent>
             </Card>
-        </>
+        </AuthGuard>
     )
 }
 
 export default function BudgetDetailsPage() {
     return (
-        <AuthGuard>
-            <BudgetDetailsPageContent />
-        </AuthGuard>
+        <BudgetDetailsPageContent />
     )
 }

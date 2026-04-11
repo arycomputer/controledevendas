@@ -85,31 +85,31 @@
 }
 
 /* Custom Table Resizing Styles */
-.resize-x {
+.resizable-header {
   resize: horizontal;
   overflow: hidden;
+  display: block;
+  min-width: 80px;
   position: relative;
+  padding-right: 12px;
 }
 
-/* Hide the default resize handle and show a custom one on hover */
-.resize-x::-webkit-resizer {
-  background-color: transparent;
-}
-
-.resize-x::after {
+.resizable-header::after {
   content: "";
   position: absolute;
   right: 0;
   top: 0;
   bottom: 0;
-  width: 4px;
+  width: 6px;
   cursor: col-resize;
-  background-color: transparent;
-  transition: background-color 0.2s;
+  background-image: radial-gradient(circle, #ccc 1px, transparent 1px);
+  background-size: 100% 4px;
+  opacity: 0;
+  transition: opacity 0.2s;
 }
 
-.resize-x:hover::after {
-  background-color: hsl(var(--primary) / 0.2);
+.resizable-header:hover::after {
+  opacity: 1;
 }
 
 /* Custom Scrollbar for Tables */
@@ -129,4 +129,10 @@
 
 .overflow-auto::-webkit-scrollbar-thumb:hover {
   background: hsl(var(--muted-foreground) / 0.5);
+}
+
+/* Global Image Responsibility */
+img {
+  max-width: 100%;
+  height: auto;
 }
