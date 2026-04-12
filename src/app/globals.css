@@ -87,23 +87,31 @@
 /* Custom Table Resizing Styles */
 .resizable-header {
   resize: horizontal;
-  overflow: hidden;
+  overflow: auto;
   display: block;
-  min-width: 80px;
+  min-width: 100px;
   position: relative;
-  padding-right: 12px;
+  padding-right: 16px;
+  box-sizing: border-box;
+}
+
+/* Hide default resize handle handle but keep functionality */
+.resizable-header::-webkit-resizer {
+  display: block;
+  background-color: transparent;
 }
 
 .resizable-header::after {
   content: "";
   position: absolute;
-  right: 0;
-  top: 0;
-  bottom: 0;
-  width: 6px;
+  right: 4px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 4px;
+  height: 12px;
   cursor: col-resize;
-  background-image: radial-gradient(circle, #ccc 1px, transparent 1px);
-  background-size: 100% 4px;
+  border-left: 1px solid hsl(var(--muted-foreground) / 0.5);
+  border-right: 1px solid hsl(var(--muted-foreground) / 0.5);
   opacity: 0;
   transition: opacity 0.2s;
 }
@@ -112,22 +120,26 @@
   opacity: 1;
 }
 
-/* Custom Scrollbar for Tables */
-.overflow-auto::-webkit-scrollbar {
+/* Custom Scrollbar for Tables and Containers */
+.overflow-auto::-webkit-scrollbar,
+.overflow-x-auto::-webkit-scrollbar {
   height: 8px;
   width: 8px;
 }
 
-.overflow-auto::-webkit-scrollbar-track {
+.overflow-auto::-webkit-scrollbar-track,
+.overflow-x-auto::-webkit-scrollbar-track {
   background: transparent;
 }
 
-.overflow-auto::-webkit-scrollbar-thumb {
+.overflow-auto::-webkit-scrollbar-thumb,
+.overflow-x-auto::-webkit-scrollbar-thumb {
   background: hsl(var(--muted-foreground) / 0.3);
   border-radius: 4px;
 }
 
-.overflow-auto::-webkit-scrollbar-thumb:hover {
+.overflow-auto::-webkit-scrollbar-thumb:hover,
+.overflow-x-auto::-webkit-scrollbar-thumb:hover {
   background: hsl(var(--muted-foreground) / 0.5);
 }
 
@@ -135,4 +147,11 @@
 img {
   max-width: 100%;
   height: auto;
+  display: block;
+}
+
+/* Table min-width behavior to allow true resizing */
+table.min-w-max {
+  width: max-content;
+  min-width: 100%;
 }
