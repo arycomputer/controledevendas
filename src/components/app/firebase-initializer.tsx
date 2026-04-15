@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useEffect, useState } from 'react';
@@ -39,7 +38,7 @@ export function FirebaseInitializer({ children }: { children: React.ReactNode })
           });
         }
 
-        // 2. Initialize Registration Settings if missing (Crucial for UI fields)
+        // 2. Initialize Registration Settings if missing
         const regSettingsRef = doc(firestore, 'settings', 'registration');
         const regSnap = await getDoc(regSettingsRef);
         if (!regSnap.exists()) {
@@ -49,7 +48,17 @@ export function FirebaseInitializer({ children }: { children: React.ReactNode })
           });
         }
 
-        // 3. Initialize Company Data if missing
+        // 3. Initialize Dashboard Settings if missing
+        const dashSettingsRef = doc(firestore, 'settings', 'dashboard');
+        const dashSnap = await getDoc(dashSettingsRef);
+        if (!dashSnap.exists()) {
+          await setDoc(dashSettingsRef, {
+            showMonthFilter: true,
+            showYearFilter: true
+          });
+        }
+
+        // 4. Initialize Company Data if missing
         const companyDataRef = doc(firestore, 'settings', 'companyData');
         const companySnap = await getDoc(companyDataRef);
         if (!companySnap.exists()) {

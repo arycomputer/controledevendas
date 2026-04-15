@@ -1,4 +1,3 @@
-
 'use client';
 
 import { z } from "zod";
@@ -129,3 +128,8 @@ export const DiscardSchema = z.object({
   items: z.array(DiscardItemSchema).optional(),
 });
 export type Discard = z.infer<typeof DiscardSchema>;
+
+export interface DashboardSettings {
+  showMonthFilter: boolean;
+  showYearFilter: boolean;
+}

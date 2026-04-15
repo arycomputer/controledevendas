@@ -1,19 +1,40 @@
 'use client'
 
-import { CircleDollarSign, Users, Package, ShoppingCart, Loader2, Wrench, Handshake } from "lucide-react";
+import { CircleDollarSign, Users, Package, ShoppingCart, Loader2, Wrench, Handshake, Filter } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { StatCard } from "@/components/app/stat-card";
 import { SalesChart } from "@/components/app/sales-chart";
 import { Badge } from "@/components/ui/badge";
-import { useCollection, useFirestore, useMemoFirebase } from "@/firebase";
-import { collection } from "firebase/firestore";
-import type { Customer, Product, Sale } from "@/lib/types";
+import { useCollection, useDoc, useFirestore, useMemoFirebase } from "@/firebase";
+import { collection, doc } from "firebase/firestore";
+import type { Customer, Product, Sale, DashboardSettings } from "@/lib/types";
 import { AuthGuard } from "@/components/app/auth-guard";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+
+const months = [
+  { value: "0", label: "Janeiro" },
+  { value: "1", label: "Fevereiro" },
+  { value: "2", label: "Março" },
+  { value: "3", label: "Abril" },
+  { value: "4", label: "Maio" },
+  { value: "5", label: "Junho" },
+  { value: "6", label: "Julho" },
+  { value: "7", label: "Agosto" },
+  { value: "8", label: "Setembro" },
+  { value: "9", label: "Outubro" },
+  { value: "10", label: "Novembro" },
+  { value: "11", label: "Dezembro" },
+];
+
+const currentYear = new Date().getFullYear();
+const years = Array.from({ length: 5 }, (_, i) => (currentYear - i).toString());
 
 function DashboardPageContent() {
   const firestore = useFirestore();
+  const [selectedMonth, setSelectedMonth] = useState<string>(new Date().getMonth().toString());
+  const [selectedYear, setSelectedYear] = useState<string>(currentYear.toString());
 
   const salesCollection = useMemoFirebase(() => firestore ? collection(firestore, 'sales') : null, [firestore]);
   const { data: sales, isLoading: salesLoading } = useCollection<Sale>(salesCollection);
@@ -24,15 +45,31 @@ function DashboardPageContent() {
   const productsCollection = useMemoFirebase(() => firestore ? collection(firestore, 'parts') : null, [firestore]);
   const { data: products, isLoading: productsLoading } = useCollection<Product>(productsCollection);
 
-  const isLoading = salesLoading || customersLoading || productsLoading;
-  
-  const stats = useMemo(() => {
-    if (!sales || !products) return { totalSalesValue: 0, totalPartsCost: 0, totalServicesRevenue: 0, recentSales: [] };
+  const dashSettingsRef = useMemoFirebase(() => firestore ? doc(firestore, 'settings', 'dashboard') : null, [firestore]);
+  const { data: dashSettings, isLoading: settingsLoading } = useDoc<DashboardSettings>(dashSettingsRef);
 
-    const activeSales = sales.filter(s => s.status !== 'cancelled');
-    const totalSalesValue = activeSales.reduce((sum, sale) => sum + sale.totalAmount, 0);
+  const isLoading = salesLoading || customersLoading || productsLoading || settingsLoading;
+  
+  const filteredSales = useMemo(() => {
+    if (!sales) return [];
     
-    const recentSales = [...activeSales]
+    return sales.filter(sale => {
+      if (sale.status === 'cancelled') return false;
+      
+      const saleDate = new Date(sale.saleDate);
+      const monthMatch = dashSettings?.showMonthFilter ? saleDate.getMonth().toString() === selectedMonth : true;
+      const yearMatch = dashSettings?.showYearFilter ? saleDate.getFullYear().toString() === selectedYear : true;
+      
+      return monthMatch && yearMatch;
+    });
+  }, [sales, selectedMonth, selectedYear, dashSettings]);
+
+  const stats = useMemo(() => {
+    if (!filteredSales || !products) return { totalSalesValue: 0, totalPartsCost: 0, totalServicesRevenue: 0, recentSales: [] };
+
+    const totalSalesValue = filteredSales.reduce((sum, sale) => sum + sale.totalAmount, 0);
+    
+    const recentSales = [...filteredSales]
       .sort((a, b) => new Date(b.saleDate).getTime() - new Date(a.saleDate).getTime())
       .slice(0, 5);
       
@@ -40,7 +77,7 @@ function DashboardPageContent() {
     let totalPartsCost = 0;
     let totalServicesRevenue = 0;
 
-    activeSales.forEach(sale => {
+    filteredSales.forEach(sale => {
       sale.items.forEach(item => {
         const product = productsMap.get(item.productId);
         if (product) {
@@ -54,7 +91,7 @@ function DashboardPageContent() {
     });
 
     return { totalSalesValue, totalPartsCost, totalServicesRevenue, recentSales };
-  }, [sales, products]);
+  }, [filteredSales, products]);
 
   if (isLoading) {
     return (
@@ -66,7 +103,40 @@ function DashboardPageContent() {
 
   return (
     <div className="flex flex-col gap-8">
-      <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
+        
+        {(dashSettings?.showMonthFilter || dashSettings?.showYearFilter) && (
+          <div className="flex items-center gap-2 bg-muted/50 p-2 rounded-lg border">
+            <Filter className="h-4 w-4 text-muted-foreground ml-1" />
+            {dashSettings?.showMonthFilter && (
+              <Select value={selectedMonth} onValueChange={setSelectedMonth}>
+                <SelectTrigger className="w-[130px] h-8 text-xs">
+                  <SelectValue placeholder="Mês" />
+                </SelectTrigger>
+                <SelectContent>
+                  {months.map(m => (
+                    <SelectItem key={m.value} value={m.value}>{m.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
+            {dashSettings?.showYearFilter && (
+              <Select value={selectedYear} onValueChange={setSelectedYear}>
+                <SelectTrigger className="w-[100px] h-8 text-xs">
+                  <SelectValue placeholder="Ano" />
+                </SelectTrigger>
+                <SelectContent>
+                  {years.map(y => (
+                    <SelectItem key={y} value={y}>{y}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
+          </div>
+        )}
+      </div>
+
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         <StatCard 
           title="Receita Total" 
@@ -85,7 +155,7 @@ function DashboardPageContent() {
         />
         <StatCard 
           title="Vendas" 
-          value={`+${sales?.filter(s => s.status !== 'cancelled').length || 0}`} 
+          value={`+${filteredSales.length}`} 
           icon={ShoppingCart}
         />
         <StatCard 
@@ -105,7 +175,7 @@ function DashboardPageContent() {
             <CardTitle>Visão Geral de Vendas</CardTitle>
           </CardHeader>
           <CardContent className="pl-2">
-            <SalesChart sales={sales?.filter(s => s.status !== 'cancelled') || []}/>
+            <SalesChart sales={filteredSales}/>
           </CardContent>
         </Card>
         <Card className="lg:col-span-3">
@@ -122,23 +192,31 @@ function DashboardPageContent() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {stats.recentSales.map((sale) => {
-                  const customer = customers?.find(c => c.id === sale.customerId);
-                  return (
-                    <TableRow key={sale.id}>
-                      <TableCell>
-                        <div className="font-medium">{customer?.name || 'N/A'}</div>
-                        <div className="text-sm text-muted-foreground">{customer?.email || ''}</div>
-                      </TableCell>
-                      <TableCell className="text-right">
-                        {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(sale.totalAmount)}
-                      </TableCell>
-                       <TableCell className="text-center">
-                        <Badge variant="outline">{new Date(sale.saleDate).toLocaleDateString('pt-BR')}</Badge>
-                      </TableCell>
-                    </TableRow>
-                  );
-                })}
+                {stats.recentSales.length > 0 ? (
+                  stats.recentSales.map((sale) => {
+                    const customer = customers?.find(c => c.id === sale.customerId);
+                    return (
+                      <TableRow key={sale.id}>
+                        <TableCell>
+                          <div className="font-medium">{customer?.name || 'N/A'}</div>
+                          <div className="text-sm text-muted-foreground">{customer?.email || ''}</div>
+                        </TableCell>
+                        <TableCell className="text-right">
+                          {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(sale.totalAmount)}
+                        </TableCell>
+                         <TableCell className="text-center">
+                          <Badge variant="outline">{new Date(sale.saleDate).toLocaleDateString('pt-BR')}</Badge>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })
+                ) : (
+                  <TableRow>
+                    <TableCell colSpan={3} className="text-center py-4 text-muted-foreground">
+                      Nenhuma venda no período.
+                    </TableCell>
+                  </TableRow>
+                )}
               </TableBody>
             </Table>
           </CardContent>

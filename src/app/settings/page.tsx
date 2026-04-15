@@ -9,6 +9,7 @@ import { ThemeSelector } from "@/components/app/settings/theme-selector";
 import { AuthGuard } from "@/components/app/auth-guard";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import { DatabaseManager } from "@/components/app/settings/database-manager";
+import { DashboardSettingsManager } from "@/components/app/settings/dashboard-settings";
 
 function SettingsPageContent() {
     return (
@@ -16,10 +17,11 @@ function SettingsPageContent() {
             <h1 className="text-3xl font-bold tracking-tight">Configurações</h1>
             <Tabs defaultValue="company" className="w-full">
                 <ScrollArea className="w-full">
-                    <TabsList className="grid w-full grid-cols-5 min-w-[500px]">
+                    <TabsList className="grid w-full grid-cols-6 min-w-[600px]">
                         <TabsTrigger value="company">Empresa</TabsTrigger>
                         <TabsTrigger value="users">Usuários</TabsTrigger>
                         <TabsTrigger value="registration">Cadastros</TabsTrigger>
+                        <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
                         <TabsTrigger value="themes">Temas</TabsTrigger>
                         <TabsTrigger value="database">Banco de Dados</TabsTrigger>
                     </TabsList>
@@ -55,6 +57,17 @@ function SettingsPageContent() {
                         </CardHeader>
                         <CardContent>
                             <RegistrationManager />
+                        </CardContent>
+                    </Card>
+                </TabsContent>
+                <TabsContent value="dashboard">
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Configurações do Dashboard</CardTitle>
+                            <CardDescription>Habilite ou desabilite filtros de visualização de dados.</CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            <DashboardSettingsManager />
                         </CardContent>
                     </Card>
                 </TabsContent>
