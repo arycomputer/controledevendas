@@ -1,8 +1,9 @@
+
 'use client'
 
 import React, { useState } from 'react';
 import { useUser, useAuth } from '@/firebase';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Menu } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card';
 import { Label } from '../ui/label';
 import { Input } from '../ui/input';
@@ -10,9 +11,10 @@ import { Button } from '../ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { signInWithEmailAndPassword } from 'firebase/auth';
 import { AppSidebar } from './app-sidebar';
-import { SidebarInset } from '../ui/sidebar';
+import { SidebarInset, SidebarTrigger } from '../ui/sidebar';
 import { useCompany } from '@/context/company-context';
 import { useInactivityLogout } from '@/hooks/use-inactivity-logout';
+import { NotificationCenter } from './notification-center';
 
 
 function LoginPage() {
@@ -87,6 +89,21 @@ function LoginPage() {
     )
 }
 
+function TopBar() {
+  return (
+    <header className="h-14 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 flex items-center justify-between px-4 sticky top-0 z-30">
+      <div className="flex items-center gap-2 md:hidden">
+         <SidebarTrigger>
+            <Menu className="h-5 w-5" />
+         </SidebarTrigger>
+      </div>
+      <div className="ml-auto flex items-center gap-4">
+        <NotificationCenter />
+      </div>
+    </header>
+  )
+}
+
 function AuthenticatedLayout({ children }: { children: React.ReactNode }) {
     useInactivityLogout();
 
@@ -94,6 +111,7 @@ function AuthenticatedLayout({ children }: { children: React.ReactNode }) {
        <>
             <AppSidebar />
             <SidebarInset>
+                <TopBar />
                 <main className="p-4 sm:p-6 lg:p-8">
                     {children}
                 </main>

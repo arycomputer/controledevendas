@@ -3,7 +3,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, Users, ShoppingCart, Package, Settings, LogOut, FileText, ClipboardList, Trash2, Truck } from 'lucide-react';
+import { LayoutDashboard, Users, ShoppingCart, Package, Settings, LogOut, FileText, ClipboardList, Trash2, Truck, Calendar } from 'lucide-react';
 import Image from 'next/image';
 import {
   Sidebar,
@@ -22,6 +22,7 @@ import { signOut } from 'firebase/auth';
 
 const navItems = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+  { href: '/agenda', label: 'Agenda', icon: Calendar },
   { href: '/customers', label: 'Clientes', icon: Users },
   { href: '/products', label: 'Produtos', icon: Package },
   { href: '/budgets', label: 'Orçamentos', icon: ClipboardList },
