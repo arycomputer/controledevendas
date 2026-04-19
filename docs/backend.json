@@ -7,637 +7,79 @@
       "type": "object",
       "description": "Represents a customer with their contact information and address.",
       "properties": {
-        "id": {
-          "type": "string",
-          "description": "Unique identifier for the Customer entity."
-        },
-        "name": {
-          "type": "string",
-          "description": "The full name of the customer."
-        },
-        "email": {
-          "type": "string",
-          "description": "The contact details of the customer, such as phone number or email address."
-        },
-        "document": {
-          "type": "string",
-          "description": "The document of the customer."
-        },
-        "phone": {
-          "type": "string",
-          "description": "The phone number of the customer."
-        },
-        "zipCode": {
-          "type": "string",
-          "description": "The ZIP code of the customer's address."
-        },
-        "street": {
-          "type": "string",
-          "description": "The street of the customer's address."
-        },
-        "number": {
-          "type": "string",
-          "description": "The number of the customer's address."
-        },
-        "complement": {
-          "type": "string",
-          "description": "The complement of the customer's address."
-        },
-        "neighborhood": {
-          "type": "string",
-          "description": "The neighborhood of the customer's address."
-        },
-        "city": {
-          "type": "string",
-          "description": "The city of the customer's address."
-        },
-        "state": {
-          "type": "string",
-          "description": "The state of the customer's address."
-        }
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "email": { "type": "string" },
+        "document": { "type": "string" },
+        "phone": { "type": "string" },
+        "zipCode": { "type": "string" },
+        "street": { "type": "string" },
+        "number": { "type": "string" },
+        "complement": { "type": "string" },
+        "neighborhood": { "type": "string" },
+        "city": { "type": "string" },
+        "state": { "type": "string" }
       },
-      "required": [
-        "id",
-        "name",
-        "email",
-        "phone",
-        "document",
-        "zipCode",
-        "street",
-        "neighborhood",
-        "city",
-        "state"
-      ]
+      "required": ["id", "name"]
     },
     "Product": {
       "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "Product",
       "type": "object",
-      "description": "Represents a product or service in the inventory with its details.",
+      "description": "Represents a product or service in the inventory.",
       "properties": {
-        "id": {
-          "type": "string",
-          "description": "Unique identifier for the Product entity."
-        },
-        "name": {
-          "type": "string",
-          "description": "The name of the product or service."
-        },
-        "description": {
-          "type": "string",
-          "description": "A description of the product or service."
-        },
-        "price": {
-          "type": "number",
-          "description": "The price of the item."
-        },
-        "cost": {
-          "type": "number",
-          "description": "The cost price of the product."
-        },
-        "quantity": {
-          "type": "number",
-          "description": "The quantity of the product in inventory (for 'piece' type)."
-        },
-        "type": {
-          "type": "string",
-          "enum": [
-            "piece",
-            "service"
-          ],
-          "description": "The type of the item."
-        },
-        "link": {
-          "type": "string",
-          "description": "An optional external link for the product."
-        },
-        "imageUrl": {
-          "type": "string"
-        }
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "description": { "type": "string" },
+        "price": { "type": "number" },
+        "cost": { "type": "number" },
+        "quantity": { "type": "number" },
+        "type": { "type": "string", "enum": ["piece", "service"] },
+        "link": { "type": "string" },
+        "imageUrl": { "type": "string" }
       },
-      "required": [
-        "id",
-        "name",
-        "description",
-        "price",
-        "type"
-      ]
+      "required": ["id", "name", "price", "type"]
     },
     "Sale": {
-      "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "Sale",
       "type": "object",
-      "description": "Represents a sales transaction, linking a customer to purchased items.",
       "properties": {
-        "id": {
-          "type": "string",
-          "description": "Unique identifier for the Sale entity."
-        },
-        "budgetId": {
-          "type": "string",
-          "description": "Optional reference to the Budget this sale was created from."
-        },
-        "customerId": {
-          "type": "string",
-          "description": "Reference to Customer."
-        },
-        "items": {
-          "type": "array",
-          "items": {
-            "type": "object",
-            "properties": {
-              "productId": {
-                "type": "string"
-              },
-              "quantity": {
-                "type": "number"
-              },
-              "unitPrice": {
-                "type": "number"
-              }
-            },
-            "required": [
-              "productId",
-              "quantity",
-              "unitPrice"
-            ]
-          }
-        },
-        "saleDate": {
-          "type": "string",
-          "description": "The date of the sale transaction.",
-          "format": "date-time"
-        },
-        "paymentDate": {
-          "type": "string",
-          "description": "The date the sale was paid.",
-          "format": "date-time"
-        },
-        "totalAmount": {
-          "type": "number",
-          "description": "The total amount of the sale transaction."
-        },
-        "paymentMethod": {
-          "type": "string",
-          "enum": [
-            "cash",
-            "pix",
-            "credit_card",
-            "debit_card"
-          ],
-          "description": "The payment method used for the sale."
-        },
-        "status": {
-          "type": "string",
-          "enum": [
-            "paid",
-            "pending"
-          ],
-          "description": "The payment status of the sale."
-        },
-        "downPayment": {
-          "type": "number",
-          "description": "The amount paid as a down payment."
-        },
-        "amountReceivable": {
-          "type": "number",
-          "description": "The remaining amount to be received."
-        }
-      },
-      "required": [
-        "id",
-        "customerId",
-        "items",
-        "saleDate",
-        "totalAmount",
-        "paymentMethod",
-        "status"
-      ]
+        "id": { "type": "string" },
+        "customerId": { "type": "string" },
+        "totalAmount": { "type": "number" },
+        "saleDate": { "type": "string", "format": "date-time" },
+        "status": { "type": "string", "enum": ["paid", "pending", "cancelled"] }
+      }
     },
-    "Purchase": {
-      "$schema": "http://json-schema.org/draft-07/schema#",
-      "title": "Purchase",
+    "FinancialTransaction": {
+      "title": "FinancialTransaction",
       "type": "object",
-      "description": "Represents a purchase transaction for restock and cost management.",
       "properties": {
-        "id": {
-          "type": "string",
-          "description": "Unique identifier for the Purchase entity."
-        },
-        "supplierName": {
-          "type": "string",
-          "description": "The name of the supplier."
-        },
-        "purchaseDate": {
-          "type": "string",
-          "description": "The date of the purchase.",
-          "format": "date-time"
-        },
-        "items": {
-          "type": "array",
-          "description": "List of products purchased.",
-          "items": {
-            "type": "object",
-            "properties": {
-              "productId": { "type": "string" },
-              "quantity": { "type": "number" },
-              "unitCost": { "type": "number" }
-            },
-            "required": ["productId", "quantity", "unitCost"]
-          }
-        },
-        "totalAmount": {
-          "type": "number",
-          "description": "The total value of the purchase."
-        },
-        "notes": {
-          "type": "string",
-          "description": "Additional notes about the purchase."
-        }
+        "id": { "type": "string" },
+        "description": { "type": "string" },
+        "amount": { "type": "number" },
+        "type": { "type": "string", "enum": ["income", "expense"] },
+        "category": { "type": "string" },
+        "date": { "type": "string", "format": "date-time" }
       },
-      "required": ["id", "supplierName", "purchaseDate", "items", "totalAmount"]
-    },
-    "User": {
-      "title": "User",
-      "type": "object",
-      "description": "Represents a user of the application.",
-      "properties": {
-        "id": {
-          "type": "string",
-          "description": "Unique identifier for the User, same as Firebase Auth UID."
-        },
-        "name": {
-          "type": "string",
-          "description": "The full name of the user."
-        },
-        "email": {
-          "type": "string",
-          "format": "email",
-          "description": "The user's email address."
-        },
-        "role": {
-          "type": "string",
-          "enum": [
-            "admin",
-            "seller"
-          ],
-          "description": "The role of the user within the application."
-        }
-      },
-      "required": [
-        "id",
-        "name",
-        "email",
-        "role"
-      ]
-    },
-    "Settings": {
-      "title": "Settings",
-      "description": "Stores application-wide settings.",
-      "type": "object",
-      "properties": {}
-    },
-    "ServiceOrder": {
-      "$schema": "http://json-schema.org/draft-07/schema#",
-      "title": "ServiceOrder",
-      "type": "object",
-      "description": "Represents a service order for a customer's item.",
-      "properties": {
-        "id": {
-          "type": "string",
-          "description": "Unique identifier for the ServiceOrder entity."
-        },
-        "customerId": {
-          "type": "string",
-          "description": "Reference to Customer."
-        },
-        "entryDate": {
-          "type": "string",
-          "description": "The date the item entered for service.",
-          "format": "date-time"
-        },
-        "exitDate": {
-          "type": "string",
-          "description": "The date the item was delivered after service.",
-          "format": "date-time"
-        },
-        "itemDescription": {
-          "type": "string",
-          "description": "Description of the item (e.g., model, brand)."
-        },
-        "problemDescription": {
-          "type": "string",
-          "description": "Description of the problem reported by the customer."
-        },
-        "serialNumber": {
-          "type": "string",
-          "description": "The serial number of the item."
-        },
-        "items": {
-          "type": "array",
-          "items": {
-            "type": "object",
-            "properties": {
-              "productId": {
-                "type": "string"
-              },
-              "quantity": {
-                "type": "number"
-              },
-              "unitPrice": {
-                "type": "number"
-              }
-            },
-            "required": [
-              "productId",
-              "quantity",
-              "unitPrice"
-            ]
-          }
-        },
-        "totalAmount": {
-          "type": "number",
-          "description": "The total amount of the service order."
-        },
-        "status": {
-          "type": "string",
-          "enum": [
-            "pending",
-            "in_progress",
-            "completed",
-            "delivered"
-          ],
-          "description": "The status of the service order."
-        }
-      },
-      "required": [
-        "id",
-        "customerId",
-        "entryDate",
-        "itemDescription",
-        "problemDescription"
-      ]
-    },
-    "Budget": {
-      "$schema": "http://json-schema.org/draft-07/schema#",
-      "title": "Budget",
-      "type": "object",
-      "description": "Represents a budget or quote for a customer.",
-      "properties": {
-        "id": {
-          "type": "string",
-          "description": "Unique identifier for the Budget entity."
-        },
-        "customerId": {
-          "type": "string",
-          "description": "Reference to Customer."
-        },
-        "items": {
-          "type": "array",
-          "items": {
-            "type": "object",
-            "properties": {
-              "productId": {
-                "type": "string"
-              },
-              "quantity": {
-                "type": "number"
-              },
-              "unitPrice": {
-                "type": "number"
-              }
-            },
-            "required": [
-              "productId",
-              "quantity",
-              "unitPrice"
-            ]
-          }
-        },
-        "budgetDate": {
-          "type": "string",
-          "description": "The date the budget was created.",
-          "format": "date-time"
-        },
-        "validUntil": {
-          "type": "string",
-          "description": "The date the budget is valid until.",
-          "format": "date-time"
-        },
-        "totalAmount": {
-          "type": "number",
-          "description": "The total amount of the budget."
-        },
-        "status": {
-          "type": "string",
-          "enum": [
-            "pending",
-            "approved",
-            "rejected"
-          ],
-          "description": "The status of the budget."
-        },
-        "itemDescription": {
-          "type": "string",
-          "description": "Description of the item for service (e.g., model, brand)."
-        },
-        "model": {
-          "type": "string",
-          "description": "The model of the equipment for service."
-        },
-        "problemDescription": {
-          "type": "string",
-          "description": "Description of the problem reported by the customer."
-        },
-        "solutionDescription": {
-          "type": "string",
-          "description": "Description of the solution for the reported problem."
-        },
-        "serialNumber": {
-          "type": "string",
-          "description": "The serial number of the item for service."
-        },
-        "imageUrls": {
-          "type": "array",
-          "items": {
-            "type": "string"
-          },
-          "description": "A list of URLs for images of the equipment's condition."
-        }
-      },
-      "required": [
-        "id",
-        "customerId",
-        "items",
-        "budgetDate",
-        "validUntil",
-        "totalAmount",
-        "status"
-      ]
-    },
-    "Discard": {
-      "$schema": "http://json-schema.org/draft-07/schema#",
-      "title": "Discard",
-      "type": "object",
-      "description": "Represents a discarded product with its details and images.",
-      "properties": {
-        "id": {
-          "type": "string",
-          "description": "Unique identifier for the Discard entity."
-        },
-        "description": {
-          "type": "string",
-          "description": "Description of the discarded item."
-        },
-        "model": {
-          "type": "string",
-          "description": "The model of the discarded item."
-        },
-        "serialNumber": {
-          "type": "string",
-          "description": "The serial number of the discarded item."
-        },
-        "problemDescription": {
-            "type": "string",
-            "description": "Description of the defect of the discarded item."
-        },
-        "imageUrls": {
-          "type": "array",
-          "items": {
-            "type": "string"
-          },
-          "description": "A list of URLs for images of the discarded item."
-        },
-        "discardDate": {
-          "type": "string",
-          "description": "The date the item was discarded.",
-          "format": "date-time"
-        },
-        "items": {
-          "type": "array",
-          "description": "A list of parts included in this discard.",
-          "items": {
-            "type": "object",
-            "properties": {
-              "productId": {
-                "type": "string"
-              },
-              "quantity": {
-                "type": "number"
-              }
-            },
-            "required": [
-              "productId",
-              "quantity"
-            ]
-          }
-        }
-      },
-      "required": [
-        "id",
-        "description",
-        "discardDate"
-      ]
+      "required": ["id", "description", "amount", "type", "date"]
     }
   },
   "auth": {
-    "providers": [
-      "password",
-      "anonymous"
-    ]
+    "providers": ["password", "anonymous"]
   },
   "firestore": {
     "structure": [
-      {
-        "path": "customers/{customerId}",
-        "definition": {
-          "entityName": "Customer",
-          "schema": {
-            "$ref": "#/backend/entities/Customer"
-          },
-          "description": "Stores customer data. Any authenticated user can manage customers."
-        }
-      },
-      {
-        "path": "parts/{partId}",
-        "definition": {
-          "entityName": "Product",
-          "schema": {
-            "$ref": "#/backend/entities/Product"
-          },
-          "description": "Stores product and service inventory data. Any authenticated user can manage products."
-        }
-      },
-      {
-        "path": "sales/{saleId}",
-        "definition": {
-          "entityName": "Sale",
-          "schema": {
-            "$ref": "#/backend/entities/Sale"
-          },
-          "description": "Stores sales transaction data. Any authenticated user can manage sales."
-        }
-      },
-      {
-        "path": "purchases/{purchaseId}",
-        "definition": {
-          "entityName": "Purchase",
-          "schema": {
-            "$ref": "#/backend/entities/Purchase"
-          },
-          "description": "Stores purchase transaction data for restock. Any authenticated user can manage purchases."
-        }
-      },
-      {
-        "path": "serviceOrders/{serviceOrderId}",
-        "definition": {
-          "entityName": "ServiceOrder",
-          "schema": {
-            "$ref": "#/backend/entities/ServiceOrder"
-          },
-          "description": "Stores service order data. Any authenticated user can manage service orders."
-        }
-      },
-      {
-        "path": "budgets/{budgetId}",
-        "definition": {
-          "entityName": "Budget",
-          "schema": {
-            "$ref": "#/backend/entities/Budget"
-          },
-          "description": "Stores budget data. Any authenticated user can manage budgets."
-        }
-      },
-      {
-        "path": "users/{userId}",
-        "definition": {
-          "entityName": "User",
-          "schema": {
-            "$ref": "#/backend/entities/User"
-          },
-          "description": "Stores application user data, mirroring Firebase Auth users. Only admins can write to this collection."
-        }
-      },
-      {
-        "path": "settings/{settingId}",
-        "definition": {
-          "entityName": "Settings",
-          "schema": {
-            "$ref": "#/backend/entities/Settings"
-          },
-          "description": "Stores global application settings. Authenticated users can read/write."
-        }
-      },
-      {
-        "path": "discards/{discardId}",
-        "definition": {
-          "entityName": "Discard",
-          "schema": {
-            "$ref": "#/backend/entities/Discard"
-          },
-          "description": "Stores discarded items. Any authenticated user can manage discards."
-        }
-      }
+      { "path": "customers/{customerId}", "definition": { "entityName": "Customer" } },
+      { "path": "parts/{partId}", "definition": { "entityName": "Product" } },
+      { "path": "sales/{saleId}", "definition": { "entityName": "Sale" } },
+      { "path": "purchases/{purchaseId}", "definition": { "entityName": "Purchase" } },
+      { "path": "transactions/{transactionId}", "definition": { "entityName": "FinancialTransaction" } },
+      { "path": "serviceOrders/{serviceOrderId}", "definition": { "entityName": "ServiceOrder" } },
+      { "path": "budgets/{budgetId}", "definition": { "entityName": "Budget" } },
+      { "path": "discards/{discardId}", "definition": { "entityName": "Discard" } },
+      { "path": "users/{userId}", "definition": { "entityName": "User" } },
+      { "path": "settings/{settingId}", "definition": { "entityName": "Settings" } }
     ]
   }
 }

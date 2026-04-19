@@ -129,6 +129,18 @@ export const DiscardSchema = z.object({
 });
 export type Discard = z.infer<typeof DiscardSchema>;
 
+export const FinancialTransactionSchema = z.object({
+  id: z.string(),
+  description: z.string(),
+  amount: z.number(),
+  type: z.enum(['income', 'expense']),
+  category: z.string(),
+  date: z.string(), // ISO string
+  paymentMethod: z.string().optional(),
+  referenceId: z.string().optional(), // ID of sale or purchase if linked
+});
+export type FinancialTransaction = z.infer<typeof FinancialTransactionSchema>;
+
 export interface DashboardSettings {
   showMonthFilter: boolean;
   showYearFilter: boolean;

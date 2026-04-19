@@ -1,41 +1,24 @@
 
-/**
- * Ruleset for VendasControl - Versão 2.5.0
- * Permissões globais e específicas para garantir acesso a todas as coleções.
- */
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-
-    // Funções auxiliares
     function isSignedIn() {
       return request.auth != null;
     }
 
-    function isAdmin() {
-       return isSignedIn() && 
-       exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
-       get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
-    }
-
-    // Regras Genéricas para Coleções de Negócio
-    // O uso de {document=**} garante que listagens e leituras funcionem em qualquer profundidade
     match /customers/{document=**} { allow read, write: if isSignedIn(); }
     match /parts/{document=**} { allow read, write: if isSignedIn(); }
     match /sales/{document=**} { allow read, write: if isSignedIn(); }
     match /purchases/{document=**} { allow read, write: if isSignedIn(); }
+    match /transactions/{document=**} { allow read, write: if isSignedIn(); }
     match /serviceOrders/{document=**} { allow read, write: if isSignedIn(); }
     match /budgets/{document=**} { allow read, write: if isSignedIn(); }
     match /discards/{document=**} { allow read, write: if isSignedIn(); }
     match /settings/{document=**} { allow read, write: if isSignedIn(); }
-
-    // Perfis de Usuário
     match /users/{userId} {
       allow read: if isSignedIn();
-      allow write: if isSignedIn() && (request.auth.uid == userId || isAdmin());
+      allow write: if isSignedIn();
     }
-    
-    // Fallback para garantir listagem em qualquer coleção nova
     match /{path=**} {
       allow list: if isSignedIn();
     }
